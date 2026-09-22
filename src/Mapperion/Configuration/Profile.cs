@@ -8,7 +8,7 @@ namespace Mapperion
     /// declare the maps in the constructor, and register it with
     /// <see cref="IMapperConfigurationExpression.AddProfile{TProfile}"/>.
     /// </summary>
-    public abstract class Profile
+    public abstract class Profile : ITypeMapRegistry
     {
         private readonly List<ITypeMapConfiguration> typeMaps = new List<ITypeMapConfiguration>();
 
@@ -25,9 +25,14 @@ namespace Mapperion
         /// <returns>The expression used to configure the map.</returns>
         protected IMappingExpression<TSource, TDestination> CreateMap<TSource, TDestination>()
         {
-            var configuration = new TypeMapConfiguration<TSource, TDestination>();
+            var configuration = new TypeMapConfiguration<TSource, TDestination>(this);
             typeMaps.Add(configuration);
             return configuration;
+        }
+
+        void ITypeMapRegistry.Add(ITypeMapConfiguration configuration)
+        {
+            typeMaps.Add(configuration);
         }
     }
 }

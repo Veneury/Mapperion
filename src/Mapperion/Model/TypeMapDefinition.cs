@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using Mapperion.Internal;
 
 namespace Mapperion.Model
@@ -36,6 +37,12 @@ namespace Mapperion.Model
 
         /// <summary>Gets the destination constructor parameters, when the destination is built through one.</summary>
         public IReadOnlyList<ConstructorParameterDefinition> ConstructorParameters { get; init; } = NoParameters;
+
+        /// <summary>
+        /// Gets the constructor used to build the destination, or <see langword="null"/> when it is
+        /// created through a parameterless constructor and populated member by member.
+        /// </summary>
+        public ConstructorInfo? Constructor { get; init; }
 
         /// <summary>
         /// Gets the converter that replaces member-by-member mapping for this pair entirely.
@@ -95,12 +102,16 @@ namespace Mapperion.Model
             return null;
         }
 
-        internal TypeMapDefinition WithMembers(IReadOnlyList<MemberDefinition> members)
+        internal TypeMapDefinition WithResolved(
+            IReadOnlyList<MemberDefinition> members,
+            ConstructorInfo? constructor,
+            IReadOnlyList<ConstructorParameterDefinition> constructorParameters)
         {
             return new TypeMapDefinition(Key)
             {
                 Members = members,
-                ConstructorParameters = ConstructorParameters,
+                Constructor = constructor,
+                ConstructorParameters = constructorParameters,
                 TypeConverterType = TypeConverterType,
                 ConstructUsing = ConstructUsing,
                 BeforeMapActions = BeforeMapActions,

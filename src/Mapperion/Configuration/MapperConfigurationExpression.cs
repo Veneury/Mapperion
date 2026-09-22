@@ -12,7 +12,7 @@ namespace Mapperion.Configuration
     /// The implementation handed to the user's configuration callback. Mutable while the callback
     /// runs, then turned into an immutable <see cref="MapperModel"/>.
     /// </summary>
-    internal sealed class MapperConfigurationExpression : IMapperConfigurationExpression
+    internal sealed class MapperConfigurationExpression : IMapperConfigurationExpression, ITypeMapRegistry
     {
         private readonly List<ITypeMapConfiguration> typeMaps = new List<ITypeMapConfiguration>();
         private readonly List<string> sourcePrefixes = new List<string>();
@@ -43,9 +43,15 @@ namespace Mapperion.Configuration
             var key = new TypeMapKey(typeof(TSource), typeof(TDestination));
             EnsureNotDeclared(key);
 
-            var configuration = new TypeMapConfiguration<TSource, TDestination>();
+            var configuration = new TypeMapConfiguration<TSource, TDestination>(this);
             typeMaps.Add(configuration);
             return configuration;
+        }
+
+        void ITypeMapRegistry.Add(ITypeMapConfiguration configuration)
+        {
+            EnsureNotDeclared(configuration.Key);
+            typeMaps.Add(configuration);
         }
 
         public void AddProfile(Profile profile)
