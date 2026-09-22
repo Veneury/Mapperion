@@ -22,6 +22,18 @@ namespace Mapperion
             Expression<Func<TDestination, TMember>> destinationMember,
             Action<IMemberConfigurationExpression<TSource, TDestination, TMember>> memberOptions);
 
+        /// <summary>
+        /// Configures one parameter of the destination constructor. Parameter names are matched
+        /// ignoring case, because C# names parameters in camelCase and properties in PascalCase.
+        /// </summary>
+        /// <param name="constructorParameterName">The parameter name, as declared.</param>
+        /// <param name="parameterOptions">The configuration applied to that parameter.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> ForCtorParam(
+            string constructorParameterName,
+            Action<ICtorParamConfigurationExpression<TSource>> parameterOptions);
+
         /// <summary>Sets which side must be fully covered for this map to validate.</summary>
         /// <param name="validation">The validation mode.</param>
         /// <returns>This expression, for chaining.</returns>

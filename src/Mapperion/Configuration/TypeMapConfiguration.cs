@@ -21,6 +21,7 @@ namespace Mapperion.Configuration
         : IMappingExpression<TSource, TDestination>, ITypeMapConfiguration
     {
         private readonly List<IMemberConfiguration> members = new List<IMemberConfiguration>();
+        private readonly List<ICtorParamConfiguration> constructorParameters = new List<ICtorParamConfiguration>();
         private MemberListValidation? validation;
         private int? maxDepth;
         private bool preserveReferences;
@@ -38,6 +39,18 @@ namespace Mapperion.Configuration
             MemberConfiguration<TSource, TDestination, TMember> configuration = FindOrAdd<TMember>(descriptor);
 
             memberOptions(configuration);
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> ForCtorParam(
+            string constructorParameterName,
+            Action<ICtorParamConfigurationExpression<TSource>> parameterOptions)
+        {
+            Guard.NotNull(constructorParameterName, nameof(constructorParameterName));
+            Guard.NotNull(parameterOptions, nameof(parameterOptions));
+
+            CtorParamConfiguration<TSource> configuration = FindOrAddParameter(constructorParameterName);
+            parameterOptions(configuration);
             return this;
         }
 
@@ -72,13 +85,40 @@ namespace Mapperion.Configuration
                 definitions[i] = members[i].Build();
             }
 
+            var parameters = new ConstructorParameterDefinition[constructorParameters.Count];
+            for (int i = 0; i < constructorParameters.Count; i++)
+            {
+                ICtorParamConfiguration parameter = constructorParameters[i];
+                parameters[i] = new ConstructorParameterDefinition(parameter.Name, typeof(object), i)
+                {
+                    Source = parameter.Source,
+                    IsExplicit = true,
+                };
+            }
+
             return new TypeMapDefinition(Key)
             {
                 Members = definitions,
+                ConstructorParameters = parameters,
                 MemberListValidation = validation ?? options.MemberListValidation,
                 MaxDepth = maxDepth,
                 PreserveReferences = preserveReferences,
             };
+        }
+
+        private CtorParamConfiguration<TSource> FindOrAddParameter(string name)
+        {
+            for (int i = 0; i < constructorParameters.Count; i++)
+            {
+                if (string.Equals(constructorParameters[i].Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return (CtorParamConfiguration<TSource>)constructorParameters[i];
+                }
+            }
+
+            var created = new CtorParamConfiguration<TSource>(name);
+            constructorParameters.Add(created);
+            return created;
         }
 
         private MemberConfiguration<TSource, TDestination, TMember> FindOrAdd<TMember>(MemberDescriptor descriptor)

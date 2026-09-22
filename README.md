@@ -4,8 +4,8 @@ Object-to-object mapper for .NET, **MIT licensed**, built as a drop-in alternati
 for commercial projects.
 
 > **Status: early development.** Configuration, conventions, validation and the mapping engine
-> work. Records, dependency injection, `ProjectTo` and the source generator do not exist yet.
-> Not published to NuGet.
+> work, including records. Dependency injection, `ProjectTo` and the source generator do not exist
+> yet. Not published to NuGet.
 
 ## Why
 
@@ -60,6 +60,14 @@ config.AssertIsValid();
 //   2. Sale -> SaleDto: member 'Lines' needs a map from 'Line' to 'LineDto'. Declare it with CreateMap<Line, LineDto>().
 ```
 
+Records are built through their constructor, matching parameter names against source members:
+
+```csharp
+public sealed record EmployeeDto(string Name, int Age);
+
+cfg.CreateMap<Employee, EmployeeDto>();
+```
+
 Profiles work the way you already know them:
 
 ```csharp
@@ -87,6 +95,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `MaxDepth()`, `PreserveReferences()` | same |
 | `AddProfile<T>()`, `AddProfiles(assembly)` | same |
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
+| `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
 | `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
@@ -117,11 +126,13 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, and collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces.
+- Records and any destination built through a constructor, with `ForCtorParam` to override an
+  argument and parameter defaults filling what the source does not provide.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-Constructor and record mapping, dictionaries, value resolvers and type converters, `MaxDepth` and
+Dictionaries, value resolvers and type converters, `BeforeMap` and `AfterMap`, `MaxDepth` and
 `PreserveReferences` at run time, `ProjectTo`, dependency injection integration, `ReverseMap`,
 inheritance, and the source generator.
 

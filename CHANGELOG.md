@@ -59,3 +59,12 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   `AllowNullCollections` respetado.
 - Rutas aplanadas con guardas de nulo que evalúan cada paso una sola vez.
 - `Condition`, `NullSubstitute`, `SetMappingOrder` y `UseDestinationValue` llegan al código generado.
+- Mapeo por constructor: records posicionales, constructores primarios y cualquier destino sin
+  constructor sin parámetros. Se elige la sobrecarga con más argumentos resolubles; los parámetros
+  con valor por defecto cubren lo que el origen no aporta.
+- `ForCtorParam(nombre, o => o.MapFrom(...))` y `UseValue(...)` para configurar un argumento a mano.
+- Los nombres de parámetro se comparan siempre sin distinguir mayúsculas: C# nombra los parámetros
+  en camelCase y las propiedades en PascalCase, así que una comparación exacta nunca emparejaría el
+  constructor primario de un record con las propiedades del origen.
+- Un miembro alimentado por el constructor ya no se asigna otra vez después de construir.
+- La validación reporta los parámetros de constructor sin origen y los mapas que les faltan.

@@ -35,6 +35,7 @@ namespace Mapperion.Validation
                     continue;
                 }
 
+                ValidateConstructor(map, model, errors);
                 ValidateDestination(map, model, errors);
 
                 if (map.MemberListValidation == MemberListValidation.Source)
@@ -59,6 +60,38 @@ namespace Mapperion.Validation
             }
 
             return text.ToString();
+        }
+
+        private static void ValidateConstructor(TypeMapDefinition map, MapperModel model, List<string> errors)
+        {
+            foreach (ConstructorParameterDefinition parameter in map.ConstructorParameters)
+            {
+                if (parameter.Source is null)
+                {
+                    if (!parameter.HasDefaultValue)
+                    {
+                        errors.Add(
+                            map.Key + ": constructor parameter '" + parameter.Name +
+                            "' has no source. Map it with ForCtorParam.");
+                    }
+
+                    continue;
+                }
+
+                if (NeedsMap(
+                        parameter.Source.ValueType,
+                        parameter.ParameterType,
+                        model,
+                        0,
+                        out Type missingSource,
+                        out Type missingDestination))
+                {
+                    errors.Add(
+                        map.Key + ": constructor parameter '" + parameter.Name + "' needs a map from '" +
+                        missingSource.Name + "' to '" + missingDestination.Name + "'. Declare it with CreateMap<" +
+                        missingSource.Name + ", " + missingDestination.Name + ">().");
+                }
+            }
         }
 
         private static void ValidateDestination(TypeMapDefinition map, MapperModel model, List<string> errors)

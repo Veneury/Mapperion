@@ -30,7 +30,7 @@ namespace Mapperion.Compilation
 
             var body = new List<Expression>
             {
-                Expression.Assign(result, CreateDestination(destinationType, destination)),
+                Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
             };
 
             foreach (MemberDefinition member in Ordered(definition.Members))
@@ -82,8 +82,24 @@ namespace Mapperion.Compilation
             }
         }
 
-        private static Expression CreateDestination(Type destinationType, ParameterExpression destination)
+        private static Expression CreateDestination(
+            TypeMapDefinition definition,
+            ParameterExpression destination,
+            ParameterExpression source,
+            ParameterExpression context,
+            MapperEngine engine)
         {
+            Type destinationType = definition.DestinationType;
+
+            if (definition.Constructor is not null)
+            {
+                Expression created = Expression.New(
+                    definition.Constructor,
+                    BuildArguments(definition, source, context, engine));
+
+                return destinationType.IsValueType ? created : Expression.Coalesce(destination, created);
+            }
+
             if (destinationType.IsValueType)
             {
                 return destination;
@@ -94,11 +110,50 @@ namespace Mapperion.Compilation
             if (parameterless is null)
             {
                 throw new MapperConfigurationException(
-                    destinationType.Name + " has no parameterless constructor. Mapping through a " +
-                    "constructor is not implemented yet; give the type one, or map to another type.");
+                    destinationType.Name + " cannot be created: it has no parameterless constructor " +
+                    "and no constructor whose arguments could be resolved from " +
+                    definition.SourceType.Name + ".");
             }
 
             return Expression.Coalesce(destination, Expression.New(parameterless));
+        }
+
+        private static Expression[] BuildArguments(
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression context,
+            MapperEngine engine)
+        {
+            var ordered = new List<ConstructorParameterDefinition>(definition.ConstructorParameters);
+            ordered.Sort(static (left, right) => left.Position.CompareTo(right.Position));
+
+            var arguments = new Expression[ordered.Count];
+
+            for (int i = 0; i < ordered.Count; i++)
+            {
+                ConstructorParameterDefinition parameter = ordered[i];
+
+                if (parameter.Source is null)
+                {
+                    if (!parameter.HasDefaultValue)
+                    {
+                        throw new MapperConfigurationException(
+                            definition.Key + ": constructor parameter '" + parameter.Name +
+                            "' has no source. Map it with ForCtorParam.");
+                    }
+
+                    arguments[i] = Expression.Constant(parameter.DefaultValue, parameter.ParameterType);
+                    continue;
+                }
+
+                arguments[i] = ConversionBuilder.Build(
+                    ReadSource(parameter.Source, source),
+                    parameter.ParameterType,
+                    engine,
+                    context);
+            }
+
+            return arguments;
         }
 
         private static Expression? BuildAssignment(

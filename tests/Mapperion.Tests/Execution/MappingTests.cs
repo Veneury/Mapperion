@@ -346,7 +346,7 @@ namespace Mapperion.Tests.Execution
         }
 
         [Fact]
-        public void A_destination_without_a_parameterless_constructor_is_reported()
+        public void A_constructor_argument_that_cannot_be_resolved_names_the_parameter()
         {
             IMapper mapper = new MapperConfiguration(cfg =>
                 cfg.CreateMap<Item, NoDefaultConstructor>()).CreateMapper();
@@ -354,7 +354,8 @@ namespace Mapperion.Tests.Execution
             MapperConfigurationException error = Should.Throw<MapperConfigurationException>(
                 () => mapper.Map<Item, NoDefaultConstructor>(new Item()));
 
-            error.Message.ShouldContain("parameterless constructor");
+            error.Message.ShouldContain("constructor parameter 'name'");
+            error.Message.ShouldContain("ForCtorParam");
         }
 
         [Fact]
