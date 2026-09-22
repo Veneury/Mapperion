@@ -175,6 +175,14 @@ namespace Mapperion.Projection
                     Expression.Default(destinationType));
             }
 
+            if (member.PreCondition is LambdaExpression preCondition)
+            {
+                converted = Expression.Condition(
+                    ParameterReplacer.Inline(preCondition, source),
+                    converted,
+                    Expression.Default(destinationType));
+            }
+
             return converted;
         }
 
@@ -262,6 +270,14 @@ namespace Mapperion.Projection
             if (destinationType == typeof(string))
             {
                 return Expression.Call(value, typeof(object).GetMethod(nameof(ToString), Type.EmptyTypes)!);
+            }
+
+            if (TypeClassifier.TryGetDictionaryTypes(sourceType, out _, out _))
+            {
+                throw new MapperConfigurationException(
+                    "A projection cannot build a dictionary from '" + sourceType.Name +
+                    "'. A query provider has no way to materialise one; query the entities and map " +
+                    "them in memory instead.");
             }
 
             Expression? projected =

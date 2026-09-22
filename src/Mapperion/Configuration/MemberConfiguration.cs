@@ -25,6 +25,7 @@ namespace Mapperion.Configuration
         private bool hasNullSubstitute;
         private object? nullSubstitute;
         private object? condition;
+        private object? preCondition;
         private Type? valueConverterType;
         private int mappingOrder;
 
@@ -67,6 +68,11 @@ namespace Mapperion.Configuration
             this.condition = Guard.NotNull(condition, nameof(condition));
         }
 
+        public void PreCondition(Expression<Func<TSource, bool>> condition)
+        {
+            preCondition = Guard.NotNull(condition, nameof(condition));
+        }
+
         public void NullSubstitute(object value)
         {
             nullSubstitute = Guard.NotNull(value, nameof(value));
@@ -95,6 +101,7 @@ namespace Mapperion.Configuration
                 HasNullSubstitute = hasNullSubstitute,
                 NullSubstitute = nullSubstitute,
                 Condition = condition,
+                PreCondition = preCondition,
                 ValueConverterType = valueConverterType,
             };
         }

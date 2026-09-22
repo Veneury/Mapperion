@@ -107,6 +107,33 @@ namespace Mapperion.Execution
             return ToList(source, context, convert, false).ToArray();
         }
 
+        internal static Dictionary<TDestinationKey, TDestinationValue> ToDictionary<
+            TSourceKey,
+            TSourceValue,
+            TDestinationKey,
+            TDestinationValue>(
+            IEnumerable<KeyValuePair<TSourceKey, TSourceValue>>? source,
+            MappingContext context,
+            Func<TSourceKey, MappingContext, TDestinationKey> key,
+            Func<TSourceValue, MappingContext, TDestinationValue> value,
+            bool allowNull)
+            where TDestinationKey : notnull
+        {
+            if (source is null)
+            {
+                return allowNull ? null! : new Dictionary<TDestinationKey, TDestinationValue>();
+            }
+
+            var result = new Dictionary<TDestinationKey, TDestinationValue>();
+
+            foreach (KeyValuePair<TSourceKey, TSourceValue> entry in source)
+            {
+                result[key(entry.Key, context)] = value(entry.Value, context);
+            }
+
+            return result;
+        }
+
         internal static HashSet<TDestination> ToHashSet<TSource, TDestination>(
             IEnumerable<TSource>? source,
             MappingContext context,

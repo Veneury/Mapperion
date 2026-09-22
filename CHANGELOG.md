@@ -125,3 +125,14 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - `Mapperion.Compatibility.Tests`: una porción representativa de la librería ejecutándose sobre
   .NET Framework real (net472 y net48) además de net8.0 y net10.0. El proyecto reduce sus TFMs
   fuera de Windows, donde .NET Framework no se puede ejecutar.
+- Diccionarios: `Dictionary<,>`, `IDictionary<,>` e `IReadOnlyDictionary<,>`, convirtiendo tanto las
+  claves como los valores. Se comprueban antes que las colecciones, porque un diccionario también
+  es una secuencia de `KeyValuePair<,>` y se mapearía mal.
+- La validación también los reconoce ahora: antes reportaba un mapa inexistente de
+  `KeyValuePair` a `KeyValuePair` para un diccionario que en realidad se mapeaba bien.
+- Una proyección rechaza los diccionarios con un mensaje claro: un proveedor de consultas no tiene
+  forma de materializar uno.
+- `PreCondition(s => ...)`: descarta el miembro antes incluso de leer su origen.
+- `Condition` pasa a evaluarse **después** de resolver el valor, como en AutoMapper. Antes se
+  comportaba como una precondición, lo que dejaba a las dos indistinguibles; ahora `Condition`
+  paga la lectura y `PreCondition` la evita, que es justo la diferencia entre ambas.

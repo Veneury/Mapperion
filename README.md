@@ -113,7 +113,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `MapperConfiguration(cfg => ...)` | same |
 | `Profile`, `CreateMap<S,D>()` | same |
 | `ForMember(d => d.X, o => o.MapFrom(...))` | same |
-| `Ignore()`, `Condition()`, `NullSubstitute()` | same |
+| `Ignore()`, `Condition()`, `PreCondition()`, `NullSubstitute()` | same |
 | `MaxDepth()`, `PreserveReferences()` | same |
 | `AddProfile<T>()`, `AddProfiles(assembly)` | same |
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
@@ -154,8 +154,9 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   missing nested maps (looking through nullables and collections), and, with
   `MemberListValidation.Source`, source members nobody reads.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
-  conversions, enums by name or value, `ToString`, `IConvertible`, and collections into arrays,
-  `List<>`, `HashSet<>` and the sequence interfaces.
+  conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
+  `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
+  converted.
 - Records and any destination built through a constructor, with `ForCtorParam` to override an
   argument and parameter defaults filling what the source does not provide.
 - `ReverseMap()`, which inverts renamed members and leaves the rest to the conventions.
@@ -171,8 +172,8 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 
 ## Not yet
 
-Dictionaries, `PreCondition`, `MaxDepth` and `PreserveReferences` at run time, inheritance, EF6,
-and the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
+`MaxDepth` and `PreserveReferences` at run time, inheritance, open generics, EF6, and the source
+generator. A projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

@@ -296,11 +296,27 @@ namespace Mapperion.Compilation
                 converted = ConversionBuilder.Build(value, destinationType, engine, context);
             }
 
-            Expression assignment = Expression.Assign(target, converted);
+            Expression assignment;
 
             if (member.Condition is LambdaExpression condition)
             {
-                assignment = Expression.IfThen(ParameterReplacer.Inline(condition, source), assignment);
+                ParameterExpression resolved = Expression.Variable(destinationType, "resolved");
+
+                assignment = Expression.Block(
+                    new[] { resolved },
+                    Expression.Assign(resolved, converted),
+                    Expression.IfThen(
+                        ParameterReplacer.Inline(condition, source),
+                        Expression.Assign(target, resolved)));
+            }
+            else
+            {
+                assignment = Expression.Assign(target, converted);
+            }
+
+            if (member.PreCondition is LambdaExpression preCondition)
+            {
+                assignment = Expression.IfThen(ParameterReplacer.Inline(preCondition, source), assignment);
             }
 
             return assignment;

@@ -60,6 +60,7 @@ namespace Mapperion.Compilation
                 TryEnum(value, sourceType, destinationType, engine)
                 ?? TryNumeric(value, sourceType, destinationType)
                 ?? TryToString(value, sourceType, destinationType)
+                ?? TryDictionary(value, sourceType, destinationType, engine, context)
                 ?? TryCollection(value, sourceType, destinationType, engine, context)
                 ?? TryNestedMap(value, sourceType, destinationType, engine, context)
                 ?? TryChangeType(value, sourceType, destinationType);
@@ -182,6 +183,82 @@ namespace Mapperion.Compilation
                 call);
         }
 
+        private static Expression? TryDictionary(
+            Expression value,
+            Type sourceType,
+            Type destinationType,
+            MapperEngine engine,
+            ParameterExpression context)
+        {
+            if (!TypeClassifier.TryGetDictionaryTypes(sourceType, out Type? sourceKey, out Type? sourceValue))
+            {
+                return null;
+            }
+
+            if (!TryGetDestinationDictionary(destinationType, out Type? destinationKey, out Type? destinationValue))
+            {
+                return null;
+            }
+
+            Delegate keyConverter = ElementConverter(sourceKey, destinationKey!, engine, out Type keyConverterType);
+            Delegate valueConverter = ElementConverter(sourceValue, destinationValue!, engine, out Type valueConverterType);
+
+            Type entryType = typeof(KeyValuePair<,>).MakeGenericType(sourceKey, sourceValue);
+            Expression entries = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(entryType));
+
+            Expression built = Expression.Call(
+                Method(nameof(MappingRuntime.ToDictionary))
+                    .MakeGenericMethod(sourceKey, sourceValue, destinationKey!, destinationValue!),
+                entries,
+                context,
+                Expression.Constant(keyConverter, keyConverterType),
+                Expression.Constant(valueConverter, valueConverterType),
+                Expression.Constant(engine.Model.Options.AllowNullCollections));
+
+            return built.Type == destinationType ? built : Expression.Convert(built, destinationType);
+        }
+
+        private static bool TryGetDestinationDictionary(
+            Type destinationType,
+            out Type? keyType,
+            out Type? valueType)
+        {
+            if (destinationType.IsGenericType)
+            {
+                Type definition = destinationType.GetGenericTypeDefinition();
+
+                if (definition == typeof(Dictionary<,>) ||
+                    definition == typeof(IDictionary<,>) ||
+                    definition == typeof(IReadOnlyDictionary<,>))
+                {
+                    Type[] arguments = destinationType.GetGenericArguments();
+                    keyType = arguments[0];
+                    valueType = arguments[1];
+                    return true;
+                }
+            }
+
+            keyType = null;
+            valueType = null;
+            return false;
+        }
+
+        private static Delegate ElementConverter(
+            Type sourceType,
+            Type destinationType,
+            MapperEngine engine,
+            out Type converterType)
+        {
+            ParameterExpression element = Expression.Parameter(sourceType, "element");
+            ParameterExpression elementContext = Expression.Parameter(typeof(MappingContext), "context");
+
+            converterType = typeof(Func<,,>).MakeGenericType(sourceType, typeof(MappingContext), destinationType);
+
+            return Expression
+                .Lambda(converterType, Build(element, destinationType, engine, elementContext), element, elementContext)
+                .Compile();
+        }
+
         private static Expression? TryCollection(
             Expression value,
             Type sourceType,
@@ -199,13 +276,7 @@ namespace Mapperion.Compilation
                 return null;
             }
 
-            ParameterExpression element = Expression.Parameter(sourceElement, "element");
-            ParameterExpression elementContext = Expression.Parameter(typeof(MappingContext), "context");
-
-            Type converterType = typeof(Func<,,>).MakeGenericType(sourceElement, typeof(MappingContext), destinationElement!);
-            Delegate converter = Expression
-                .Lambda(converterType, Build(element, destinationElement!, engine, elementContext), element, elementContext)
-                .Compile();
+            Delegate converter = ElementConverter(sourceElement, destinationElement!, engine, out Type converterType);
 
             Expression sequence = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(sourceElement));
 

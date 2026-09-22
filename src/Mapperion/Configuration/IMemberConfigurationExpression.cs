@@ -38,9 +38,20 @@ namespace Mapperion
         /// <summary>Leaves the member unmapped.</summary>
         void Ignore();
 
-        /// <summary>Assigns the member only when the predicate holds.</summary>
+        /// <summary>
+        /// Assigns the member only when the predicate holds. The source value is read first, so a
+        /// condition costs the read even when it turns out false; use
+        /// <see cref="PreCondition"/> when the read itself is what you want to avoid.
+        /// </summary>
         /// <param name="condition">The predicate evaluated against the source.</param>
         void Condition(Expression<Func<TSource, bool>> condition);
+
+        /// <summary>
+        /// Skips the member entirely, before its source is even read, when the predicate does not
+        /// hold. Useful when reading the source is expensive or would throw.
+        /// </summary>
+        /// <param name="condition">The predicate evaluated against the source.</param>
+        void PreCondition(Expression<Func<TSource, bool>> condition);
 
         /// <summary>Substitutes a value when the source resolves to null.</summary>
         /// <param name="value">The replacement value.</param>

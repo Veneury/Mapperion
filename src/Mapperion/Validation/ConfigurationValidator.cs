@@ -167,6 +167,14 @@ namespace Mapperion.Validation
             }
 
             if (depth < MaxElementDepth &&
+                TypeClassifier.TryGetDictionaryTypes(actualSource, out Type? sourceKey, out Type? sourceValue) &&
+                TypeClassifier.TryGetDictionaryTypes(actualDestination, out Type? destinationKey, out Type? destinationValue))
+            {
+                return NeedsMap(sourceKey, destinationKey, model, depth + 1, out missingSource, out missingDestination)
+                    || NeedsMap(sourceValue, destinationValue, model, depth + 1, out missingSource, out missingDestination);
+            }
+
+            if (depth < MaxElementDepth &&
                 TypeClassifier.TryGetElementType(actualSource, out Type? sourceElement) &&
                 TypeClassifier.TryGetElementType(actualDestination, out Type? destinationElement))
             {
