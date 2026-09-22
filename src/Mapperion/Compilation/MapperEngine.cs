@@ -17,6 +17,7 @@ namespace Mapperion.Compilation
         private readonly ConcurrentDictionary<TypeMapKey, MapPlan> plans =
             new ConcurrentDictionary<TypeMapKey, MapPlan>();
 
+        private readonly ConcurrentDictionary<Type, object> instances = new ConcurrentDictionary<Type, object>();
         private readonly Func<TypeMapKey, MapPlan> compile;
 
         internal MapperEngine(MapperModel model)
@@ -26,6 +27,27 @@ namespace Mapperion.Compilation
         }
 
         internal MapperModel Model { get; }
+
+        internal IMapper Mapper { get; set; } = null!;
+
+        internal object GetInstance(Type type)
+        {
+            return instances.GetOrAdd(type, Create);
+        }
+
+        private static object Create(Type type)
+        {
+            object? instance = Activator.CreateInstance(type);
+
+            if (instance is null)
+            {
+                throw new MapperConfigurationException(
+                    type.Name + " could not be created. A converter or resolver needs a public " +
+                    "parameterless constructor until dependency injection support lands.");
+            }
+
+            return instance;
+        }
 
         internal MapPlan GetPlan(TypeMapKey key)
         {

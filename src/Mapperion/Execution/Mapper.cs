@@ -22,7 +22,8 @@ namespace Mapperion.Execution
         [RequiresDynamicCode("Mapping compiles plans at run time.")]
         internal Mapper(MapperModel model)
         {
-            engine = new MapperEngine(model);
+            engine = new MapperEngine(model) { Mapper = null! };
+            engine.Mapper = this;
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]

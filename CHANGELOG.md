@@ -73,3 +73,14 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   expresiones arbitrarias y los miembros ignorados no se invierten y el inverso los resuelve por
   convención. Funciona igual dentro de un `Profile`.
 - Workflow de CI: build y test en Linux y Windows contra .NET 8, 9 y 10, y `pack` del core.
+- `ITypeConverter<TSource,TDest>`, `IValueConverter<TSourceMember,TDestMember>` e
+  `IValueResolver<TSource,TDest,TMember>`, con `ResolutionContext` como vía de vuelta al mapper
+  para que el código de usuario pueda mapear valores anidados.
+- `ConvertUsing<TTypeConverter>()` sustituye el mapa completo de un par de tipos; en ese caso la
+  configuración de miembros deja de aplicarse y la validación de miembros se omite.
+- `ConvertUsing<TValueConverter, TSourceMember>()` y `MapFrom<TValueResolver>()` por miembro,
+  ambos con restricciones de tipo, así que el compilador de C# rechaza un converter que no encaje.
+- Converters y resolvers se instancian una sola vez y se reutilizan, cacheados por el motor. De
+  momento necesitan un constructor sin parámetros; la resolución por DI llega en v0.4.
+- Un resolver que alimenta un parámetro de constructor recibe el destino por defecto, porque
+  todavía no existe cuando se calculan los argumentos.

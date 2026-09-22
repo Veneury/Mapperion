@@ -97,6 +97,8 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
 | `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `ReverseMap()` | same, minus unflattening |
+| `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
+| `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
 | `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
@@ -130,11 +132,13 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Records and any destination built through a constructor, with `ForCtorParam` to override an
   argument and parameter defaults filling what the source does not provide.
 - `ReverseMap()`, which inverts renamed members and leaves the rest to the conventions.
+- Type converters, value converters and value resolvers, each created once and reused. They need
+  a parameterless constructor until dependency injection support lands.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-Dictionaries, value resolvers and type converters, `BeforeMap` and `AfterMap`, `MaxDepth` and
+Dictionaries, `BeforeMap` and `AfterMap`, `PreCondition`, `MaxDepth` and
 `PreserveReferences` at run time, `ProjectTo`, dependency injection integration, inheritance, and
 the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.

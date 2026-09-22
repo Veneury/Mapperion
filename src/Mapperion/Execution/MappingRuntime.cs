@@ -30,6 +30,36 @@ namespace Mapperion.Execution
             return ((MapDelegate<TSource, TDestination>)plan.Typed)(source, destination, context);
         }
 
+        internal static TDestination ConvertType<TSource, TDestination>(
+            Type converterType,
+            TSource source,
+            TDestination destination,
+            MappingContext context)
+        {
+            var converter = (ITypeConverter<TSource, TDestination>)context.Engine.GetInstance(converterType);
+            return converter.Convert(source, destination, new ResolutionContext(context));
+        }
+
+        internal static TDestinationMember ConvertValue<TSourceMember, TDestinationMember>(
+            Type converterType,
+            TSourceMember value,
+            MappingContext context)
+        {
+            var converter = (IValueConverter<TSourceMember, TDestinationMember>)context.Engine.GetInstance(converterType);
+            return converter.Convert(value, new ResolutionContext(context));
+        }
+
+        internal static TDestinationMember Resolve<TSource, TDestination, TDestinationMember>(
+            Type resolverType,
+            TSource source,
+            TDestination destination,
+            TDestinationMember current,
+            MappingContext context)
+        {
+            var resolver = (IValueResolver<TSource, TDestination, TDestinationMember>)context.Engine.GetInstance(resolverType);
+            return resolver.Resolve(source, destination, current, new ResolutionContext(context));
+        }
+
         internal static List<TDestination> ToList<TSource, TDestination>(
             IEnumerable<TSource>? source,
             MappingContext context,

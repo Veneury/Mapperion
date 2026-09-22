@@ -20,6 +20,21 @@ namespace Mapperion
         /// <param name="sourceMember">The expression that reads the value.</param>
         void MapFrom<TSourceMember>(Expression<Func<TSource, TSourceMember>> sourceMember);
 
+        /// <summary>
+        /// Takes the value from a resolver, which sees the whole source and destination.
+        /// </summary>
+        /// <typeparam name="TValueResolver">The resolver, which needs a parameterless constructor.</typeparam>
+        void MapFrom<TValueResolver>()
+            where TValueResolver : IValueResolver<TSource, TDestination, TMember>;
+
+        /// <summary>
+        /// Runs the resolved value through a converter before assigning it.
+        /// </summary>
+        /// <typeparam name="TValueConverter">The converter, which needs a parameterless constructor.</typeparam>
+        /// <typeparam name="TSourceMember">The type the converter reads.</typeparam>
+        void ConvertUsing<TValueConverter, TSourceMember>()
+            where TValueConverter : IValueConverter<TSourceMember, TMember>;
+
         /// <summary>Leaves the member unmapped.</summary>
         void Ignore();
 

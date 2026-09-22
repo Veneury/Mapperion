@@ -44,6 +44,15 @@ namespace Mapperion
         /// <exception cref="MapperConfigurationException">The reverse pair was already declared.</exception>
         IMappingExpression<TDestination, TSource> ReverseMap();
 
+        /// <summary>
+        /// Replaces this map entirely with a converter. Member configuration stops applying: the
+        /// converter produces the destination on its own.
+        /// </summary>
+        /// <typeparam name="TTypeConverter">The converter, which needs a parameterless constructor.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> ConvertUsing<TTypeConverter>()
+            where TTypeConverter : ITypeConverter<TSource, TDestination>;
+
         /// <summary>Sets which side must be fully covered for this map to validate.</summary>
         /// <param name="validation">The validation mode.</param>
         /// <returns>This expression, for chaining.</returns>

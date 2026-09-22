@@ -32,6 +32,7 @@ namespace Mapperion.Configuration
         private readonly List<ICtorParamConfiguration> constructorParameters = new List<ICtorParamConfiguration>();
         private readonly ITypeMapRegistry registry;
         private MemberListValidation? validation;
+        private Type? typeConverterType;
         private int? maxDepth;
         private bool preserveReferences;
 
@@ -101,6 +102,13 @@ namespace Mapperion.Configuration
             members.Add(member);
         }
 
+        public IMappingExpression<TSource, TDestination> ConvertUsing<TTypeConverter>()
+            where TTypeConverter : ITypeConverter<TSource, TDestination>
+        {
+            typeConverterType = typeof(TTypeConverter);
+            return this;
+        }
+
         public IMappingExpression<TSource, TDestination> ValidateMemberList(MemberListValidation validation)
         {
             this.validation = validation;
@@ -149,6 +157,7 @@ namespace Mapperion.Configuration
                 ConstructorParameters = parameters,
                 MemberListValidation = validation ?? options.MemberListValidation,
                 IsReverse = IsReverse,
+                TypeConverterType = typeConverterType,
                 MaxDepth = maxDepth,
                 PreserveReferences = preserveReferences,
             };
