@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Linq.Expressions;
 using Mapperion.Compilation;
 using Mapperion.Internal;
 using Mapperion.Model;
@@ -90,6 +92,25 @@ namespace Mapperion.Execution
             var typed = (MapDelegate<TSource, TDestination>)plan.Typed;
 
             return typed(source, destination, Context());
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        public IQueryable<TDestination> ProjectTo<TDestination>(IQueryable source)
+        {
+            Guard.NotNull(source, nameof(source));
+
+            LambdaExpression selector = engine.GetProjection(
+                new TypeMapKey(source.ElementType, typeof(TDestination)));
+
+            MethodCallExpression select = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Select),
+                new[] { source.ElementType, typeof(TDestination) },
+                source.Expression,
+                Expression.Quote(selector));
+
+            return source.Provider.CreateQuery<TDestination>(select);
         }
 
         private MappingContext Context()

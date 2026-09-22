@@ -101,3 +101,19 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   registrar `IMapper` como scoped no recompila nada.
 - `MappingContext` pasa a llevar también el resolutor y el mapper en curso, para que
   `ResolutionContext.Mapper` devuelva el del scope y no uno global.
+- `ProjectTo`: `IQueryable.ProjectTo<TDest>(configuracion)` e `IMapper.ProjectTo<TDest>(consulta)`.
+  Un compilador de proyección aparte emite `Expression<Func<TSource,TDest>>` que un proveedor LINQ
+  sabe traducir: inicialización de miembros, acceso a miembros, condicionales y `Select`, sin
+  bloques, sin variables y sin llamadas a esta librería.
+- Vive en el core: solo necesita `IQueryable` y `System.Linq.Expressions`, así que el paquete
+  `Mapperion.EntityFrameworkCore` que estaba planeado no hace falta.
+- Lo que un proveedor no puede ejecutar se reporta en vez de omitirse: type converters, value
+  converters, resolvers y los pasos de `BeforeMap`/`AfterMap`. AutoMapper los omite en silencio; se
+  prefirió el error porque una proyección que difiere del mismo mapa por `Map` es un fallo caro de
+  encontrar.
+- Un mapa que se referencia a sí mismo se reporta también: una proyección se expande por completo
+  de antemano, así que un ciclo no tiene fin.
+- Las proyecciones se cachean por par de tipos, igual que los planes.
+- Tests de integración reales con EF Core y SQLite en memoria: verifican que la consulta se traduce
+  a SQL, que solo se piden las columnas del destino y que el filtrado y la paginación siguen
+  ocurriendo en la base de datos.

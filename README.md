@@ -68,6 +68,19 @@ public sealed record EmployeeDto(string Name, int Age);
 cfg.CreateMap<Employee, EmployeeDto>();
 ```
 
+Queries are projected in the database rather than materialised:
+
+```csharp
+List<BookDto> books = await context.Books
+    .Where(b => b.Pages > 200)
+    .ProjectTo<BookDto>(configuration)
+    .ToListAsync();
+```
+
+Anything a query provider cannot run — type converters, value converters, resolvers, `BeforeMap`
+and `AfterMap` — is reported rather than skipped. AutoMapper skips them silently, which lets a
+projection quietly disagree with the same map run through `Map`.
+
 In an ASP.NET Core application:
 
 ```csharp
@@ -110,6 +123,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
 | `AddAutoMapper(...)` | `AddMapperion(...)` |
+| `ProjectTo<T>(configuration)` | same, and on `IMapper` too |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
 
@@ -148,12 +162,14 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   converter runs neither: the converter replaces the whole map.
 - `Mapperion.Extensions.DependencyInjection`, which registers the mapper and lets converters and
   resolvers take their dependencies from the container.
+- `ProjectTo`, which rewrites a query so the database returns only the columns the destination
+  needs. Verified against EF Core with SQLite, not just built.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-Dictionaries, `PreCondition`, `MaxDepth` and `PreserveReferences` at run time, `ProjectTo`,
-inheritance, and the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
+Dictionaries, `PreCondition`, `MaxDepth` and `PreserveReferences` at run time, inheritance, EF6,
+and the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development
