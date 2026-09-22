@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mapperion.Configuration;
+using Mapperion.Execution;
 using System.Collections.Generic;
 using Mapperion.Internal;
 using Mapperion.Model;
@@ -40,6 +41,15 @@ namespace Mapperion
 
         /// <summary>Gets the global options in force.</summary>
         public MapperOptions Options => Model.Options;
+
+        /// <summary>
+        /// Builds the mapper. Plans are compiled the first time each type pair is mapped and kept
+        /// afterwards, so the first call for a pair is slower than the rest.
+        /// </summary>
+        /// <returns>An immutable mapper safe to share between threads.</returns>
+        [RequiresUnreferencedCode("Mapping resolves members by reflection.")]
+        [RequiresDynamicCode("Mapping compiles plans at run time.")]
+        public IMapper CreateMapper() => new Mapper(Model);
 
         /// <summary>
         /// Throws when the configuration has problems, listing every one of them rather than

@@ -47,3 +47,15 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - `ValidateOnBuild` pasa a `false` por defecto, como AutoMapper, para no romper en arranque las
   configuraciones recién migradas.
 - `MemberListValidation` global ahora se aplica de verdad a los mapas que no lo sobrescriben.
+- Compilador de expresiones (capa 4) y motor de ejecución (capa 5): `MapperConfiguration.CreateMapper()`
+  devuelve un `IMapper` con `Map<TDest>(object)`, `Map<TSource,TDest>(source)`,
+  `Map(source, destino)` y la sobrecarga no genérica.
+- Los planes se compilan la primera vez que se usa cada par y se cachean. Los mapas anidados se
+  resuelven en ejecución en vez de insertarse en línea, que es lo que permite que dos mapas se
+  referencien mutuamente sin que el compilador recurse.
+- Conversiones: nullables en ambos sentidos, numéricas, enums según la política configurada,
+  enum con string, `ToString` e `IConvertible` como último recurso.
+- Colecciones: array, `List<>`, `HashSet<>`, `ISet<>` y las interfaces de secuencia, con
+  `AllowNullCollections` respetado.
+- Rutas aplanadas con guardas de nulo que evalúan cada paso una sola vez.
+- `Condition`, `NullSubstitute`, `SetMappingOrder` y `UseDestinationValue` llegan al código generado.

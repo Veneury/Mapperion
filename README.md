@@ -3,8 +3,9 @@
 Object-to-object mapper for .NET, **MIT licensed**, built as a drop-in alternative to AutoMapper
 for commercial projects.
 
-> **Status: early development.** The configuration API and the convention engine work. The mapping
-> engine does not exist yet, so you cannot map anything at run time. Not published to NuGet.
+> **Status: early development.** Configuration, conventions, validation and the mapping engine
+> work. Records, dependency injection, `ProjectTo` and the source generator do not exist yet.
+> Not published to NuGet.
 
 ## Why
 
@@ -29,7 +30,15 @@ var config = new MapperConfiguration(cfg =>
        .ForMember(d => d.Total,      o => o.MapFrom(s => s.Lines.Sum(l => l.Price)))
        .ForMember(d => d.AuditToken, o => o.Ignore());
 });
+
+IMapper mapper = config.CreateMapper();
+
+OrderDto dto = mapper.Map<Order, OrderDto>(order);
+mapper.Map(order, existingDto);
 ```
+
+Maps are compiled to delegates the first time each type pair is used, so nothing is resolved by
+reflection once a map is warm.
 
 Everything not configured by hand is resolved by convention, in the same order AutoMapper uses:
 
@@ -77,6 +86,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `Ignore()`, `Condition()`, `NullSubstitute()` | same |
 | `MaxDepth()`, `PreserveReferences()` | same |
 | `AddProfile<T>()`, `AddProfiles(assembly)` | same |
+| `CreateMapper()`, `IMapper.Map<T>(...)` | same |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
 | `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
@@ -104,12 +114,16 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Validation: `AssertIsValid()` reports every problem at once — unmapped destination members,
   missing nested maps (looking through nullables and collections), and, with
   `MemberListValidation.Source`, source members nobody reads.
+- Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
+  conversions, enums by name or value, `ToString`, `IConvertible`, and collections into arrays,
+  `List<>`, `HashSet<>` and the sequence interfaces.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-The expression compiler, `IMapper` and its `Map` methods, collections, enums, constructor mapping,
-`ProjectTo`, dependency injection integration and the source generator.
+Constructor and record mapping, dictionaries, value resolvers and type converters, `MaxDepth` and
+`PreserveReferences` at run time, `ProjectTo`, dependency injection integration, `ReverseMap`,
+inheritance, and the source generator.
 
 ## Development
 
