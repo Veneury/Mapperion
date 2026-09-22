@@ -41,6 +41,16 @@ cfg.CreateMap<Person, PersonDto>();
 // PersonDto.CompanyContactEmail<- Company.Contact.Email
 ```
 
+Validation reports everything it finds in one go, rather than stopping at the first problem:
+
+```csharp
+config.AssertIsValid();
+
+// MapperConfigurationException: The mapper configuration is not valid. 2 problems were found:
+//   1. Sale -> SaleDto: destination member 'Reference' has no source. Map it with ForMember, or ignore it.
+//   2. Sale -> SaleDto: member 'Lines' needs a map from 'Line' to 'LineDto'. Declare it with CreateMap<Line, LineDto>().
+```
+
 Profiles work the way you already know them:
 
 ```csharp
@@ -68,11 +78,11 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `MaxDepth()`, `PreserveReferences()` | same |
 | `AddProfile<T>()`, `AddProfiles(assembly)` | same |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
-| `AssertConfigurationIsValid()` | `AssertIsValid()` *(not implemented yet)* |
+| `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
 | `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
 
-Deliberate differences: a type pair with no `CreateMap` is an error rather than an implicit map,
-and validation is strict by default.
+Deliberate difference: a type pair with no `CreateMap` is an error rather than an implicit map.
+Validation stays opt-in, exactly as in AutoMapper.
 
 ## Supported frameworks
 
@@ -91,12 +101,15 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Profiles, including assembly scanning.
 - Conventions: exact name, case-insensitive name, configurable prefixes and suffixes, and
   flattening up to a configurable depth.
+- Validation: `AssertIsValid()` reports every problem at once — unmapped destination members,
+  missing nested maps (looking through nullables and collections), and, with
+  `MemberListValidation.Source`, source members nobody reads.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
 The expression compiler, `IMapper` and its `Map` methods, collections, enums, constructor mapping,
-`AssertIsValid()`, `ProjectTo`, dependency injection integration and the source generator.
+`ProjectTo`, dependency injection integration and the source generator.
 
 ## Development
 

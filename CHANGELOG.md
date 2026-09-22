@@ -39,3 +39,11 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - `Internal/TrimmingAttributes.cs` aporta el polyfill de `RequiresUnreferencedCodeAttribute` para
   `netstandard2.0`, que PolySharp no cubre.
 - La carpeta `docs/` queda fuera del repositorio.
+- `AssertIsValid()` y el alias `AssertConfigurationIsValid()`: reportan todos los problemas juntos
+  en `MapperConfigurationException.Errors`, nunca solo el primero. Detectan miembros destino sin
+  origen, mapas anidados que faltan (desenvolviendo nullables y colecciones) y, con
+  `MemberListValidation.Source`, miembros de origen que nadie consume.
+- `Internal/TypeClassifier`: distingue tipos simples, nullables y secuencias.
+- `ValidateOnBuild` pasa a `false` por defecto, como AutoMapper, para no romper en arranque las
+  configuraciones recién migradas.
+- `MemberListValidation` global ahora se aplica de verdad a los mapas que no lo sobrescriben.

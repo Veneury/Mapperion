@@ -1,8 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using Mapperion.Configuration;
+using System.Collections.Generic;
 using Mapperion.Internal;
 using Mapperion.Model;
+using Mapperion.Validation;
 
 namespace Mapperion
 {
@@ -26,6 +28,11 @@ namespace Mapperion
             var expression = new MapperConfigurationExpression();
             configure(expression);
             Model = expression.BuildModel();
+
+            if (Model.Options.ValidateOnBuild)
+            {
+                AssertIsValid();
+            }
         }
 
         /// <summary>Gets the frozen configuration model the compiler turns into executable plans.</summary>
@@ -33,5 +40,29 @@ namespace Mapperion
 
         /// <summary>Gets the global options in force.</summary>
         public MapperOptions Options => Model.Options;
+
+        /// <summary>
+        /// Throws when the configuration has problems, listing every one of them rather than
+        /// stopping at the first.
+        /// </summary>
+        /// <exception cref="MapperConfigurationException">The configuration has problems.</exception>
+        [RequiresUnreferencedCode("Validation inspects types by reflection.")]
+        public void AssertIsValid()
+        {
+            IReadOnlyList<string> errors = ConfigurationValidator.Validate(Model);
+
+            if (errors.Count != 0)
+            {
+                throw new MapperConfigurationException(ConfigurationValidator.BuildMessage(errors), errors);
+            }
+        }
+
+        /// <summary>
+        /// The name AutoMapper uses for <see cref="AssertIsValid"/>, so migrated startup code keeps
+        /// compiling unchanged.
+        /// </summary>
+        /// <exception cref="MapperConfigurationException">The configuration has problems.</exception>
+        [RequiresUnreferencedCode("Validation inspects types by reflection.")]
+        public void AssertConfigurationIsValid() => AssertIsValid();
     }
 }

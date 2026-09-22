@@ -125,7 +125,7 @@ namespace Mapperion.Tests.Model
             defaults.AllowNullCollections.ShouldBeFalse();
             defaults.EnumMapping.ShouldBe(EnumMappingPolicy.ByNameThenValue);
             defaults.MemberListValidation.ShouldBe(MemberListValidation.Destination);
-            defaults.ValidateOnBuild.ShouldBeTrue();
+            defaults.ValidateOnBuild.ShouldBeFalse();
             defaults.IncludeFields.ShouldBeFalse();
         }
 

@@ -101,7 +101,7 @@ namespace Mapperion.Configuration
             var definitions = new TypeMapDefinition[typeMaps.Count];
             for (int i = 0; i < typeMaps.Count; i++)
             {
-                definitions[i] = resolver.Complete(typeMaps[i].Build());
+                definitions[i] = resolver.Complete(typeMaps[i].Build(options));
             }
 
             return new MapperModel(options, definitions);

@@ -168,7 +168,7 @@ namespace Mapperion.Tests.Configuration
                 cfg.AllowNullCollections = true;
                 cfg.IncludeFields = true;
                 cfg.EnumMapping = EnumMappingPolicy.ByValue;
-                cfg.ValidateOnBuild = false;
+                cfg.ValidateOnBuild = true;
                 cfg.RecognizeSourcePrefixes("Get", string.Empty);
                 cfg.RecognizeDestinationPostfixes("Dto");
             });
@@ -180,7 +180,7 @@ namespace Mapperion.Tests.Configuration
             options.AllowNullCollections.ShouldBeTrue();
             options.IncludeFields.ShouldBeTrue();
             options.EnumMapping.ShouldBe(EnumMappingPolicy.ByValue);
-            options.ValidateOnBuild.ShouldBeFalse();
+            options.ValidateOnBuild.ShouldBeTrue();
             options.SourcePrefixes.ShouldHaveSingleItem().ShouldBe("Get");
             options.DestinationPostfixes.ShouldHaveSingleItem().ShouldBe("Dto");
         }

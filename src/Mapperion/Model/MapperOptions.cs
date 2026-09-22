@@ -40,8 +40,11 @@ namespace Mapperion.Model
         /// <summary>Gets which side must be fully covered for a map to validate.</summary>
         public MemberListValidation MemberListValidation { get; init; } = MemberListValidation.Destination;
 
-        /// <summary>Gets a value indicating whether the configuration is validated when it is built.</summary>
-        public bool ValidateOnBuild { get; init; } = true;
+        /// <summary>
+        /// Gets a value indicating whether the configuration is validated when it is built.
+        /// Off by default, matching AutoMapper: call <c>AssertIsValid</c> when you want the check.
+        /// </summary>
+        public bool ValidateOnBuild { get; init; }
 
         /// <summary>Gets the source member name prefixes stripped before matching, such as <c>Get</c>.</summary>
         public IReadOnlyList<string> SourcePrefixes { get; init; } = NoAffixes;

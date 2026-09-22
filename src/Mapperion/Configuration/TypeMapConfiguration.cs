@@ -13,7 +13,7 @@ namespace Mapperion.Configuration
     {
         TypeMapKey Key { get; }
 
-        TypeMapDefinition Build();
+        TypeMapDefinition Build(MapperOptions options);
     }
 
     /// <inheritdoc cref="ITypeMapConfiguration" />
@@ -21,7 +21,7 @@ namespace Mapperion.Configuration
         : IMappingExpression<TSource, TDestination>, ITypeMapConfiguration
     {
         private readonly List<IMemberConfiguration> members = new List<IMemberConfiguration>();
-        private MemberListValidation validation = MemberListValidation.Destination;
+        private MemberListValidation? validation;
         private int? maxDepth;
         private bool preserveReferences;
 
@@ -64,7 +64,7 @@ namespace Mapperion.Configuration
             return this;
         }
 
-        public TypeMapDefinition Build()
+        public TypeMapDefinition Build(MapperOptions options)
         {
             var definitions = new MemberDefinition[members.Count];
             for (int i = 0; i < members.Count; i++)
@@ -75,7 +75,7 @@ namespace Mapperion.Configuration
             return new TypeMapDefinition(Key)
             {
                 Members = definitions,
-                MemberListValidation = validation,
+                MemberListValidation = validation ?? options.MemberListValidation,
                 MaxDepth = maxDepth,
                 PreserveReferences = preserveReferences,
             };
