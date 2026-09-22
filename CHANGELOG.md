@@ -68,3 +68,8 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   constructor primario de un record con las propiedades del origen.
 - Un miembro alimentado por el constructor ya no se asigna otra vez después de construir.
 - La validación reporta los parámetros de constructor sin origen y los mapas que les faltan.
+- `ReverseMap()`: declara el par inverso y lo devuelve para seguir configurándolo. Invierte los
+  miembros renombrados con un `MapFrom` sobre un único miembro escribible; las rutas aplanadas, las
+  expresiones arbitrarias y los miembros ignorados no se invierten y el inverso los resuelve por
+  convención. Funciona igual dentro de un `Profile`.
+- Workflow de CI: build y test en Linux y Windows contra .NET 8, 9 y 10, y `pack` del core.

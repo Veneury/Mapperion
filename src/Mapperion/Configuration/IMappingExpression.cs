@@ -34,6 +34,16 @@ namespace Mapperion
             string constructorParameterName,
             Action<ICtorParamConfigurationExpression<TSource>> parameterOptions);
 
+        /// <summary>
+        /// Declares the map in the opposite direction and returns it, so it can be configured
+        /// further. Members configured here with a plain <c>MapFrom</c> onto a single writable
+        /// source member are inverted; flattened paths, arbitrary expressions and ignored members
+        /// are not, and the reverse resolves those by convention instead.
+        /// </summary>
+        /// <returns>The expression configuring the reverse map.</returns>
+        /// <exception cref="MapperConfigurationException">The reverse pair was already declared.</exception>
+        IMappingExpression<TDestination, TSource> ReverseMap();
+
         /// <summary>Sets which side must be fully covered for this map to validate.</summary>
         /// <param name="validation">The validation mode.</param>
         /// <returns>This expression, for chaining.</returns>
