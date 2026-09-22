@@ -33,6 +33,8 @@ namespace Mapperion.Configuration
         private readonly ITypeMapRegistry registry;
         private MemberListValidation? validation;
         private Type? typeConverterType;
+        private readonly List<object> beforeMapActions = new List<object>();
+        private readonly List<object> afterMapActions = new List<object>();
         private int? maxDepth;
         private bool preserveReferences;
 
@@ -109,6 +111,46 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        public IMappingExpression<TSource, TDestination> BeforeMap(Action<TSource, TDestination> action)
+        {
+            beforeMapActions.Add(Guard.NotNull(action, nameof(action)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> BeforeMap(
+            Action<TSource, TDestination, ResolutionContext> action)
+        {
+            beforeMapActions.Add(Guard.NotNull(action, nameof(action)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> BeforeMap<TMappingAction>()
+            where TMappingAction : IMappingAction<TSource, TDestination>
+        {
+            beforeMapActions.Add(typeof(TMappingAction));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> AfterMap(Action<TSource, TDestination> action)
+        {
+            afterMapActions.Add(Guard.NotNull(action, nameof(action)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> AfterMap(
+            Action<TSource, TDestination, ResolutionContext> action)
+        {
+            afterMapActions.Add(Guard.NotNull(action, nameof(action)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> AfterMap<TMappingAction>()
+            where TMappingAction : IMappingAction<TSource, TDestination>
+        {
+            afterMapActions.Add(typeof(TMappingAction));
+            return this;
+        }
+
         public IMappingExpression<TSource, TDestination> ValidateMemberList(MemberListValidation validation)
         {
             this.validation = validation;
@@ -158,6 +200,8 @@ namespace Mapperion.Configuration
                 MemberListValidation = validation ?? options.MemberListValidation,
                 IsReverse = IsReverse,
                 TypeConverterType = typeConverterType,
+                BeforeMapActions = beforeMapActions.ToArray(),
+                AfterMapActions = afterMapActions.ToArray(),
                 MaxDepth = maxDepth,
                 PreserveReferences = preserveReferences,
             };

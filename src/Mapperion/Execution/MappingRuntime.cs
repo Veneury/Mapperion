@@ -40,6 +40,16 @@ namespace Mapperion.Execution
             return converter.Convert(source, destination, new ResolutionContext(context));
         }
 
+        internal static void RunAction<TSource, TDestination>(
+            Type actionType,
+            TSource source,
+            TDestination destination,
+            MappingContext context)
+        {
+            var action = (IMappingAction<TSource, TDestination>)context.Engine.GetInstance(actionType);
+            action.Process(source, destination, new ResolutionContext(context));
+        }
+
         internal static TDestinationMember ConvertValue<TSourceMember, TDestinationMember>(
             Type converterType,
             TSourceMember value,

@@ -84,3 +84,10 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   momento necesitan un constructor sin parámetros; la resolución por DI llega en v0.4.
 - Un resolver que alimenta un parámetro de constructor recibe el destino por defecto, porque
   todavía no existe cuando se calculan los argumentos.
+- `BeforeMap` y `AfterMap`, cada uno en tres formas: lambda de dos argumentos, lambda con
+  `ResolutionContext`, y `IMappingAction<TSource,TDestination>` como tipo propio.
+- Los pasos se insertan en el plan compilado en el orden en que se declararon: los de antes justo
+  después de crear el destino, los de después una vez asignados todos los miembros. Los pasos con
+  tipo propio se instancian una sola vez, igual que converters y resolvers.
+- Un mapa con `ConvertUsing` no ejecuta los pasos: el converter reemplaza el mapa entero, igual que
+  reemplaza la configuración de miembros.

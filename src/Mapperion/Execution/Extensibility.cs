@@ -36,6 +36,21 @@ namespace Mapperion
     }
 
     /// <summary>
+    /// A step that runs before or after a map, reusable across configurations. Use it instead of a
+    /// lambda when the step needs its own type, for example to be tested on its own.
+    /// </summary>
+    /// <typeparam name="TSource">The source type.</typeparam>
+    /// <typeparam name="TDestination">The destination type.</typeparam>
+    public interface IMappingAction<in TSource, in TDestination>
+    {
+        /// <summary>Runs the step.</summary>
+        /// <param name="source">The object being mapped.</param>
+        /// <param name="destination">The destination being built.</param>
+        /// <param name="context">The current operation.</param>
+        void Process(TSource source, TDestination destination, ResolutionContext context);
+    }
+
+    /// <summary>
     /// Converts one value into another, reusable across any member with the same pair of types.
     /// </summary>
     /// <typeparam name="TSourceMember">The type read from the source.</typeparam>

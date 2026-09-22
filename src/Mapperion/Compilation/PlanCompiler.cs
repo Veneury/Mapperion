@@ -41,6 +41,11 @@ namespace Mapperion.Compilation
                     Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
                 };
 
+                foreach (object action in definition.BeforeMapActions)
+                {
+                    body.Add(BuildAction(action, definition, source, result, context));
+                }
+
                 foreach (MemberDefinition member in Ordered(definition.Members))
                 {
                     Expression? assignment = BuildAssignment(member, result, source, context, engine);
@@ -49,6 +54,11 @@ namespace Mapperion.Compilation
                     {
                         body.Add(assignment);
                     }
+                }
+
+                foreach (object action in definition.AfterMapActions)
+                {
+                    body.Add(BuildAction(action, definition, source, result, context));
                 }
 
                 body.Add(result);
@@ -90,6 +100,48 @@ namespace Mapperion.Compilation
             return arguments[1] == definition.DestinationType
                 ? call
                 : Expression.Convert(call, definition.DestinationType);
+        }
+
+        private static Expression BuildAction(
+            object action,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression result,
+            ParameterExpression context)
+        {
+            if (action is Delegate handler)
+            {
+                int parameters = handler.GetType().GetMethod("Invoke")!.GetParameters().Length;
+
+                return parameters == 3
+                    ? Expression.Invoke(Expression.Constant(handler), source, result, NewResolutionContext(context))
+                    : Expression.Invoke(Expression.Constant(handler), source, result);
+            }
+
+            if (action is Type actionType)
+            {
+                return Expression.Call(
+                    Method(nameof(MappingRuntime.RunAction))
+                        .MakeGenericMethod(definition.SourceType, definition.DestinationType),
+                    Expression.Constant(actionType, typeof(Type)),
+                    source,
+                    result,
+                    context);
+            }
+
+            throw new MapperConfigurationException(
+                definition.Key + ": a before or after step must be a delegate or an IMappingAction type.");
+        }
+
+        private static NewExpression NewResolutionContext(ParameterExpression context)
+        {
+            ConstructorInfo constructor = typeof(ResolutionContext).GetConstructor(
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new[] { typeof(MappingContext) },
+                null)!;
+
+            return Expression.New(constructor, context);
         }
 
         private static Type[] InterfaceArguments(Type implementation, Type contract, string expected)
