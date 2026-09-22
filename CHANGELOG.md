@@ -91,3 +91,13 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   tipo propio se instancian una sola vez, igual que converters y resolvers.
 - Un mapa con `ConvertUsing` no ejecuta los pasos: el converter reemplaza el mapa entero, igual que
   reemplaza la configuración de miembros.
+- Paquete `Mapperion.Extensions.DependencyInjection` con `AddMapperion(...)`, en tres formas:
+  callback de configuración, ensamblados a escanear, o tipos marcadores.
+- `MapperConfiguration.CreateMapper(IServiceProvider)`: el mapper pide converters, resolvers y
+  acciones al contenedor y cae en la construcción directa para los que este no conoce, así que un
+  resolver sin dependencias no necesita registrarse.
+- La resolución de instancias sale del motor a `IServiceResolver`. El motor sigue siendo el dueño
+  de los planes compilados y se comparte entre todos los mappers de una configuración, de modo que
+  registrar `IMapper` como scoped no recompila nada.
+- `MappingContext` pasa a llevar también el resolutor y el mapper en curso, para que
+  `ResolutionContext.Mapper` devuelva el del scope y no uno global.

@@ -16,7 +16,7 @@ namespace Mapperion
         }
 
         /// <summary>Gets the mapper running the current operation.</summary>
-        public IMapper Mapper => context.Engine.Mapper;
+        public IMapper Mapper => context.Mapper;
     }
 
     /// <summary>

@@ -68,6 +68,15 @@ public sealed record EmployeeDto(string Name, int Age);
 cfg.CreateMap<Employee, EmployeeDto>();
 ```
 
+In an ASP.NET Core application:
+
+```csharp
+builder.Services.AddMapperion(typeof(Program).Assembly);
+```
+
+That registers the configuration as a singleton and `IMapper` as scoped, so a resolver may depend
+on scoped services. Every mapper shares the same compiled plans, so one per request costs nothing.
+
 Profiles work the way you already know them:
 
 ```csharp
@@ -100,9 +109,9 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
 | `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
+| `AddAutoMapper(...)` | `AddMapperion(...)` |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
-| `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
 
 Deliberate difference: a type pair with no `CreateMap` is an error rather than an implicit map.
 Validation stays opt-in, exactly as in AutoMapper.
@@ -137,13 +146,14 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   a parameterless constructor until dependency injection support lands.
 - `BeforeMap` and `AfterMap`, as a lambda or as an `IMappingAction` type. A map with a type
   converter runs neither: the converter replaces the whole map.
+- `Mapperion.Extensions.DependencyInjection`, which registers the mapper and lets converters and
+  resolvers take their dependencies from the container.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-Dictionaries, `PreCondition`, `MaxDepth` and
-`PreserveReferences` at run time, `ProjectTo`, dependency injection integration, inheritance, and
-the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
+Dictionaries, `PreCondition`, `MaxDepth` and `PreserveReferences` at run time, `ProjectTo`,
+inheritance, and the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

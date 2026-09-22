@@ -36,7 +36,7 @@ namespace Mapperion.Execution
             TDestination destination,
             MappingContext context)
         {
-            var converter = (ITypeConverter<TSource, TDestination>)context.Engine.GetInstance(converterType);
+            var converter = (ITypeConverter<TSource, TDestination>)context.Services.Resolve(converterType);
             return converter.Convert(source, destination, new ResolutionContext(context));
         }
 
@@ -46,7 +46,7 @@ namespace Mapperion.Execution
             TDestination destination,
             MappingContext context)
         {
-            var action = (IMappingAction<TSource, TDestination>)context.Engine.GetInstance(actionType);
+            var action = (IMappingAction<TSource, TDestination>)context.Services.Resolve(actionType);
             action.Process(source, destination, new ResolutionContext(context));
         }
 
@@ -55,7 +55,7 @@ namespace Mapperion.Execution
             TSourceMember value,
             MappingContext context)
         {
-            var converter = (IValueConverter<TSourceMember, TDestinationMember>)context.Engine.GetInstance(converterType);
+            var converter = (IValueConverter<TSourceMember, TDestinationMember>)context.Services.Resolve(converterType);
             return converter.Convert(value, new ResolutionContext(context));
         }
 
@@ -66,7 +66,7 @@ namespace Mapperion.Execution
             TDestinationMember current,
             MappingContext context)
         {
-            var resolver = (IValueResolver<TSource, TDestination, TDestinationMember>)context.Engine.GetInstance(resolverType);
+            var resolver = (IValueResolver<TSource, TDestination, TDestinationMember>)context.Services.Resolve(resolverType);
             return resolver.Resolve(source, destination, current, new ResolutionContext(context));
         }
 
