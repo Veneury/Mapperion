@@ -132,9 +132,12 @@ Validation stays opt-in, exactly as in AutoMapper.
 
 ## Supported frameworks
 
-Currently built for `netstandard2.0`, `net8.0`, `net9.0` and `net10.0`.
-`net472` and `netstandard2.1` are next, so .NET Framework consumers get a native target instead of
-the netstandard compatibility shims.
+Built for `netstandard2.0`, `netstandard2.1`, `net472`, `net8.0`, `net9.0` and `net10.0`.
+
+.NET Framework gets a native `net472` target rather than the netstandard shims, so a project on
+4.7.2 or 4.8 does not drag in dozens of `System.*` compatibility packages. A slice of the test
+suite runs on net472 and net48 on every build, so Framework support is verified rather than
+assumed.
 
 Trimming and AOT: the runtime engine resolves members by reflection and is annotated
 `[RequiresUnreferencedCode]` accordingly. A source generator mode with full AOT support is planned.

@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapperion.Extensions.Depend
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapperion.EntityFrameworkCore.Tests", "tests\Mapperion.EntityFrameworkCore.Tests\Mapperion.EntityFrameworkCore.Tests.csproj", "{6F485188-07E4-44AF-89FE-AB517FA961C2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mapperion.Compatibility.Tests", "tests\Mapperion.Compatibility.Tests\Mapperion.Compatibility.Tests.csproj", "{85144130-0720-40E1-9005-ECC34DA85BF2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{6F485188-07E4-44AF-89FE-AB517FA961C2}.Release|x64.Build.0 = Release|Any CPU
 		{6F485188-07E4-44AF-89FE-AB517FA961C2}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F485188-07E4-44AF-89FE-AB517FA961C2}.Release|x86.Build.0 = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|x64.Build.0 = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Debug|x86.Build.0 = Debug|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|x64.ActiveCfg = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|x64.Build.0 = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|x86.ActiveCfg = Release|Any CPU
+		{85144130-0720-40E1-9005-ECC34DA85BF2}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,5 +111,6 @@ Global
 		{CA8C5F48-9349-46FE-83EB-C7CC1EC33412} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{54EF3B4A-5053-4771-8917-048000BA56A7} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{6F485188-07E4-44AF-89FE-AB517FA961C2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{85144130-0720-40E1-9005-ECC34DA85BF2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

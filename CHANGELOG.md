@@ -117,3 +117,11 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Tests de integración reales con EF Core y SQLite en memoria: verifican que la consulta se traduce
   a SQL, que solo se piden las columnas del destino y que el filtrado y la paginación siguen
   ocurriendo en la base de datos.
+- TFMs `netstandard2.1` y `net472` en los dos paquetes, que pasan a publicar seis: `netstandard2.0`,
+  `netstandard2.1`, `net472`, `net8.0`, `net9.0` y `net10.0`.
+- `Microsoft.NETFramework.ReferenceAssemblies` aporta los ensamblados de referencia de .NET
+  Framework, así que compilar `net472` no exige tener instalado el Developer Pack, ni siquiera en
+  Linux.
+- `Mapperion.Compatibility.Tests`: una porción representativa de la librería ejecutándose sobre
+  .NET Framework real (net472 y net48) además de net8.0 y net10.0. El proyecto reduce sus TFMs
+  fuera de Windows, donde .NET Framework no se puede ejecutar.
