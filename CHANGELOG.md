@@ -15,6 +15,11 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   compilación hasta que el fichero se actualiza, con lo cual aparece en el diff. Un solo fichero
   cubre los seis TFMs, porque la superficie es idéntica en todos.
 - `CONTRIBUTING.md`, con qué hacer cuando el build falla por eso y las reglas de la casa.
+- Sitio de documentación en `website/`, generado con DocFX y publicado en GitHub Pages desde
+  `main`. La referencia de API sale de la documentación XML que el build ya exige en cada miembro
+  público, así que no puede desviarse del código. Cuatro artículos escritos a mano: primeros pasos,
+  migración desde AutoMapper, AOT y rendimiento. El fuente vive en `website/` y no en `docs/`,
+  que está fuera del repositorio.
 - `GOVERNANCE.md`, `SECURITY.md` y `CODE_OF_CONDUCT.md`. El de gobernanza explica por qué el
   compromiso de licencia vale algo: no hay CLA ni cesión de copyright, así que relicenciar
   versiones futuras haría falta el acuerdo de todo el que haya contribuido, y las ya publicadas

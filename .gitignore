@@ -1,3 +1,8 @@
+# Documentation site: both the rendered output and the API metadata DocFX writes from the
+# assemblies. Neither is source.
+website/_site/
+website/api/
+
 # Build output
 [Bb]in/
 [Oo]bj/
