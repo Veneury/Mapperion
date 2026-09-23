@@ -85,7 +85,7 @@ namespace Mapperion.Compilation
                 Expression core = Expression.Block(new[] { result }, body);
                 core = WithPreservedShortCircuit(core, definition, source, context);
                 core = WithDepthLimit(core, definition, context);
-                core = WithDerivedDispatch(core, definition, source, context);
+                core = WithDerivedDispatch(core, definition, source, context, engine);
 
                 block = Expression.Block(
                     new[] { step },
@@ -119,7 +119,8 @@ namespace Mapperion.Compilation
             Expression core,
             TypeMapDefinition definition,
             ParameterExpression source,
-            ParameterExpression context)
+            ParameterExpression context,
+            MapperEngine engine)
         {
             if (definition.DerivedMaps.Count == 0)
             {
@@ -149,10 +150,11 @@ namespace Mapperion.Compilation
             {
                 TypeMapKey derived = ordered[i];
 
-                MethodCallExpression mapped = Expression.Call(
-                    Method(nameof(MappingRuntime.MapValue))
-                        .MakeGenericMethod(derived.SourceType, derived.DestinationType),
+                MethodCallExpression mapped = ConversionBuilder.NestedMapCall(
+                    derived.SourceType,
+                    derived.DestinationType,
                     Expression.Convert(source, derived.SourceType),
+                    engine,
                     context);
 
                 dispatch = Expression.Condition(
@@ -476,7 +478,7 @@ namespace Mapperion.Compilation
             else if (member.UseDestinationValue &&
                 engine.CanMap(new TypeMapKey(value.Type, destinationType)))
             {
-                converted = MapIntoExisting(value, target, destinationType, context);
+                converted = MapIntoExisting(value, target, destinationType, context, engine);
             }
             else
             {
@@ -570,13 +572,18 @@ namespace Mapperion.Compilation
             Expression value,
             Expression target,
             Type destinationType,
-            ParameterExpression context)
+            ParameterExpression context,
+            MapperEngine engine)
         {
-            MethodInfo method = typeof(MappingRuntime)
-                .GetMethod(nameof(MappingRuntime.MapInto), BindingFlags.NonPublic | BindingFlags.Static)!
-                .MakeGenericMethod(value.Type, destinationType);
+            Type referenceType = typeof(PlanReference<,>).MakeGenericType(value.Type, destinationType);
+            object reference = Activator.CreateInstance(referenceType, engine)!;
 
-            Expression call = Expression.Call(method, value, target, context);
+            Expression call = Expression.Call(
+                Expression.Constant(reference, referenceType),
+                referenceType.GetMethod(nameof(PlanReference<object, object>.MapInto))!,
+                value,
+                target,
+                context);
 
             if (value.Type.IsValueType)
             {

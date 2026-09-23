@@ -199,6 +199,27 @@ namespace Mapperion.Compilation
                 call);
         }
 
+        /// <summary>
+        /// Emits the call into a nested map through a reference that resolves the plan once, rather
+        /// than a helper that looks it up on every value.
+        /// </summary>
+        internal static MethodCallExpression NestedMapCall(
+            Type sourceType,
+            Type destinationType,
+            Expression value,
+            MapperEngine engine,
+            ParameterExpression context)
+        {
+            Type referenceType = typeof(PlanReference<,>).MakeGenericType(sourceType, destinationType);
+            object reference = Activator.CreateInstance(referenceType, engine)!;
+
+            return Expression.Call(
+                Expression.Constant(reference, referenceType),
+                referenceType.GetMethod(nameof(PlanReference<object, object>.Map))!,
+                value,
+                context);
+        }
+
         private static Expression? TryDictionary(
             Expression value,
             Type sourceType,
@@ -232,6 +253,116 @@ namespace Mapperion.Compilation
                 Expression.Constant(engine.Model.Options.AllowNullCollections));
 
             return built.Type == destinationType ? built : Expression.Convert(built, destinationType);
+        }
+
+        /// <summary>
+        /// Emits the loop directly when the source can be indexed and the destination is a list or
+        /// an array, which covers nearly every collection member in practice.
+        /// </summary>
+        /// <remarks>
+        /// The general path compiles the element conversion into a delegate and calls it once per
+        /// element. That costs an indirect call per element and stops the JIT from seeing through
+        /// the conversion. Here the conversion is emitted inside the loop body instead, and the
+        /// destination is allocated at the right size up front. Anything that is only an
+        /// <c>IEnumerable</c> still takes the general path: walking it needs an enumerator and a
+        /// try/finally, which is a good deal more emitted code for a case that is far rarer.
+        /// </remarks>
+        private static Expression? TryInlineLoop(
+            Expression value,
+            Type sourceType,
+            Type destinationType,
+            Type sourceElement,
+            Type destinationElement,
+            MapperEngine engine,
+            ParameterExpression context)
+        {
+            Type indexable = typeof(IList<>).MakeGenericType(sourceElement);
+
+            if (!indexable.IsAssignableFrom(sourceType))
+            {
+                return null;
+            }
+
+            bool toArray = destinationType.IsArray;
+            Type listType = typeof(List<>).MakeGenericType(destinationElement);
+            Type builtType = toArray ? destinationElement.MakeArrayType() : listType;
+
+            if (!toArray && !destinationType.IsAssignableFrom(listType))
+            {
+                return null;
+            }
+
+            ParameterExpression source = Expression.Variable(indexable, "sequence");
+            ParameterExpression result = Expression.Variable(builtType, "mapped");
+            ParameterExpression count = Expression.Variable(typeof(int), "count");
+            ParameterExpression index = Expression.Variable(typeof(int), "index");
+            LabelTarget done = Expression.Label("done");
+
+            Expression item = Expression.MakeIndex(
+                source,
+                indexable.GetProperty("Item"),
+                new[] { (Expression)index });
+
+            Expression converted = Build(item, destinationElement, engine, context);
+
+            Expression add = toArray
+                ? Expression.Assign(Expression.ArrayAccess(result, index), converted)
+                : Expression.Call(result, listType.GetMethod("Add")!, converted);
+
+            Expression allocate = toArray
+                ? Expression.NewArrayBounds(destinationElement, count)
+                : Expression.New(listType.GetConstructor(new[] { typeof(int) })!, count);
+
+            Expression empty = toArray
+                ? Expression.NewArrayBounds(destinationElement, Expression.Constant(0))
+                : (Expression)Expression.New(listType.GetConstructor(Type.EmptyTypes)!);
+
+            Expression whenNull = engine.Model.Options.AllowNullCollections
+                ? Expression.Default(builtType)
+                : empty;
+
+            Expression fill = Expression.Block(
+                Expression.Assign(
+                    count,
+                    Expression.Property(
+                        source,
+                        typeof(ICollection<>).MakeGenericType(sourceElement).GetProperty("Count")!)),
+                Expression.Assign(result, allocate),
+                Expression.Assign(index, Expression.Constant(0)),
+                Expression.Loop(
+                    Expression.IfThenElse(
+                        Expression.LessThan(index, count),
+                        Expression.Block(add, Expression.PostIncrementAssign(index)),
+                        Expression.Break(done)),
+                    done));
+
+            ParameterExpression error = Expression.Parameter(typeof(Exception), "error");
+
+            Expression reported = Expression.TryCatch(
+                Expression.Block(typeof(void), fill),
+                Expression.Catch(
+                    error,
+                    Expression.Block(
+                        typeof(void),
+                        Expression.Assign(
+                            result,
+                            Expression.Call(
+                                Method(nameof(MappingRuntime.FailAtIndex)).MakeGenericMethod(builtType),
+                                index,
+                                error)))));
+
+            Expression body = Expression.Block(
+                new[] { source, result, count, index },
+                Expression.Assign(source, Expression.Convert(value, indexable)),
+                Expression.IfThenElse(
+                    Expression.Equal(source, Expression.Constant(null, indexable)),
+                    Expression.Assign(result, whenNull),
+                    reported),
+                result);
+
+            return destinationType.IsAssignableFrom(builtType)
+                ? body
+                : Expression.Convert(body, destinationType);
         }
 
         private static bool TryGetDestinationDictionary(
@@ -290,6 +421,20 @@ namespace Mapperion.Compilation
             if (!TryGetDestinationCollection(destinationType, out Type? destinationElement, out string? helper))
             {
                 return null;
+            }
+
+            Expression? inlined = TryInlineLoop(
+                value,
+                sourceType,
+                destinationType,
+                sourceElement,
+                destinationElement!,
+                engine,
+                context);
+
+            if (inlined is not null)
+            {
+                return inlined;
             }
 
             Delegate converter = ElementConverter(sourceElement, destinationElement!, engine, out Type converterType);
@@ -358,10 +503,7 @@ namespace Mapperion.Compilation
                 return null;
             }
 
-            Expression call = Expression.Call(
-                Method(nameof(MappingRuntime.MapValue)).MakeGenericMethod(sourceType, destinationType),
-                value,
-                context);
+            Expression call = NestedMapCall(sourceType, destinationType, value, engine, context);
 
             if (sourceType.IsValueType)
             {

@@ -74,6 +74,16 @@ namespace Mapperion.Execution
             return outer;
         }
 
+        internal static TDestination FailAtIndex<TDestination>(int index, Exception error)
+        {
+            if (error is MapperConfigurationException)
+            {
+                ExceptionDispatchInfo.Capture(error).Throw();
+            }
+
+            throw AtIndex(index, error);
+        }
+
         private static MappingException AtIndex(int index, Exception error)
         {
             string path = Combine("[" + index.ToString(CultureInfo.InvariantCulture) + "]", error);
