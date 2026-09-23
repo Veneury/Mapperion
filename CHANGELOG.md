@@ -162,3 +162,13 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - `AssertIsValid()` detecta ahora los ciclos sin protección recorriendo el grafo de mapas, de modo
   que lo que antes mataba el proceso en producción es un error en arranque.
 - `PreserveReferences` sobre tipos por valor se reporta: no hay identidad que preservar.
+- `AllowNullDestinationValues` **funciona**. Era el último no-op silencioso: se configuraba, llegaba
+  al modelo y nadie la leía. Con la opción desactivada, un miembro cuyo origen resuelve a null
+  recibe el contenido vacío del tipo destino: cadena vacía, o una instancia nueva si el tipo tiene
+  constructor sin parámetros. Los tipos por valor no se tocan y las colecciones siguen respondiendo
+  a `AllowNullCollections`, que es la opción que habla de ellas. En una proyección solo se aplica al
+  caso de las cadenas: un proveedor de consultas no puede construir un objeto de la nada.
+- Las colecciones se reconstruyen siempre, nunca se comparten. Antes, un `List<X>` hacia `List<X>` o
+  hacia `IReadOnlyList<X>` pasaba por el atajo de tipos iguales o asignables y el destino se quedaba
+  con **la misma lista** que el origen: cambiar una cambiaba la otra, y además `AllowNullCollections`
+  quedaba sin efecto en esos pares. Lo destapó un test de la interacción entre las dos opciones.

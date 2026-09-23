@@ -14,6 +14,12 @@ namespace Mapperion.Compilation
     /// Everything it emits is typed: nothing here boxes a value or falls back to <c>object</c>
     /// unless the conversion itself has no other way through.
     /// </summary>
+    /// <remarks>
+    /// Sequences are looked at before anything else, including before the source and destination
+    /// types being the same or assignable. A destination that shared the source's list would let a
+    /// change to one show up in the other, and it would also slip past
+    /// <c>AllowNullCollections</c>; a collection is always rebuilt.
+    /// </remarks>
     [RequiresUnreferencedCode("Building a conversion inspects types by reflection.")]
     [RequiresDynamicCode("Building a conversion emits code at run time.")]
     internal static class ConversionBuilder
@@ -32,6 +38,18 @@ namespace Mapperion.Compilation
             ParameterExpression context)
         {
             Type sourceType = value.Type;
+
+            if (TypeClassifier.IsSequence(sourceType))
+            {
+                Expression? copied =
+                    TryDictionary(value, sourceType, destinationType, engine, context)
+                    ?? TryCollection(value, sourceType, destinationType, engine, context);
+
+                if (copied is not null)
+                {
+                    return copied;
+                }
+            }
 
             if (sourceType == destinationType)
             {
@@ -60,8 +78,6 @@ namespace Mapperion.Compilation
                 TryEnum(value, sourceType, destinationType, engine)
                 ?? TryNumeric(value, sourceType, destinationType)
                 ?? TryToString(value, sourceType, destinationType)
-                ?? TryDictionary(value, sourceType, destinationType, engine, context)
-                ?? TryCollection(value, sourceType, destinationType, engine, context)
                 ?? TryNestedMap(value, sourceType, destinationType, engine, context)
                 ?? TryChangeType(value, sourceType, destinationType);
 
