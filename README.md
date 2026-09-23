@@ -153,6 +153,8 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Validation: `AssertIsValid()` reports every problem at once — unmapped destination members,
   missing nested maps (looking through nullables and collections), and, with
   `MemberListValidation.Source`, source members nobody reads.
+- Failures at run time name the member that caused them, with the path through nested maps and
+  collections: `Batch.Readings[0].Ratio`.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values

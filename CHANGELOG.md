@@ -136,3 +136,12 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - `Condition` pasa a evaluarse **después** de resolver el valor, como en AutoMapper. Antes se
   comportaba como una precondición, lo que dejaba a las dos indistinguibles; ahora `Condition`
   paga la lectura y `PreCondition` la evita, que es justo la diferencia entre ambas.
+- Un fallo en tiempo de mapeo dice ahora qué miembro lo causó, con la ruta completa a través de
+  mapas anidados y colecciones: `Batch.Readings[0].Ratio`. La excepción original queda como
+  `InnerException`.
+- `MappingException.MemberPath` se rellena de verdad; antes existía y nadie la escribía.
+- Un problema de configuración descubierto al compilar un mapa anidado en pleno mapeo sigue
+  saliendo como `MapperConfigurationException`, no disfrazado de fallo de mapeo.
+- El `catch` del plan no lleva filtro de excepción: un filtro compila a un bloque IL de filtro y
+  `DynamicMethod` los rechaza en .NET Framework. Lo detectaron los tests de compatibilidad, que
+  pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.

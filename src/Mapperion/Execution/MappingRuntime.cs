@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using Mapperion.Compilation;
 using Mapperion.Model;
 
@@ -15,6 +16,43 @@ namespace Mapperion.Execution
     [RequiresDynamicCode("Mapping compiles plans at run time.")]
     internal static class MappingRuntime
     {
+        internal static TDestination Fail<TDestination>(string member, string map, Exception error)
+        {
+            if (error is MapperConfigurationException)
+            {
+                ExceptionDispatchInfo.Capture(error).Throw();
+            }
+
+            string path = Combine(member, error);
+
+            throw new MappingException(
+                "Mapping " + map + " failed at '" + path + "'. See the inner exception.",
+                path,
+                error);
+        }
+
+        private static string Combine(string outer, Exception error)
+        {
+            if (error is MappingException inner && !string.IsNullOrEmpty(inner.MemberPath))
+            {
+                return inner.MemberPath![0] == '['
+                    ? outer + inner.MemberPath
+                    : outer + "." + inner.MemberPath;
+            }
+
+            return outer;
+        }
+
+        private static MappingException AtIndex(int index, Exception error)
+        {
+            string path = Combine("[" + index.ToString(CultureInfo.InvariantCulture) + "]", error);
+
+            return new MappingException(
+                "Mapping the element at " + path + " failed. See the inner exception.",
+                path,
+                error);
+        }
+
         internal static TDestination MapValue<TSource, TDestination>(TSource source, MappingContext context)
         {
             MapPlan plan = context.Engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
@@ -85,9 +123,19 @@ namespace Mapperion.Execution
                 ? new List<TDestination>(known.Count)
                 : new List<TDestination>();
 
-            foreach (TSource item in source)
+            int index = 0;
+
+            try
             {
-                result.Add(convert(item, context));
+                foreach (TSource item in source)
+                {
+                    result.Add(convert(item, context));
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
             }
 
             return result;
@@ -125,10 +173,19 @@ namespace Mapperion.Execution
             }
 
             var result = new Dictionary<TDestinationKey, TDestinationValue>();
+            int index = 0;
 
-            foreach (KeyValuePair<TSourceKey, TSourceValue> entry in source)
+            try
             {
-                result[key(entry.Key, context)] = value(entry.Value, context);
+                foreach (KeyValuePair<TSourceKey, TSourceValue> entry in source)
+                {
+                    result[key(entry.Key, context)] = value(entry.Value, context);
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
             }
 
             return result;
@@ -146,10 +203,19 @@ namespace Mapperion.Execution
             }
 
             var result = new HashSet<TDestination>();
+            int index = 0;
 
-            foreach (TSource item in source)
+            try
             {
-                result.Add(convert(item, context));
+                foreach (TSource item in source)
+                {
+                    result.Add(convert(item, context));
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
             }
 
             return result;

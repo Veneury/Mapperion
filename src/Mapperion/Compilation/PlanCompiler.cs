@@ -36,13 +36,17 @@ namespace Mapperion.Compilation
             }
             else
             {
+                ParameterExpression step = Expression.Variable(typeof(string), "step");
+
                 var body = new List<Expression>
                 {
+                    Expression.Assign(step, Expression.Constant("(constructing)")),
                     Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
                 };
 
                 foreach (object action in definition.BeforeMapActions)
                 {
+                    body.Add(Expression.Assign(step, Expression.Constant("(before step)")));
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
@@ -52,17 +56,29 @@ namespace Mapperion.Compilation
 
                     if (assignment is not null)
                     {
+                        body.Add(Expression.Assign(
+                            step,
+                            Expression.Constant(member.DestinationMember.Name)));
+
                         body.Add(assignment);
                     }
                 }
 
                 foreach (object action in definition.AfterMapActions)
                 {
+                    body.Add(Expression.Assign(step, Expression.Constant("(after step)")));
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
                 body.Add(result);
-                block = Expression.Block(new[] { result }, body);
+
+                block = Expression.Block(
+                    new[] { step },
+                    Expression.Assign(step, Expression.Constant("(constructing)")),
+                    Reporting(
+                        Expression.Block(new[] { result }, body),
+                        step,
+                        definition));
             }
 
             if (!sourceType.IsValueType)
@@ -77,6 +93,27 @@ namespace Mapperion.Compilation
             Delegate typed = Expression.Lambda(delegateType, block, source, destination, context).Compile();
 
             return new MapPlan(typed, BuildBoxed(typed, sourceType, destinationType));
+        }
+
+        /// <remarks>
+        /// The catch carries no exception filter. A filter compiles to an IL filter block, and
+        /// <c>DynamicMethod</c> on .NET Framework refuses those, so the decision of what to rethrow
+        /// untouched lives in <see cref="MappingRuntime.Fail{TDestination}"/> instead.
+        /// </remarks>
+        private static TryExpression Reporting(
+            Expression body,
+            ParameterExpression step,
+            TypeMapDefinition definition)
+        {
+            ParameterExpression error = Expression.Parameter(typeof(Exception), "error");
+
+            MethodCallExpression fail = Expression.Call(
+                Method(nameof(MappingRuntime.Fail)).MakeGenericMethod(definition.DestinationType),
+                step,
+                Expression.Constant(definition.Key.ToString()),
+                error);
+
+            return Expression.TryCatch(body, Expression.Catch(error, fail));
         }
 
         private static Expression BuildTypeConverterCall(
