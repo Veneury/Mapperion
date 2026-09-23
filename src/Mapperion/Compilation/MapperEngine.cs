@@ -8,6 +8,7 @@ using Mapperion.Conventions;
 using Mapperion.Internal;
 using Mapperion.Model;
 using Mapperion.Projection;
+using Mapperion.Validation;
 
 namespace Mapperion.Compilation
 {
@@ -29,6 +30,9 @@ namespace Mapperion.Compilation
         private readonly Dictionary<TypeMapKey, TypeMapDefinition> closedTemplates =
             new Dictionary<TypeMapKey, TypeMapDefinition>();
 
+        private static readonly HashSet<TypeMapKey> Empty = new HashSet<TypeMapKey>();
+
+        private readonly HashSet<TypeMapKey> ceilings;
         private readonly object closing = new object();
         private readonly ConventionResolver resolver;
         private readonly Func<TypeMapKey, MapPlan> compile;
@@ -37,7 +41,10 @@ namespace Mapperion.Compilation
         internal MapperEngine(MapperModel model)
         {
             Model = model;
-            RequiresState = NeedsState(model);
+            ceilings = model.Options.RecursionLimit > 0
+                ? CycleFinder.Closing(model)
+                : Empty;
+            RequiresState = NeedsState(model) || ceilings.Count > 0;
             resolver = new ConventionResolver(model.Options);
             compile = CompilePlan;
             project = CompileProjection;
@@ -47,17 +54,77 @@ namespace Mapperion.Compilation
 
         internal bool RequiresState { get; }
 
+        /// <summary>
+        /// Answers whether an operation has to carry state. Depth counting and reference tracking
+        /// need it, and so does anything that is handed a <see cref="ResolutionContext"/>, since
+        /// that is the way into the per-operation items.
+        /// </summary>
         private static bool NeedsState(MapperModel model)
         {
             foreach (TypeMapDefinition definition in model.TypeMaps)
             {
-                if (definition.MaxDepth is not null || definition.PreserveReferences)
+                if (definition.MaxDepth is not null ||
+                    definition.PreserveReferences ||
+                    HandsOutContext(definition))
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        private static bool HandsOutContext(TypeMapDefinition definition)
+        {
+            if (definition.TypeConverterType is not null)
+            {
+                return true;
+            }
+
+            if (definition.ConstructUsing is Delegate factory && TakesContext(factory, 2))
+            {
+                return true;
+            }
+
+            foreach (object action in definition.BeforeMapActions)
+            {
+                if (IsContextAction(action))
+                {
+                    return true;
+                }
+            }
+
+            foreach (object action in definition.AfterMapActions)
+            {
+                if (IsContextAction(action))
+                {
+                    return true;
+                }
+            }
+
+            foreach (MemberDefinition member in definition.Members)
+            {
+                if (member.ValueConverterType is not null || member.Source is ValueResolverSource)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A step written as its own type always receives the operation. A step written as a lambda
+        /// only receives it when the user asked for the overload that passes it.
+        /// </summary>
+        private static bool IsContextAction(object action)
+        {
+            return action is Type || (action is Delegate handler && TakesContext(handler, 3));
+        }
+
+        private static bool TakesContext(Delegate handler, int parameters)
+        {
+            return handler.GetType().GetMethod("Invoke")!.GetParameters().Length == parameters;
         }
 
         internal LambdaExpression GetProjection(TypeMapKey key)
@@ -108,6 +175,15 @@ namespace Mapperion.Compilation
                 closedTemplates[key] = definition!;
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Answers whether a map closes a loop that nothing else stops, and so needs counting to
+        /// keep a looping graph from recursing without end.
+        /// </summary>
+        internal bool NeedsCeiling(TypeMapKey key)
+        {
+            return ceilings.Contains(key);
         }
 
         internal bool CanMap(TypeMapKey key)

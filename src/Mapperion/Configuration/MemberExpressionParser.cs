@@ -24,6 +24,50 @@ namespace Mapperion.Configuration
                 "A destination member must be a direct member access such as 'd => d.Total', but was '" + selector.Body + "'.");
         }
 
+        /// <summary>
+        /// Reads a chain of destination members, such as <c>d =&gt; d.Customer.Name</c>. Everything
+        /// that would make the chain unwritable is refused here rather than at map time.
+        /// </summary>
+        internal static MemberPath ParseDestinationPath(LambdaExpression selector)
+        {
+            if (!TryParsePath(selector.Body, out MemberPath? path))
+            {
+                throw new MapperConfigurationException(
+                    "A destination path must be a chain of member accesses such as " +
+                    "'d => d.Customer.Name', but was '" + selector.Body + "'.");
+            }
+
+            foreach (MemberDescriptor step in path!.Steps)
+            {
+                if (step.Kind == MemberKind.Method)
+                {
+                    throw new MapperConfigurationException(
+                        "The destination path '" + path + "' goes through a method call. There is " +
+                        "nothing to write to on the other side of one.");
+                }
+            }
+
+            if (!path.Leaf.CanWrite)
+            {
+                throw new MapperConfigurationException(
+                    "The destination path '" + path + "' ends on '" + path.Leaf.Name +
+                    "', which cannot be written.");
+            }
+
+            for (int i = 0; i < path.Length - 1; i++)
+            {
+                if (path.Steps[i].MemberType.IsValueType)
+                {
+                    throw new MapperConfigurationException(
+                        "The destination path '" + path + "' goes through '" + path.Steps[i].Name +
+                        "', which is a value type. Writing through it would change a copy and be " +
+                        "lost, so map that member as a whole instead.");
+                }
+            }
+
+            return path;
+        }
+
         internal static MemberSource ParseSource(LambdaExpression selector)
         {
             if (TryParsePath(selector.Body, out MemberPath? path))

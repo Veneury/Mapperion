@@ -184,7 +184,7 @@ namespace Mapperion.Compilation
                 return false;
             }
 
-            if (!IsPlain(candidate))
+            if (!IsPlain(candidate) || Engine.NeedsCeiling(key))
             {
                 return false;
             }
@@ -217,6 +217,11 @@ namespace Mapperion.Compilation
         /// own plan: a converter, a before or after step, a derived dispatch, a depth limit or
         /// reference tracking.
         /// </summary>
+        /// <remarks>
+        /// A map that closes a loop is refused separately, by the caller: its plan carries the
+        /// counter that bounds the recursion, and writing its body somewhere else would leave the
+        /// loop with nothing counting it.
+        /// </remarks>
         private static bool IsPlain(TypeMapDefinition definition)
         {
             return definition.TypeConverterType is null

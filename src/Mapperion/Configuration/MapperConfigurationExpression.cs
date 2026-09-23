@@ -28,6 +28,8 @@ namespace Mapperion.Configuration
 
         public bool AllowNullDestinationValues { get; set; } = MapperOptions.Defaults.AllowNullDestinationValues;
 
+        public int RecursionLimit { get; set; } = MapperOptions.Defaults.RecursionLimit;
+
         public bool IncludeFields { get; set; } = MapperOptions.Defaults.IncludeFields;
 
         public bool IncludeSourceMethods { get; set; } = MapperOptions.Defaults.IncludeSourceMethods;
@@ -172,6 +174,7 @@ namespace Mapperion.Configuration
                 MaxFlatteningDepth = MaxFlatteningDepth,
                 AllowNullCollections = AllowNullCollections,
                 AllowNullDestinationValues = AllowNullDestinationValues,
+                RecursionLimit = RecursionLimit,
                 IncludeFields = IncludeFields,
                 IncludeSourceMethods = IncludeSourceMethods,
                 EnumMapping = EnumMapping,

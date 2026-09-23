@@ -78,6 +78,26 @@ namespace Mapperion.Projection
                     "Project to a type without one, or query the entities and map them in memory.");
             }
 
+            if (definition.ConstructUsing is not null)
+            {
+                throw new MapperConfigurationException(
+                    definition.Key + " builds its destination with a factory, which a query " +
+                    "provider cannot call. Project to a type without one, or query the entities " +
+                    "and map them in memory.");
+            }
+
+            foreach (MemberDefinition member in definition.Members)
+            {
+                if (member.IsPath)
+                {
+                    throw new MapperConfigurationException(
+                        definition.Key + " writes into '" + member.DestinationPath +
+                        "' with ForPath, which a projection cannot express: it builds each object " +
+                        "in a single expression, with nothing to walk into afterwards. Project to a " +
+                        "flatter type, or query the entities and map them in memory.");
+                }
+            }
+
             if (definition.DerivedMaps.Count != 0)
             {
                 throw new MapperConfigurationException(

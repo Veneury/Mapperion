@@ -9,6 +9,40 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- `ForPath(d => d.Address.Street, ...)` escribe un miembro que está dentro del destino en vez de
+  sobre él. Los objetos del camino se crean si faltan; uno que no se pueda escribir y esté a nulo
+  tiene que venir puesto, y el mapa dice cuál era. Las rutas se asignan después de todos los
+  miembros directos, así que configurar el objeto entero y algo de dentro deja la última palabra a
+  la ruta en vez de depender del orden de declaración. Una ruta de un solo paso es un miembro
+  normal. Una proyección la reporta en vez de ignorarla.
+- `ConstructUsing`, con las dos sobrecargas de AutoMapper: la que recibe solo el origen y la que
+  además recibe el `ResolutionContext`. La fábrica solo corre cuando hay que crear el destino, así
+  que mapear sobre una instancia que trae el llamante la sigue usando a ella. Declararla junto a
+  `ForCtorParam` se rechaza al construir la configuración, porque la fábrica ganaría y los
+  parámetros no harían nada.
+- `ResolutionContext.Items`, con sobrecargas de `Map` que toman un
+  `Action<IMappingOperationOptions>` para llenarlos. Sirven para pasar contexto que no está en el
+  objeto de origen, como el usuario o el tenant actual. El diccionario es de una operación y no se
+  comparte con otra. Solo se reserva estado cuando la configuración tiene algo que pueda leerlo:
+  un converter, un resolver o un paso que reciba el contexto.
+- `MapperHost`, un hueco para un `IMapper` accesible estáticamente, pensado para .NET Framework sin
+  contenedor y documentado como último recurso. Instalar uno segundo sin llamar antes a `Reset` se
+  rechaza, porque cambiaría a media ejecución lo que resuelven las llamadas ya escritas.
+
+- Un grafo de objetos que se cierra sobre sí mismo ya no tumba el proceso. El mapa que cierra el
+  bucle cuenta su propia profundidad y lanza `RecursionLimitException` al pasar de
+  `RecursionLimit`, que por defecto son 64 niveles, el mismo valor que usan `System.Text.Json` y
+  Newtonsoft para la misma protección. Antes la recursión terminaba en un `StackOverflowException`,
+  que no se puede capturar y se lleva el proceso por delante: es la forma del CVE-2026-32933 de
+  AutoMapper, que no se va a parchear en su línea MIT.
+- Solo cuentan los mapas que cierran un bucle sin `MaxDepth` ni `PreserveReferences`, así que una
+  configuración cuyos tipos no pueden recurrir no paga nada por esto, y un mapa que ya se protege
+  conserva su propio comportamiento.
+- `RecursionLimit` en la configuración, para subirlo cuando el grafo de verdad es más profundo.
+  Cero o menos quita el techo y devuelve el desbordamiento de pila.
+- `RecursionLimitException` deriva de `MappingException`, así que un `catch` existente la sigue
+  atrapando, y lleva el mapa y el límite que se alcanzó.
+
 - Herencia y polimorfismo. `Include<TDerivedSource,TDerivedDestination>()` hace que mapear a través
   de una referencia base produzca el destino derivado que corresponde; las comprobaciones se emiten
   de más derivado a menos, así que una jerarquía de varios niveles elige la coincidencia más
