@@ -5,7 +5,10 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
-## [Unreleased]
+## [0.9.0-preview.1] - 2026-09-23
+
+Una minor y no un parche porque el nombre seguro cambia la identidad de los ensamblados, que es
+una ruptura. Antes de la 1.0 está permitido, y es cuando sale más barato.
 
 ### Added
 
