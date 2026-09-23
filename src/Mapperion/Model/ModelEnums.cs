@@ -31,6 +31,9 @@ namespace Mapperion.Model
 
         /// <summary>An engine-specific payload, such as a user-supplied lambda.</summary>
         Custom = 3,
+
+        /// <summary>A source of another map, read against a member of this one.</summary>
+        IncludedMember = 4,
     }
 
     /// <summary>

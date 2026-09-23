@@ -201,6 +201,8 @@ than asserted.
   `PublishAot=true` runs on every build.
 - `ConstructUsing` to build the destination with a factory, and `ForPath` to assign a member that
   sits inside it.
+- `IncludeMembers` to build one destination out of several nested source objects, taking the
+  renames and converters of the included maps with it.
 - Per-operation values through `IMappingOperationOptions.Items`, read back from a converter,
   resolver or step as `ResolutionContext.Items`.
 - A recursion ceiling on any map that can reach itself, so a looping object graph raises

@@ -96,6 +96,41 @@ namespace Mapperion.Model
     }
 
     /// <summary>
+    /// Takes a source belonging to another map and reads it against a member of this one, which is
+    /// what <c>IncludeMembers</c> produces.
+    /// </summary>
+    /// <remarks>
+    /// Only the sources that cannot simply be rebased end up here. A path is folded into a longer
+    /// path and a constant needs no owner at all, so both stay as they were; a resolver or a lambda
+    /// is written against the included type and has to be handed an instance of it.
+    /// </remarks>
+    public sealed class IncludedMemberSource : MemberSource
+    {
+        /// <summary>Creates a source read against an included member.</summary>
+        /// <param name="prefix">The path to the member of this map's source that owns the value.</param>
+        /// <param name="inner">The source as the included map declared it.</param>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        public IncludedMemberSource(MemberPath prefix, MemberSource inner)
+            : base(Guard.NotNull(inner, nameof(inner)).ValueType)
+        {
+            Prefix = Guard.NotNull(prefix, nameof(prefix));
+            Inner = inner;
+        }
+
+        /// <inheritdoc />
+        public override MemberSourceKind Kind => MemberSourceKind.IncludedMember;
+
+        /// <summary>Gets the path to the member the inner source is read against.</summary>
+        public MemberPath Prefix { get; }
+
+        /// <summary>Gets the source as the included map declared it.</summary>
+        public MemberSource Inner { get; }
+
+        /// <inheritdoc />
+        public override string ToString() => Prefix + " -> " + Inner;
+    }
+
+    /// <summary>
     /// Carries a payload only one engine understands, typically a user-supplied lambda held as
     /// <see cref="object"/> so the model stays independent of <c>System.Linq.Expressions</c>.
     /// </summary>

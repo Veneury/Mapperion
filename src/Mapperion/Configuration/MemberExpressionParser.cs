@@ -68,6 +68,22 @@ namespace Mapperion.Configuration
             return path;
         }
 
+        /// <summary>
+        /// Reads the path to a source member named by <c>IncludeMembers</c>. It has to be a plain
+        /// chain of members: there is nothing for an included map to be read against otherwise.
+        /// </summary>
+        internal static MemberPath ParseIncludedMember(LambdaExpression selector)
+        {
+            if (!TryParsePath(selector.Body, out MemberPath? path))
+            {
+                throw new MapperConfigurationException(
+                    "An included member must be a source member such as 's => s.Inner', but was '" +
+                    selector.Body + "'.");
+            }
+
+            return path!;
+        }
+
         internal static MemberSource ParseSource(LambdaExpression selector)
         {
             if (TryParsePath(selector.Body, out MemberPath? path))

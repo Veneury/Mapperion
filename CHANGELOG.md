@@ -9,6 +9,21 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- `IncludeMembers(s => s.Applicant, s => s.Employment)` construye un destino a partir de varios
+  objetos anidados del origen. El mapa se mira primero: lo que configura explícitamente y lo que
+  resuelven sus propias convenciones gana, y solo lo que queda sin origen se ofrece a los miembros
+  incluidos, en el orden dado. El primero que tenga algo que decir lo aporta, y un miembro que el
+  mapa incluido ignora cuenta como no tener nada que decir.
+- Si hay un mapa declarado para el tipo incluido se usa, así que sus renombrados y sus
+  `IValueConverter` viajan con él; si no lo hay, el miembro se empareja contra el tipo incluido por
+  las mismas convenciones de siempre, sin obligar a declarar un mapa que nadie necesitaría.
+- Un `IValueResolver` del mapa incluido recibe la instancia incluida, no el origen de fuera. Una
+  condición sí se reporta en vez de descartarse: está escrita contra el tipo incluido y no hay
+  forma de trasladarla al de fuera.
+- Un miembro incluido a nulo deja a cero lo que habría rellenado, igual que ya hace una ruta
+  aplanada con un nulo por el camino.
+- `ProjectTo` atraviesa los miembros incluidos cuando lo que aportan es una ruta o una expresión.
+
 - `samples/Mapperion.Aot`, una aplicación publicada con `PublishAot=true` que mapea con el código
   generado y comprueba su propio resultado, saliendo con código distinto de cero si algo no cuadra.
   Lleva los analizadores de trimming y AOT activados, así que un build corriente ya falla ante

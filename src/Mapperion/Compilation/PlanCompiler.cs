@@ -918,9 +918,37 @@ namespace Mapperion.Compilation
                 case ValueResolverSource resolver:
                     return BuildResolverCall(resolver, sourceParameter, destinationInstance, context);
 
+                case IncludedMemberSource included:
+                    return ReadIncluded(included, sourceParameter, destinationInstance, context);
+
                 default:
                     throw new MapperConfigurationException("Unsupported member source: " + source.Kind + ".");
             }
+        }
+
+        /// <summary>
+        /// Reads a source belonging to an included map against the member that owns it. The owner
+        /// is read once into a local and guarded, so an included member that is null leaves what it
+        /// would have filled at its default instead of throwing.
+        /// </summary>
+        private static BlockExpression ReadIncluded(
+            IncludedMemberSource included,
+            ParameterExpression sourceParameter,
+            Expression destinationInstance,
+            ParameterExpression context)
+        {
+            Expression access = ReadPath(sourceParameter, included.Prefix.Steps, 0);
+            ParameterExpression owner = Expression.Variable(access.Type, "included");
+            Expression inner = ReadSource(included.Inner, owner, destinationInstance, context);
+
+            Expression guarded = CanBeNull(access.Type)
+                ? Expression.Condition(
+                    Expression.Equal(owner, Expression.Constant(null, access.Type)),
+                    Expression.Default(inner.Type),
+                    inner)
+                : inner;
+
+            return Expression.Block(new[] { owner }, Expression.Assign(owner, access), guarded);
         }
 
         private static MethodCallExpression BuildResolverCall(
