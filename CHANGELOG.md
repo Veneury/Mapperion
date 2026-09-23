@@ -31,6 +31,23 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Las plantillas quedan fuera de la validación de miembros y de la detección de ciclos, que no
   significan nada sobre un tipo sin cerrar. Sí se comprueba que las dos partes tengan el mismo
   número de argumentos de tipo, y que no se mezcle un tipo abierto con uno cerrado.
+- Paquete `Mapperion.SourceGenerator`: un generador incremental de Roslyn que escribe el cuerpo de
+  los métodos `partial` de una clase marcada con `[Mapper]`. La salida es C# corriente, sin
+  reflexión y sin emisión de código en ejecución, que es lo que la hace válida bajo trimming y AOT.
+- Emparejamiento por nombre exacto y luego sin distinguir mayúsculas, igual que el motor de
+  runtime; `[MapProperty("Customer.Address.City", "CustomerCity")]` para rutas explícitas, con
+  guarda de nulos en cada paso; `[MapperIgnore]` para saltarse un miembro.
+- Cubre objetos anidados llamando a otro método del mismo mapeador, colecciones con `Select` y
+  `ToList`/`ToArray`/`ToHashSet`, nullables, enums, conversiones numéricas, `ToString` y
+  construcción por constructor, incluidos los records.
+- Seis diagnósticos, `MPR0001` a `MPR0006`, para lo que no puede escribir: clase no `partial`,
+  miembro sin origen, conversión inexistente, destino que no se puede construir, firma no
+  soportada, y atributo que nombra un miembro inexistente.
+- Los atributos los emite el propio generador en cada compilación, `internal`, así que el paquete
+  no arrastra dependencia en ejecución y dos ensamblados nunca chocan.
+- `BothEnginesAgreeTests` pasa los mismos casos por los dos motores y compara los resultados. Es la
+  garantía que ADR-0005 dejó como condición: los dos no comparten una línea de código, así que lo
+  único que los mantiene honestos es ejecutarlos contra lo mismo.
 
 - Documentación de planeación completa (`docs/`), incluidos 4 ADRs.
 - Esqueleto de la solución: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package
