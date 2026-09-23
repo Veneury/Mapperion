@@ -74,19 +74,27 @@ namespace Mapperion.Execution
             return outer;
         }
 
-        internal static TDestination FailAtIndex<TDestination>(int index, Exception error)
+        /// <param name="index">The position in the source sequence that was being mapped.</param>
+        /// <param name="member">
+        /// The member inside the element, when the element's map was written into the loop and so
+        /// has no reporting region of its own; empty when the element was mapped through a call and
+        /// reports its own member.
+        /// </param>
+        /// <param name="error">The failure to wrap.</param>
+        internal static TDestination FailAtIndex<TDestination>(int index, string member, Exception error)
         {
             if (error is MapperConfigurationException)
             {
                 ExceptionDispatchInfo.Capture(error).Throw();
             }
 
-            throw AtIndex(index, error);
+            throw AtIndex(index, member, error);
         }
 
-        private static MappingException AtIndex(int index, Exception error)
+        private static MappingException AtIndex(int index, string member, Exception error)
         {
-            string path = Combine("[" + index.ToString(CultureInfo.InvariantCulture) + "]", error);
+            string at = "[" + index.ToString(CultureInfo.InvariantCulture) + "]";
+            string path = Combine(string.IsNullOrEmpty(member) ? at : at + "." + member, error);
 
             return new MappingException(
                 "Mapping the element at " + path + " failed. See the inner exception.",
@@ -176,7 +184,7 @@ namespace Mapperion.Execution
             }
             catch (Exception error) when (!(error is MapperConfigurationException))
             {
-                throw AtIndex(index, error);
+                throw AtIndex(index, string.Empty, error);
             }
 
             return result;
@@ -226,7 +234,7 @@ namespace Mapperion.Execution
             }
             catch (Exception error) when (!(error is MapperConfigurationException))
             {
-                throw AtIndex(index, error);
+                throw AtIndex(index, string.Empty, error);
             }
 
             return result;
@@ -256,7 +264,7 @@ namespace Mapperion.Execution
             }
             catch (Exception error) when (!(error is MapperConfigurationException))
             {
-                throw AtIndex(index, error);
+                throw AtIndex(index, string.Empty, error);
             }
 
             return result;

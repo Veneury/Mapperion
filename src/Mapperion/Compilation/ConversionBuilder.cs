@@ -31,19 +31,15 @@ namespace Mapperion.Compilation
             typeof(char), typeof(float), typeof(double), typeof(decimal),
         };
 
-        internal static Expression Build(
-            Expression value,
-            Type destinationType,
-            MapperEngine engine,
-            ParameterExpression context)
+        internal static Expression Build(Expression value, Type destinationType, CompileScope scope)
         {
             Type sourceType = value.Type;
 
             if (TypeClassifier.IsSequence(sourceType))
             {
                 Expression? copied =
-                    TryDictionary(value, sourceType, destinationType, engine, context)
-                    ?? TryCollection(value, sourceType, destinationType, engine, context);
+                    TryDictionary(value, sourceType, destinationType, scope)
+                    ?? TryCollection(value, sourceType, destinationType, scope);
 
                 if (copied is not null)
                 {
@@ -61,12 +57,12 @@ namespace Mapperion.Compilation
 
             if (sourceUnderlying is not null)
             {
-                return FromNullableSource(value, sourceUnderlying, destinationType, destinationUnderlying, engine, context);
+                return FromNullableSource(value, sourceUnderlying, destinationType, destinationUnderlying, scope);
             }
 
             if (destinationUnderlying is not null)
             {
-                return ToNullableDestination(value, destinationType, destinationUnderlying, engine, context);
+                return ToNullableDestination(value, destinationType, destinationUnderlying, scope);
             }
 
             if (destinationType.IsAssignableFrom(sourceType))
@@ -75,10 +71,10 @@ namespace Mapperion.Compilation
             }
 
             Expression? converted =
-                TryEnum(value, sourceType, destinationType, engine)
+                TryEnum(value, sourceType, destinationType, scope.Engine)
                 ?? TryNumeric(value, sourceType, destinationType)
                 ?? TryToString(value, sourceType, destinationType)
-                ?? TryNestedMap(value, sourceType, destinationType, engine, context)
+                ?? TryNestedMap(value, sourceType, destinationType, scope)
                 ?? TryChangeType(value, sourceType, destinationType);
 
             if (converted is not null)
@@ -96,14 +92,12 @@ namespace Mapperion.Compilation
             Type sourceUnderlying,
             Type destinationType,
             Type? destinationUnderlying,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             Expression inner = Build(
                 Expression.Property(value, "Value"),
                 destinationUnderlying ?? destinationType,
-                engine,
-                context);
+                scope);
 
             if (inner.Type != destinationType)
             {
@@ -120,11 +114,10 @@ namespace Mapperion.Compilation
             Expression value,
             Type destinationType,
             Type destinationUnderlying,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             Expression inner = Expression.Convert(
-                Build(value, destinationUnderlying, engine, context),
+                Build(value, destinationUnderlying, scope),
                 destinationType);
 
             if (value.Type.IsValueType)
@@ -207,25 +200,23 @@ namespace Mapperion.Compilation
             Type sourceType,
             Type destinationType,
             Expression value,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             Type referenceType = typeof(PlanReference<,>).MakeGenericType(sourceType, destinationType);
-            object reference = Activator.CreateInstance(referenceType, engine)!;
+            object reference = Activator.CreateInstance(referenceType, scope.Engine)!;
 
             return Expression.Call(
                 Expression.Constant(reference, referenceType),
                 referenceType.GetMethod(nameof(PlanReference<object, object>.Map))!,
                 value,
-                context);
+                scope.Context);
         }
 
         private static Expression? TryDictionary(
             Expression value,
             Type sourceType,
             Type destinationType,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             if (!TypeClassifier.TryGetDictionaryTypes(sourceType, out Type? sourceKey, out Type? sourceValue))
             {
@@ -237,8 +228,8 @@ namespace Mapperion.Compilation
                 return null;
             }
 
-            Delegate keyConverter = ElementConverter(sourceKey, destinationKey!, engine, out Type keyConverterType);
-            Delegate valueConverter = ElementConverter(sourceValue, destinationValue!, engine, out Type valueConverterType);
+            Delegate keyConverter = ElementConverter(sourceKey, destinationKey!, scope, out Type keyConverterType);
+            Delegate valueConverter = ElementConverter(sourceValue, destinationValue!, scope, out Type valueConverterType);
 
             Type entryType = typeof(KeyValuePair<,>).MakeGenericType(sourceKey, sourceValue);
             Expression entries = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(entryType));
@@ -247,10 +238,10 @@ namespace Mapperion.Compilation
                 Method(nameof(MappingRuntime.ToDictionary))
                     .MakeGenericMethod(sourceKey, sourceValue, destinationKey!, destinationValue!),
                 entries,
-                context,
+                scope.Context,
                 Expression.Constant(keyConverter, keyConverterType),
                 Expression.Constant(valueConverter, valueConverterType),
-                Expression.Constant(engine.Model.Options.AllowNullCollections));
+                Expression.Constant(scope.Engine.Model.Options.AllowNullCollections));
 
             return built.Type == destinationType ? built : Expression.Convert(built, destinationType);
         }
@@ -273,8 +264,7 @@ namespace Mapperion.Compilation
             Type destinationType,
             Type sourceElement,
             Type destinationElement,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             Type indexable = typeof(IList<>).MakeGenericType(sourceElement);
 
@@ -303,11 +293,16 @@ namespace Mapperion.Compilation
                 indexable.GetProperty("Item"),
                 new[] { (Expression)index });
 
-            Expression converted = Build(item, destinationElement, engine, context);
+            var elementStep = new StepSlot(Expression.Variable(typeof(string), "elementStep"));
+            Expression converted = Build(item, destinationElement, scope.ForElement(elementStep));
 
             Expression add = toArray
                 ? Expression.Assign(Expression.ArrayAccess(result, index), converted)
                 : Expression.Call(result, listType.GetMethod("Add")!, converted);
+
+            Expression step = elementStep.Used
+                ? Expression.Assign(elementStep.Variable, Expression.Constant(string.Empty))
+                : (Expression)Expression.Empty();
 
             Expression allocate = toArray
                 ? Expression.NewArrayBounds(destinationElement, count)
@@ -317,7 +312,7 @@ namespace Mapperion.Compilation
                 ? Expression.NewArrayBounds(destinationElement, Expression.Constant(0))
                 : (Expression)Expression.New(listType.GetConstructor(Type.EmptyTypes)!);
 
-            Expression whenNull = engine.Model.Options.AllowNullCollections
+            Expression whenNull = scope.Engine.Model.Options.AllowNullCollections
                 ? Expression.Default(builtType)
                 : empty;
 
@@ -332,7 +327,7 @@ namespace Mapperion.Compilation
                 Expression.Loop(
                     Expression.IfThenElse(
                         Expression.LessThan(index, count),
-                        Expression.Block(add, Expression.PostIncrementAssign(index)),
+                        Expression.Block(step, add, Expression.PostIncrementAssign(index)),
                         Expression.Break(done)),
                     done));
 
@@ -349,10 +344,20 @@ namespace Mapperion.Compilation
                             Expression.Call(
                                 Method(nameof(MappingRuntime.FailAtIndex)).MakeGenericMethod(builtType),
                                 index,
+                                elementStep.Used
+                                    ? (Expression)elementStep.Variable
+                                    : Expression.Constant(string.Empty),
                                 error)))));
 
+            var locals = new List<ParameterExpression> { source, result, count, index };
+
+            if (elementStep.Used)
+            {
+                locals.Add(elementStep.Variable);
+            }
+
             Expression body = Expression.Block(
-                new[] { source, result, count, index },
+                locals,
                 Expression.Assign(source, Expression.Convert(value, indexable)),
                 Expression.IfThenElse(
                     Expression.Equal(source, Expression.Constant(null, indexable)),
@@ -393,7 +398,7 @@ namespace Mapperion.Compilation
         private static Delegate ElementConverter(
             Type sourceType,
             Type destinationType,
-            MapperEngine engine,
+            CompileScope scope,
             out Type converterType)
         {
             ParameterExpression element = Expression.Parameter(sourceType, "element");
@@ -402,7 +407,11 @@ namespace Mapperion.Compilation
             converterType = typeof(Func<,,>).MakeGenericType(sourceType, typeof(MappingContext), destinationType);
 
             return Expression
-                .Lambda(converterType, Build(element, destinationType, engine, elementContext), element, elementContext)
+                .Lambda(
+                    converterType,
+                    Build(element, destinationType, scope.ForLambda(elementContext)),
+                    element,
+                    elementContext)
                 .Compile();
         }
 
@@ -410,8 +419,7 @@ namespace Mapperion.Compilation
             Expression value,
             Type sourceType,
             Type destinationType,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
             if (!TypeClassifier.TryGetElementType(sourceType, out Type? sourceElement))
             {
@@ -429,24 +437,23 @@ namespace Mapperion.Compilation
                 destinationType,
                 sourceElement,
                 destinationElement!,
-                engine,
-                context);
+                scope);
 
             if (inlined is not null)
             {
                 return inlined;
             }
 
-            Delegate converter = ElementConverter(sourceElement, destinationElement!, engine, out Type converterType);
+            Delegate converter = ElementConverter(sourceElement, destinationElement!, scope, out Type converterType);
 
             Expression sequence = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(sourceElement));
 
             Expression built = Expression.Call(
                 Method(helper!).MakeGenericMethod(sourceElement, destinationElement!),
                 sequence,
-                context,
+                scope.Context,
                 Expression.Constant(converter, converterType),
-                Expression.Constant(engine.Model.Options.AllowNullCollections));
+                Expression.Constant(scope.Engine.Model.Options.AllowNullCollections));
 
             return built.Type == destinationType ? built : Expression.Convert(built, destinationType);
         }
@@ -495,15 +502,23 @@ namespace Mapperion.Compilation
             Expression value,
             Type sourceType,
             Type destinationType,
-            MapperEngine engine,
-            ParameterExpression context)
+            CompileScope scope)
         {
-            if (!engine.CanMap(new TypeMapKey(sourceType, destinationType)))
+            var key = new TypeMapKey(sourceType, destinationType);
+
+            if (!scope.Engine.CanMap(key))
             {
                 return null;
             }
 
-            Expression call = NestedMapCall(sourceType, destinationType, value, engine, context);
+            Expression? written = PlanCompiler.TryInline(key, value, scope);
+
+            if (written is not null)
+            {
+                return written;
+            }
+
+            Expression call = NestedMapCall(sourceType, destinationType, value, scope);
 
             if (sourceType.IsValueType)
             {

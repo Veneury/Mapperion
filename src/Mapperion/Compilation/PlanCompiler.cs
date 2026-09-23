@@ -36,12 +36,13 @@ namespace Mapperion.Compilation
             }
             else
             {
-                ParameterExpression step = Expression.Variable(typeof(string), "step");
+                var step = new StepSlot(Expression.Variable(typeof(string), "step"));
+                CompileScope scope = CompileScope.Root(engine, context, step, definition.Key);
 
                 var body = new List<Expression>
                 {
-                    Expression.Assign(step, Expression.Constant("(constructing)")),
-                    Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
+                    Expression.Assign(step.Variable, Expression.Constant("(constructing)")),
+                    Expression.Assign(result, CreateDestination(definition, destination, source, scope)),
                 };
 
                 if (definition.PreserveReferences)
@@ -56,18 +57,18 @@ namespace Mapperion.Compilation
 
                 foreach (object action in definition.BeforeMapActions)
                 {
-                    body.Add(Expression.Assign(step, Expression.Constant("(before step)")));
+                    body.Add(Expression.Assign(step.Variable, Expression.Constant("(before step)")));
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
                 foreach (MemberDefinition member in Ordered(definition.Members))
                 {
-                    Expression? assignment = BuildAssignment(member, result, source, context, engine);
+                    Expression? assignment = BuildAssignment(member, result, source, scope);
 
                     if (assignment is not null)
                     {
                         body.Add(Expression.Assign(
-                            step,
+                            step.Variable,
                             Expression.Constant(member.DestinationMember.Name)));
 
                         body.Add(assignment);
@@ -76,7 +77,7 @@ namespace Mapperion.Compilation
 
                 foreach (object action in definition.AfterMapActions)
                 {
-                    body.Add(Expression.Assign(step, Expression.Constant("(after step)")));
+                    body.Add(Expression.Assign(step.Variable, Expression.Constant("(after step)")));
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
@@ -85,12 +86,12 @@ namespace Mapperion.Compilation
                 Expression core = Expression.Block(new[] { result }, body);
                 core = WithPreservedShortCircuit(core, definition, source, context);
                 core = WithDepthLimit(core, definition, context);
-                core = WithDerivedDispatch(core, definition, source, context, engine);
+                core = WithDerivedDispatch(core, definition, source, scope);
 
                 block = Expression.Block(
-                    new[] { step },
-                    Expression.Assign(step, Expression.Constant("(constructing)")),
-                    Reporting(core, step, definition));
+                    new[] { step.Variable },
+                    Expression.Assign(step.Variable, Expression.Constant("(constructing)")),
+                    Reporting(core, step.Variable, definition));
             }
 
             if (!sourceType.IsValueType)
@@ -119,8 +120,7 @@ namespace Mapperion.Compilation
             Expression core,
             TypeMapDefinition definition,
             ParameterExpression source,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             if (definition.DerivedMaps.Count == 0)
             {
@@ -154,8 +154,7 @@ namespace Mapperion.Compilation
                     derived.SourceType,
                     derived.DestinationType,
                     Expression.Convert(source, derived.SourceType),
-                    engine,
-                    context);
+                    scope);
 
                 dispatch = Expression.Condition(
                     Expression.TypeIs(source, derived.SourceType),
@@ -344,7 +343,10 @@ namespace Mapperion.Compilation
             ParameterExpression destination = Expression.Parameter(key.DestinationType, "destination");
             ParameterExpression context = Expression.Parameter(typeof(MappingContext), "context");
 
-            Expression body = ConversionBuilder.Build(source, key.DestinationType, engine, context);
+            Expression body = ConversionBuilder.Build(
+                source,
+                key.DestinationType,
+                CompileScope.Root(engine, context, null, key));
 
             Type delegateType = typeof(MapDelegate<,>).MakeGenericType(key.SourceType, key.DestinationType);
             Delegate typed = Expression.Lambda(delegateType, body, source, destination, context).Compile();
@@ -377,8 +379,7 @@ namespace Mapperion.Compilation
             TypeMapDefinition definition,
             ParameterExpression destination,
             ParameterExpression source,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             Type destinationType = definition.DestinationType;
 
@@ -386,7 +387,7 @@ namespace Mapperion.Compilation
             {
                 Expression created = Expression.New(
                     definition.Constructor,
-                    BuildArguments(definition, source, context, engine));
+                    BuildArguments(definition, source, scope));
 
                 return destinationType.IsValueType ? created : Expression.Coalesce(destination, created);
             }
@@ -412,12 +413,12 @@ namespace Mapperion.Compilation
         private static Expression[] BuildArguments(
             TypeMapDefinition definition,
             ParameterExpression source,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             var ordered = new List<ConstructorParameterDefinition>(definition.ConstructorParameters);
             ordered.Sort(static (left, right) => left.Position.CompareTo(right.Position));
 
+            CompileScope argument = scope.WithoutInlining();
             var arguments = new Expression[ordered.Count];
 
             for (int i = 0; i < ordered.Count; i++)
@@ -442,50 +443,151 @@ namespace Mapperion.Compilation
                         parameter.Source,
                         source,
                         Expression.Default(definition.DestinationType),
-                        context),
+                        scope.Context),
                     parameter.ParameterType,
-                    engine,
-                    context);
+                    argument);
             }
 
             return arguments;
+        }
+
+        /// <summary>
+        /// Writes a nested map straight into the body that needs it, instead of calling its plan.
+        /// Returns <see langword="null"/> when the scope does not allow it and the call stands.
+        /// </summary>
+        /// <remarks>
+        /// The absorbed assignments write their full path into the enclosing step variable, so a
+        /// failure inside one still names the member it happened at. The body then puts the step
+        /// back to the member being produced, so a destination setter that throws is not blamed on
+        /// the last member read.
+        /// </remarks>
+        internal static Expression? TryInline(TypeMapKey key, Expression value, CompileScope scope)
+        {
+            if (!scope.TryReserveInline(key, out TypeMapDefinition? definition))
+            {
+                return null;
+            }
+
+            CompileScope inner = scope.Inside(key);
+            ParameterExpression nested = Expression.Variable(key.SourceType, "nested");
+            ParameterExpression built = Expression.Variable(key.DestinationType, "built");
+
+            var body = new List<Expression>
+            {
+                Expression.Assign(built, CreateInlineDestination(definition, nested, inner)),
+            };
+
+            bool tracked = false;
+
+            foreach (MemberDefinition member in Ordered(definition.Members))
+            {
+                Expression? assignment = BuildAssignment(member, built, nested, inner);
+
+                if (assignment is null)
+                {
+                    continue;
+                }
+
+                body.Add(Expression.Assign(
+                    scope.Step!.Variable,
+                    Expression.Constant(scope.Prefix + member.DestinationMember.Name)));
+
+                body.Add(assignment);
+                tracked = true;
+            }
+
+            if (tracked)
+            {
+                body.Add(Expression.Assign(scope.Step!.Variable, Expression.Constant(scope.StepValue)));
+                scope.Step!.Used = true;
+            }
+
+            body.Add(built);
+
+            Expression block = Expression.Block(new[] { built }, body);
+
+            Expression produced = key.SourceType.IsValueType
+                ? block
+                : Expression.Condition(
+                    Expression.Equal(nested, Expression.Constant(null, key.SourceType)),
+                    Expression.Default(key.DestinationType),
+                    block);
+
+            return Expression.Block(
+                new[] { nested },
+                Expression.Assign(nested, value),
+                produced);
+        }
+
+        /// <summary>
+        /// Builds the destination of an absorbed map. Unlike the plan's own version there is no
+        /// instance the caller may have passed in: an inlined map always produces a new one.
+        /// </summary>
+        private static Expression CreateInlineDestination(
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            CompileScope scope)
+        {
+            Type destinationType = definition.DestinationType;
+
+            if (definition.Constructor is not null)
+            {
+                return Expression.New(definition.Constructor, BuildArguments(definition, source, scope));
+            }
+
+            if (destinationType.IsValueType)
+            {
+                return Expression.Default(destinationType);
+            }
+
+            ConstructorInfo? parameterless = destinationType.GetConstructor(Type.EmptyTypes);
+
+            if (parameterless is null)
+            {
+                throw new MapperConfigurationException(
+                    destinationType.Name + " cannot be created: it has no parameterless constructor " +
+                    "and no constructor whose arguments could be resolved from " +
+                    definition.SourceType.Name + ".");
+            }
+
+            return Expression.New(parameterless);
         }
 
         private static Expression? BuildAssignment(
             MemberDefinition member,
             ParameterExpression result,
             ParameterExpression source,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             if (member.IsIgnored || member.Source is null)
             {
                 return null;
             }
 
-            Expression value = ReadSource(member.Source, source, result, context);
+            Expression value = ReadSource(member.Source, source, result, scope.Context);
             value = ApplyNullSubstitute(member, value);
 
             Type destinationType = member.DestinationMember.MemberType;
             Expression target = Access(result, member.DestinationMember);
+            CompileScope inside = scope.ForMember(member.DestinationMember.Name);
 
             Expression converted;
 
             if (member.ValueConverterType is not null)
             {
-                converted = BuildValueConverterCall(member.ValueConverterType, value, destinationType, context, engine);
+                converted = BuildValueConverterCall(member.ValueConverterType, value, destinationType, inside);
             }
             else if (member.UseDestinationValue &&
-                engine.CanMap(new TypeMapKey(value.Type, destinationType)))
+                scope.Engine.CanMap(new TypeMapKey(value.Type, destinationType)))
             {
-                converted = MapIntoExisting(value, target, destinationType, context, engine);
+                converted = MapIntoExisting(value, target, destinationType, scope);
             }
             else
             {
-                converted = ConversionBuilder.Build(value, destinationType, engine, context);
+                converted = ConversionBuilder.Build(value, destinationType, inside);
             }
 
-            converted = WithoutNullDestination(converted, engine.Model.Options);
+            converted = WithoutNullDestination(converted, scope.Engine.Model.Options);
 
             Expression assignment;
 
@@ -549,41 +651,39 @@ namespace Mapperion.Compilation
             Type converterType,
             Expression value,
             Type destinationType,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             Type[] arguments = InterfaceArguments(
                 converterType,
                 typeof(IValueConverter<,>),
                 "IValueConverter<TSourceMember, TDestinationMember>");
 
-            Expression input = ConversionBuilder.Build(value, arguments[0], engine, context);
+            Expression input = ConversionBuilder.Build(value, arguments[0], scope);
 
             Expression produced = Expression.Call(
                 Method(nameof(MappingRuntime.ConvertValue)).MakeGenericMethod(arguments[0], arguments[1]),
                 Expression.Constant(converterType, typeof(Type)),
                 input,
-                context);
+                scope.Context);
 
-            return ConversionBuilder.Build(produced, destinationType, engine, context);
+            return ConversionBuilder.Build(produced, destinationType, scope);
         }
 
         private static Expression MapIntoExisting(
             Expression value,
             Expression target,
             Type destinationType,
-            ParameterExpression context,
-            MapperEngine engine)
+            CompileScope scope)
         {
             Type referenceType = typeof(PlanReference<,>).MakeGenericType(value.Type, destinationType);
-            object reference = Activator.CreateInstance(referenceType, engine)!;
+            object reference = Activator.CreateInstance(referenceType, scope.Engine)!;
 
             Expression call = Expression.Call(
                 Expression.Constant(reference, referenceType),
                 referenceType.GetMethod(nameof(PlanReference<object, object>.MapInto))!,
                 value,
                 target,
-                context);
+                scope.Context);
 
             if (value.Type.IsValueType)
             {
