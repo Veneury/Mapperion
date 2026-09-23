@@ -11,21 +11,42 @@
         }
       ],
       "dest": "api",
-      "properties": { "TargetFramework": "net10.0", "Configuration": "Release" },
+      "properties": {
+        "TargetFramework": "net10.0",
+        "Configuration": "Release"
+      },
       "memberLayout": "separatePages"
     }
   ],
   "build": {
     "content": [
-      { "files": ["**/*.{md,yml}"], "exclude": ["_site/**", "obj/**"] }
+      {
+        "files": [
+          "**/*.{md,yml}"
+        ],
+        "exclude": [
+          "_site/**",
+          "obj/**"
+        ]
+      }
     ],
-    "resource": [{ "files": ["images/**"] }],
+    "resource": [
+      {
+        "files": [
+          "images/**",
+          "google6963982ff3bfb15c.html"
+        ]
+      }
+    ],
     "output": "_site",
-    "template": ["default", "modern"],
+    "template": [
+      "default",
+      "modern"
+    ],
     "globalMetadata": {
       "_appName": "Mapperion",
       "_appTitle": "Mapperion",
-      "_appFooter": "Mapperion — MIT licensed object mapper for .NET",
+      "_appFooter": "Mapperion \u2014 MIT licensed object mapper for .NET",
       "_enableSearch": true,
       "_disableContribution": false,
       "_gitContribute": {
@@ -33,6 +54,8 @@
         "branch": "main"
       }
     },
-    "sitemap": { "baseUrl": "https://veneury.github.io/Mapperion/" }
+    "sitemap": {
+      "baseUrl": "https://veneury.github.io/Mapperion/"
+    }
   }
 }
