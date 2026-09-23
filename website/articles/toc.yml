@@ -1,0 +1,8 @@
+- name: Getting started
+  href: getting-started.md
+- name: Migrating from AutoMapper
+  href: migrating-from-automapper.md
+- name: Ahead-of-time and trimming
+  href: aot.md
+- name: Performance
+  href: performance.md
