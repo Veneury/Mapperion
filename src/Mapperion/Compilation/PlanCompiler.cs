@@ -332,6 +332,24 @@ namespace Mapperion.Compilation
             return typeof(MappingRuntime).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
         }
 
+        /// <summary>
+        /// Compiles a pair that needs no member configuration at all, such as one sequence into
+        /// another. The whole body is the conversion the builder already knows how to write.
+        /// </summary>
+        internal static MapPlan CompileConversion(TypeMapKey key, MapperEngine engine)
+        {
+            ParameterExpression source = Expression.Parameter(key.SourceType, "source");
+            ParameterExpression destination = Expression.Parameter(key.DestinationType, "destination");
+            ParameterExpression context = Expression.Parameter(typeof(MappingContext), "context");
+
+            Expression body = ConversionBuilder.Build(source, key.DestinationType, engine, context);
+
+            Type delegateType = typeof(MapDelegate<,>).MakeGenericType(key.SourceType, key.DestinationType);
+            Delegate typed = Expression.Lambda(delegateType, body, source, destination, context).Compile();
+
+            return new MapPlan(typed, BuildBoxed(typed, key.SourceType, key.DestinationType));
+        }
+
         private static IEnumerable<MemberDefinition> Ordered(IReadOnlyList<MemberDefinition> members)
         {
             var ordered = new List<KeyValuePair<int, MemberDefinition>>(members.Count);

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Reflection;
 using Mapperion.Conventions;
+using Mapperion.Internal;
 using Mapperion.Model;
 using Mapperion.Projection;
 
@@ -182,14 +183,19 @@ namespace Mapperion.Compilation
 
         private MapPlan CompilePlan(TypeMapKey key)
         {
-            if (!TryGetDefinition(key, out TypeMapDefinition? definition))
+            if (TryGetDefinition(key, out TypeMapDefinition? definition))
             {
-                throw new MappingException(
-                    "No map is configured for " + key + ". Declare it with CreateMap<" +
-                    key.SourceType.Name + ", " + key.DestinationType.Name + ">().");
+                return PlanCompiler.Compile(definition!, this);
             }
 
-            return PlanCompiler.Compile(definition!, this);
+            if (TypeClassifier.IsSequence(key.SourceType) && TypeClassifier.IsSequence(key.DestinationType))
+            {
+                return PlanCompiler.CompileConversion(key, this);
+            }
+
+            throw new MappingException(
+                "No map is configured for " + key + ". Declare it with CreateMap<" +
+                key.SourceType.Name + ", " + key.DestinationType.Name + ">().");
         }
     }
 }
