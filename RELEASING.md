@@ -4,15 +4,39 @@ A version on NuGet cannot be replaced, only delisted. Everything here exists bec
 
 ## Once, before the first release
 
-1. Create a NuGet API key at <https://www.nuget.org/account/apikeys> scoped to **Push** for the
-   package IDs `Mapperion`, `Mapperion.Extensions.DependencyInjection` and
-   `Mapperion.SourceGenerator`. Glob patterns work: `Mapperion*`.
-2. Add it to the repository as the secret `NUGET_API_KEY`, under
-   *Settings → Secrets and variables → Actions*.
+There is no NuGet API key in this repository, and there should never be one. Publishing uses
+trusted publishing: the job proves who it is with a token GitHub signs for this workflow, in this
+repository, in this environment, and nuget.org hands back a key that lasts an hour.
+
+1. On nuget.org, open *your username → Trusted Publishing* and add a policy:
+
+   | Field | Value |
+   |---|---|
+   | Policy Name | anything, e.g. `Mapperion release` |
+   | Package Owner | the nuget.org account that will own the packages |
+   | CI/CD Provider | GitHub Actions |
+   | Repository Owner | `Veneury` |
+   | Repository | `Mapperion` |
+   | Workflow File | `release.yml` — the file name only, no `.github/workflows/` |
+   | Environment | `nuget` — must match `environment:` in the workflow |
+   | Scopes | Push, *Push new packages and package versions*, pattern `Mapperion*` |
+
+   The workflow file name and the environment are part of what nuget.org checks, so renaming
+   either one stops publishing until the policy is updated to match. That is the point of them.
+
+2. Add the nuget.org **profile name** (not the email address) as the repository secret
+   `NUGET_USER`, under *Settings → Secrets and variables → Actions*. It is not sensitive, but
+   keeping it out of a public file is what NuGet recommends, and the workflow stops with a clear
+   message when it is missing.
+
 3. Open *Settings → Environments → nuget* and add yourself as a required reviewer. The release
    workflow waits there before pushing, which is the last chance to stop a release that should not
    go out. The environment is created by the first run if it does not exist, but without a
    reviewer it does not stop anything.
+
+On a private repository a new policy is only provisionally active for seven days and lapses if
+nothing is published in that time. This repository is public, so that does not apply, but it is
+worth knowing if the repository is ever made private.
 
 ## Each release
 
@@ -35,7 +59,10 @@ The version comes from the tag, so nothing needs editing to release. `VersionPre
 ## If it goes wrong
 
 - **A package failed to push and others went up.** Re-run the job. The push uses
-  `--skip-duplicate`, so what is already on NuGet is left alone.
+  `--skip-duplicate`, so what is already on NuGet is left alone. The key is asked for again on the
+  re-run, since each one lasts only an hour.
+- **The push is rejected as unauthorized.** The policy on nuget.org no longer matches the job: check
+  the workflow file name, the environment name and the package owner against the table above.
 - **A version went out that should not have.** It cannot be taken back. Delist it on nuget.org so
   it stops appearing in search and in the version list, then release the fix as a new version.
   Delisting does not break anyone who already depends on that exact version, which is the point.
