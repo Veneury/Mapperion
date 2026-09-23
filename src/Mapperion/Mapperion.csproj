@@ -28,10 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="Mapperion.Extensions.DependencyInjection" />
-    <InternalsVisibleTo Include="Mapperion.Tests" />
-    <InternalsVisibleTo Include="Mapperion.Benchmarks" />
-    <InternalsVisibleTo Include="Mapperion.Tests.Behavior" />
+    <InternalsVisibleTo Include="Mapperion.Extensions.DependencyInjection" Key="$(MapperionPublicKey)" />
+    <InternalsVisibleTo Include="Mapperion.Tests" Key="$(MapperionPublicKey)" />
+    <InternalsVisibleTo Include="Mapperion.Benchmarks" Key="$(MapperionPublicKey)" />
+    <InternalsVisibleTo Include="Mapperion.Tests.Behavior" Key="$(MapperionPublicKey)" />
   </ItemGroup>
 
   <!--

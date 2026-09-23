@@ -20,6 +20,21 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   versiones futuras haría falta el acuerdo de todo el que haya contribuido, y las ya publicadas
   quedan MIT para siempre pase lo que pase. También dice dónde esa protección todavía es floja,
   que es hoy, con un solo contribuidor.
+- Todos los ensamblados llevan nombre seguro, con la clave `mapperion.snk`, que está en el
+  repositorio. Sin esto una base de código firmada en .NET Framework no puede referenciar
+  Mapperion en absoluto, y .NET Framework es un objetivo que esta librería se toma en serio. La
+  clave va versionada a propósito: un nombre seguro es identidad, no seguridad, y cualquiera puede
+  quitarlo y volver a firmar con la suya.
+
+### Changed
+
+- **Cambia la identidad de los ensamblados**, que ahora llevan el token `03d4952d6f16ebf2`. Quien
+  referenciara la 0.8.0-preview.3 verá un ensamblado distinto al actualizar. Se hace ahora, días
+  después de publicar por primera vez y antes de la 1.0, porque más adelante saldría mucho más
+  caro.
+- La firma de autor de los paquetes sigue sin hacerse, y no es cuestión de trabajo: nuget.org exige
+  un certificado de firma de código que encadene a una raíz de confianza y rechaza los autoemitidos.
+  Lo que sí hay, sin coste, es que nuget.org firma como repositorio todo lo que acepta.
 
 ## [0.8.0-preview.3] - 2026-09-23
 
