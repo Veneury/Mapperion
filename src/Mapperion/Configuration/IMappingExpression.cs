@@ -23,6 +23,35 @@ namespace Mapperion
             Action<IMemberConfigurationExpression<TSource, TDestination, TMember>> memberOptions);
 
         /// <summary>
+        /// Configures a member that sits inside the destination rather than on it, such as
+        /// <c>d =&gt; d.Customer.Name</c>.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The objects along the path are created as needed, so the destination does not have to
+        /// arrive with them already in place. A step that cannot be written and is null has to be
+        /// there: nothing can put it there, and the map says so when it runs.
+        /// </para>
+        /// <para>
+        /// Paths are assigned after every direct member, so configuring both the whole object and
+        /// something inside it leaves the path with the last word rather than depending on
+        /// declaration order. A single-step path is just a member, and is treated as one.
+        /// </para>
+        /// </remarks>
+        /// <typeparam name="TMember">The type of the member at the end of the path.</typeparam>
+        /// <param name="destinationPath">A chain of member accesses on the destination.</param>
+        /// <param name="pathOptions">The configuration applied to the member at the end.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        /// <exception cref="MapperConfigurationException">
+        /// <paramref name="destinationPath"/> is not a chain of member accesses, ends on something
+        /// that cannot be written, or goes through a value type or a method call.
+        /// </exception>
+        IMappingExpression<TSource, TDestination> ForPath<TMember>(
+            Expression<Func<TDestination, TMember>> destinationPath,
+            Action<IMemberConfigurationExpression<TSource, TDestination, TMember>> pathOptions);
+
+        /// <summary>
         /// Configures one parameter of the destination constructor. Parameter names are matched
         /// ignoring case, because C# names parameters in camelCase and properties in PascalCase.
         /// </summary>
@@ -52,6 +81,31 @@ namespace Mapperion
         /// <returns>This expression, for chaining.</returns>
         IMappingExpression<TSource, TDestination> ConvertUsing<TTypeConverter>()
             where TTypeConverter : ITypeConverter<TSource, TDestination>;
+
+        /// <summary>
+        /// Builds the destination with the given factory instead of calling a constructor.
+        /// </summary>
+        /// <remarks>
+        /// The factory only runs when the destination has to be created. Mapping onto an instance
+        /// the caller already passed in uses that instance, as it does without a factory. Members
+        /// are still assigned afterwards, so a factory that fills some of them will see them
+        /// overwritten by whatever the map resolves for them; ignore those members if the factory
+        /// is meant to have the last word.
+        /// </remarks>
+        /// <param name="factory">Produces the destination from the source.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> ConstructUsing(Func<TSource, TDestination> factory);
+
+        /// <summary>
+        /// Builds the destination with the given factory, which also receives the running
+        /// operation so it can map nested values itself.
+        /// </summary>
+        /// <param name="factory">Produces the destination from the source.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="factory"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> ConstructUsing(
+            Func<TSource, ResolutionContext, TDestination> factory);
 
         /// <summary>Runs a step before the members are assigned, once the destination exists.</summary>
         /// <param name="action">The step to run.</param>

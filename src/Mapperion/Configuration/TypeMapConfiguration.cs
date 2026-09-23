@@ -35,6 +35,7 @@ namespace Mapperion.Configuration
         private readonly ITypeMapRegistry registry;
         private MemberListValidation? validation;
         private Type? typeConverterType;
+        private object? constructUsing;
         private readonly List<TypeMapKey> derivedMaps = new List<TypeMapKey>();
         private readonly List<TypeMapKey> baseMaps = new List<TypeMapKey>();
         private readonly List<object> beforeMapActions = new List<object>();
@@ -65,6 +66,26 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        public IMappingExpression<TSource, TDestination> ForPath<TMember>(
+            Expression<Func<TDestination, TMember>> destinationPath,
+            Action<IMemberConfigurationExpression<TSource, TDestination, TMember>> pathOptions)
+        {
+            Guard.NotNull(destinationPath, nameof(destinationPath));
+            Guard.NotNull(pathOptions, nameof(pathOptions));
+
+            MemberPath path = MemberExpressionParser.ParseDestinationPath(destinationPath);
+
+            if (!path.IsFlattened)
+            {
+                return ForMember(destinationPath, pathOptions);
+            }
+
+            MemberConfiguration<TSource, TDestination, TMember> configuration = FindOrAddPath<TMember>(path);
+
+            pathOptions(configuration);
+            return this;
+        }
+
         public IMappingExpression<TSource, TDestination> ForCtorParam(
             string constructorParameterName,
             Action<ICtorParamConfigurationExpression<TSource>> parameterOptions)
@@ -86,6 +107,7 @@ namespace Mapperion.Configuration
                 MemberDefinition built = member.Build();
 
                 if (built.IsIgnored ||
+                    built.IsPath ||
                     !built.DestinationMember.CanRead ||
                     built.Source is not MemberPathSource path ||
                     path.Path.IsFlattened ||
@@ -112,6 +134,19 @@ namespace Mapperion.Configuration
             where TTypeConverter : ITypeConverter<TSource, TDestination>
         {
             typeConverterType = typeof(TTypeConverter);
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> ConstructUsing(Func<TSource, TDestination> factory)
+        {
+            constructUsing = Guard.NotNull(factory, nameof(factory));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> ConstructUsing(
+            Func<TSource, ResolutionContext, TDestination> factory)
+        {
+            constructUsing = Guard.NotNull(factory, nameof(factory));
             return this;
         }
 
@@ -195,6 +230,14 @@ namespace Mapperion.Configuration
         [RequiresUnreferencedCode("Resolving a member by name inspects types by reflection.")]
         public TypeMapDefinition Build(MapperOptions options)
         {
+            if (constructUsing is not null && constructorParameters.Count != 0)
+            {
+                throw new MapperConfigurationException(
+                    Key + ": the map builds its destination with ConstructUsing and also configures " +
+                    "constructor parameters with ForCtorParam. The factory would win and the " +
+                    "parameters would do nothing. Keep one of the two.");
+            }
+
             var definitions = new MemberDefinition[members.Count];
             for (int i = 0; i < members.Count; i++)
             {
@@ -219,6 +262,7 @@ namespace Mapperion.Configuration
                 MemberListValidation = validation ?? options.MemberListValidation,
                 IsReverse = IsReverse,
                 TypeConverterType = typeConverterType,
+                ConstructUsing = constructUsing,
                 DerivedMaps = derivedMaps.ToArray(),
                 BaseMaps = baseMaps.ToArray(),
                 BeforeMapActions = beforeMapActions.ToArray(),
@@ -260,6 +304,27 @@ namespace Mapperion.Configuration
             }
 
             var created = new MemberConfiguration<TSource, TDestination, TMember>(descriptor);
+            members.Add(created);
+            return created;
+        }
+
+        private MemberConfiguration<TSource, TDestination, TMember> FindOrAddPath<TMember>(MemberPath path)
+        {
+            for (int i = 0; i < members.Count; i++)
+            {
+                if (path.Equals(members[i].DestinationPath))
+                {
+                    if (members[i] is MemberConfiguration<TSource, TDestination, TMember> existing)
+                    {
+                        return existing;
+                    }
+
+                    throw new MapperConfigurationException(
+                        "Path '" + path + "' was already configured with a different member type.");
+                }
+            }
+
+            var created = new MemberConfiguration<TSource, TDestination, TMember>(path.Leaf, path);
             members.Add(created);
             return created;
         }

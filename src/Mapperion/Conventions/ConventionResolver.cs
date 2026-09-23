@@ -48,7 +48,7 @@ namespace Mapperion.Conventions
 
             foreach (MemberDefinition configured in definition.Members)
             {
-                completed.Add(Resolve(configured, definition));
+                completed.Add(configured.IsPath ? configured : Resolve(configured, definition));
             }
 
             foreach (MemberDescriptor destination in members.Writable(definition.DestinationType))

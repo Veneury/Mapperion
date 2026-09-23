@@ -12,6 +12,8 @@ namespace Mapperion.Configuration
     {
         MemberDescriptor DestinationMember { get; }
 
+        MemberPath? DestinationPath { get; }
+
         MemberDefinition Build();
     }
 
@@ -30,11 +32,19 @@ namespace Mapperion.Configuration
         private int mappingOrder;
 
         internal MemberConfiguration(MemberDescriptor destinationMember)
+            : this(destinationMember, null)
+        {
+        }
+
+        internal MemberConfiguration(MemberDescriptor destinationMember, MemberPath? destinationPath)
         {
             DestinationMember = destinationMember;
+            DestinationPath = destinationPath;
         }
 
         public MemberDescriptor DestinationMember { get; }
+
+        public MemberPath? DestinationPath { get; }
 
         public void MapFrom<TSourceMember>(Expression<Func<TSource, TSourceMember>> sourceMember)
         {
@@ -93,6 +103,7 @@ namespace Mapperion.Configuration
         {
             return new MemberDefinition(DestinationMember)
             {
+                DestinationPath = DestinationPath,
                 Source = source,
                 IsIgnored = isIgnored,
                 IsExplicit = true,

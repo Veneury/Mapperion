@@ -63,13 +63,37 @@ namespace Mapperion.Compilation
 
                 foreach (MemberDefinition member in Ordered(definition.Members))
                 {
-                    Expression? assignment = BuildAssignment(member, result, source, scope);
+                    if (member.IsPath)
+                    {
+                        continue;
+                    }
+
+                    Expression? assignment = BuildAssignment(member, result, result, source, scope);
 
                     if (assignment is not null)
                     {
                         body.Add(Expression.Assign(
                             step.Variable,
                             Expression.Constant(member.DestinationMember.Name)));
+
+                        body.Add(assignment);
+                    }
+                }
+
+                foreach (MemberDefinition member in Ordered(definition.Members))
+                {
+                    if (!member.IsPath)
+                    {
+                        continue;
+                    }
+
+                    Expression? assignment = BuildPathAssignment(member, result, source, scope);
+
+                    if (assignment is not null)
+                    {
+                        body.Add(Expression.Assign(
+                            step.Variable,
+                            Expression.Constant(member.DestinationPath!.ToString())));
 
                         body.Add(assignment);
                     }
@@ -427,6 +451,13 @@ namespace Mapperion.Compilation
         {
             Type destinationType = definition.DestinationType;
 
+            if (definition.ConstructUsing is Delegate factory)
+            {
+                Expression built = InvokeFactory(factory, definition, source, scope);
+
+                return destinationType.IsValueType ? built : Expression.Coalesce(destination, built);
+            }
+
             if (definition.Constructor is not null)
             {
                 Expression created = Expression.New(
@@ -452,6 +483,27 @@ namespace Mapperion.Compilation
             }
 
             return Expression.Coalesce(destination, Expression.New(parameterless));
+        }
+
+        /// <summary>
+        /// Emits the call into a destination factory, with or without the operation depending on
+        /// which overload the user reached for.
+        /// </summary>
+        private static Expression InvokeFactory(
+            Delegate factory,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            CompileScope scope)
+        {
+            int parameters = factory.GetType().GetMethod("Invoke")!.GetParameters().Length;
+
+            Expression call = parameters == 2
+                ? Expression.Invoke(Expression.Constant(factory), source, NewResolutionContext(scope.Context))
+                : Expression.Invoke(Expression.Constant(factory), source);
+
+            return call.Type == definition.DestinationType
+                ? call
+                : Expression.Convert(call, definition.DestinationType);
         }
 
         private static Expression[] BuildArguments(
@@ -525,7 +577,7 @@ namespace Mapperion.Compilation
 
             foreach (MemberDefinition member in Ordered(definition.Members))
             {
-                Expression? assignment = BuildAssignment(member, built, nested, inner);
+                Expression? assignment = BuildAssignment(member, built, built, nested, inner);
 
                 if (assignment is null)
                 {
@@ -597,8 +649,15 @@ namespace Mapperion.Compilation
             return Expression.New(parameterless);
         }
 
+        /// <param name="member">What is being assigned.</param>
+        /// <param name="owner">The instance the member lives on, which is the destination itself
+        /// except when writing into a path.</param>
+        /// <param name="result">The destination, which is what a resolver is given.</param>
+        /// <param name="source">The object being read from.</param>
+        /// <param name="scope">The surrounding compilation.</param>
         private static Expression? BuildAssignment(
             MemberDefinition member,
+            ParameterExpression owner,
             ParameterExpression result,
             ParameterExpression source,
             CompileScope scope)
@@ -612,7 +671,7 @@ namespace Mapperion.Compilation
             value = ApplyNullSubstitute(member, value);
 
             Type destinationType = member.DestinationMember.MemberType;
-            Expression target = Access(result, member.DestinationMember);
+            Expression target = Access(owner, member.DestinationMember);
             CompileScope inside = scope.ForMember(member.DestinationMember.Name);
 
             Expression converted;
@@ -657,6 +716,86 @@ namespace Mapperion.Compilation
             }
 
             return assignment;
+        }
+
+        /// <summary>
+        /// Walks into the destination and assigns a member that sits inside it, creating the
+        /// objects along the way.
+        /// </summary>
+        /// <remarks>
+        /// A step that can be written is created when it is missing, which is what lets a path be
+        /// configured against a destination that arrives empty. A step that cannot be written has
+        /// to be there already; nothing can put it there, so the map says which one was missing
+        /// rather than throwing a bare null reference.
+        /// </remarks>
+        private static BlockExpression? BuildPathAssignment(
+            MemberDefinition member,
+            ParameterExpression result,
+            ParameterExpression source,
+            CompileScope scope)
+        {
+            if (member.IsIgnored || member.Source is null)
+            {
+                return null;
+            }
+
+            MemberPath path = member.DestinationPath!;
+            var locals = new List<ParameterExpression>();
+            var body = new List<Expression>();
+            Expression current = result;
+
+            for (int i = 0; i < path.Length - 1; i++)
+            {
+                MemberDescriptor step = path.Steps[i];
+                ParameterExpression local = Expression.Variable(step.MemberType, "path" + i.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Expression access = Access(current, step);
+
+                locals.Add(local);
+                body.Add(Expression.Assign(local, access));
+                body.Add(Expression.IfThen(
+                    Expression.Equal(local, Expression.Constant(null, step.MemberType)),
+                    Fill(path, step, local, access)));
+
+                current = local;
+            }
+
+            Expression? assignment = BuildAssignment(
+                member,
+                (ParameterExpression)current,
+                result,
+                source,
+                scope);
+
+            if (assignment is null)
+            {
+                return null;
+            }
+
+            body.Add(assignment);
+
+            return Expression.Block(locals, body);
+        }
+
+        private static Expression Fill(
+            MemberPath path,
+            MemberDescriptor step,
+            ParameterExpression local,
+            Expression access)
+        {
+            ConstructorInfo? parameterless = step.MemberType.GetConstructor(Type.EmptyTypes);
+
+            if (parameterless is null || !step.CanWrite)
+            {
+                return Expression.Throw(Expression.Call(
+                    Method(nameof(MappingRuntime.PathStepMissing)),
+                    Expression.Constant(path.ToString()),
+                    Expression.Constant(step.Name),
+                    Expression.Constant(parameterless is null)));
+            }
+
+            return Expression.Block(
+                Expression.Assign(local, Expression.New(parameterless)),
+                Expression.Assign(access, local));
         }
 
         /// <summary>

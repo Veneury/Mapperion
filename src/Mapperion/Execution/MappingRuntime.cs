@@ -47,6 +47,17 @@ namespace Mapperion.Execution
                 "through IMapper rather than invoking a compiled plan directly.");
         }
 
+        internal static Exception PathStepMissing(string path, string step, bool uncreatable)
+        {
+            string why = uncreatable
+                ? "it has no parameterless constructor"
+                : "it cannot be written";
+
+            return new MappingException(
+                "'" + step + "' is null and " + why + ", so there is no way to put one there. " +
+                "Give the destination an instance before mapping, or map that member as a whole.");
+        }
+
         internal static TDestination TooDeep<TDestination>(string map, int limit)
         {
             throw new RecursionLimitException(map, limit);

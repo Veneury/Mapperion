@@ -30,6 +30,11 @@ namespace Mapperion.Conventions
 
         internal static bool IsNeeded(TypeMapDefinition definition)
         {
+            if (definition.ConstructUsing is not null)
+            {
+                return false;
+            }
+
             if (definition.ConstructorParameters.Count != 0)
             {
                 return true;

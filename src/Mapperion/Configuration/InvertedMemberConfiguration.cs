@@ -19,6 +19,12 @@ namespace Mapperion.Configuration
 
         public MemberDescriptor DestinationMember { get; }
 
+        /// <remarks>
+        /// Always null. A reversal only ever produces direct members: a path written into the
+        /// destination has no single source member to come back from.
+        /// </remarks>
+        public MemberPath? DestinationPath => null;
+
         public MemberDefinition Build()
         {
             return new MemberDefinition(DestinationMember)

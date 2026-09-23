@@ -21,6 +21,20 @@ namespace Mapperion.Model
         public MemberDescriptor DestinationMember { get; }
 
         /// <summary>
+        /// Gets the chain of destination members walked to reach the one being populated, when it
+        /// sits inside another object instead of directly on the destination.
+        /// </summary>
+        /// <remarks>
+        /// Null, or a chain of one, means the member is directly on the destination, which is the
+        /// ordinary case. A longer chain comes from <c>ForPath</c> and makes the compiler walk the
+        /// destination, creating the objects along the way, before assigning.
+        /// </remarks>
+        public MemberPath? DestinationPath { get; init; }
+
+        /// <summary>Gets a value indicating whether the member sits inside another object.</summary>
+        public bool IsPath => DestinationPath is not null && DestinationPath.Length > 1;
+
+        /// <summary>
         /// Gets where the value comes from, or <see langword="null"/> when no source could be
         /// resolved. A null source on a member that is not ignored is a configuration error.
         /// </summary>
@@ -70,6 +84,7 @@ namespace Mapperion.Model
         {
             return new MemberDefinition(DestinationMember)
             {
+                DestinationPath = DestinationPath,
                 Source = source,
                 IsIgnored = IsIgnored,
                 IsExplicit = IsExplicit,
@@ -86,12 +101,14 @@ namespace Mapperion.Model
         /// <inheritdoc />
         public override string ToString()
         {
+            string name = DestinationPath?.ToString() ?? DestinationMember.Name;
+
             if (IsIgnored)
             {
-                return DestinationMember.Name + " <- (ignored)";
+                return name + " <- (ignored)";
             }
 
-            return DestinationMember.Name + " <- " + (Source?.ToString() ?? "(unresolved)");
+            return name + " <- " + (Source?.ToString() ?? "(unresolved)");
         }
     }
 }
