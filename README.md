@@ -8,6 +8,14 @@ for commercial projects.
 > AutoMapper does and Mapperion does not. What is still missing is the thing no amount of code
 > supplies: nobody has yet migrated a real project onto it, so the API may still move before 1.0.
 
+## The short version of the licence
+
+MIT, and every version already published stays MIT: an MIT grant cannot be withdrawn from something
+already released. There is no contributor licence agreement here and no copyright assignment, which
+is what would make relicensing future versions possible for one party to decide alone.
+[GOVERNANCE.md](GOVERNANCE.md) explains the mechanism, and is honest about where that protection is
+still thin.
+
 ## Why
 
 AutoMapper moved to a paid commercial license at v15. Earlier versions stay MIT but are frozen:

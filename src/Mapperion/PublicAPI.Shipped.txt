@@ -1,0 +1,344 @@
+#nullable enable
+Mapperion.ICtorParamConfigurationExpression<TSource>
+Mapperion.ICtorParamConfigurationExpression<TSource>.MapFrom<TMember>(System.Linq.Expressions.Expression<System.Func<TSource, TMember>!>! sourceMember) -> void
+Mapperion.ICtorParamConfigurationExpression<TSource>.UseValue(object! value) -> void
+Mapperion.IMapper
+Mapperion.IMapper.Map(object? source, System.Type! sourceType, System.Type! destinationType) -> object?
+Mapperion.IMapper.Map(object? source, System.Type! sourceType, System.Type! destinationType, System.Action<Mapperion.IMappingOperationOptions!>! options) -> object?
+Mapperion.IMapper.Map<TDestination>(object? source) -> TDestination
+Mapperion.IMapper.Map<TDestination>(object? source, System.Action<Mapperion.IMappingOperationOptions!>! options) -> TDestination
+Mapperion.IMapper.Map<TSource, TDestination>(TSource source) -> TDestination
+Mapperion.IMapper.Map<TSource, TDestination>(TSource source, System.Action<Mapperion.IMappingOperationOptions!>! options) -> TDestination
+Mapperion.IMapper.Map<TSource, TDestination>(TSource source, TDestination destination) -> TDestination
+Mapperion.IMapper.Map<TSource, TDestination>(TSource source, TDestination destination, System.Action<Mapperion.IMappingOperationOptions!>! options) -> TDestination
+Mapperion.IMapper.ProjectTo<TDestination>(System.Linq.IQueryable! source) -> System.Linq.IQueryable<TDestination>!
+Mapperion.IMapperConfigurationExpression
+Mapperion.IMapperConfigurationExpression.AddProfile(Mapperion.Profile! profile) -> void
+Mapperion.IMapperConfigurationExpression.AddProfile<TProfile>() -> void
+Mapperion.IMapperConfigurationExpression.AddProfiles(params System.Reflection.Assembly![]! assemblies) -> void
+Mapperion.IMapperConfigurationExpression.AllowNullCollections.get -> bool
+Mapperion.IMapperConfigurationExpression.AllowNullCollections.set -> void
+Mapperion.IMapperConfigurationExpression.AllowNullDestinationValues.get -> bool
+Mapperion.IMapperConfigurationExpression.AllowNullDestinationValues.set -> void
+Mapperion.IMapperConfigurationExpression.CreateMap(System.Type! sourceType, System.Type! destinationType) -> Mapperion.IOpenMappingExpression!
+Mapperion.IMapperConfigurationExpression.CreateMap<TSource, TDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMapperConfigurationExpression.EnumMapping.get -> Mapperion.Model.EnumMappingPolicy
+Mapperion.IMapperConfigurationExpression.EnumMapping.set -> void
+Mapperion.IMapperConfigurationExpression.IncludeFields.get -> bool
+Mapperion.IMapperConfigurationExpression.IncludeFields.set -> void
+Mapperion.IMapperConfigurationExpression.IncludeSourceMethods.get -> bool
+Mapperion.IMapperConfigurationExpression.IncludeSourceMethods.set -> void
+Mapperion.IMapperConfigurationExpression.MaxFlatteningDepth.get -> int
+Mapperion.IMapperConfigurationExpression.MaxFlatteningDepth.set -> void
+Mapperion.IMapperConfigurationExpression.MemberListValidation.get -> Mapperion.Model.MemberListValidation
+Mapperion.IMapperConfigurationExpression.MemberListValidation.set -> void
+Mapperion.IMapperConfigurationExpression.NameComparison.get -> Mapperion.Model.MemberNameComparison
+Mapperion.IMapperConfigurationExpression.NameComparison.set -> void
+Mapperion.IMapperConfigurationExpression.RecognizeDestinationPostfixes(params string![]! postfixes) -> void
+Mapperion.IMapperConfigurationExpression.RecognizeDestinationPrefixes(params string![]! prefixes) -> void
+Mapperion.IMapperConfigurationExpression.RecognizeSourcePostfixes(params string![]! postfixes) -> void
+Mapperion.IMapperConfigurationExpression.RecognizeSourcePrefixes(params string![]! prefixes) -> void
+Mapperion.IMapperConfigurationExpression.RecursionLimit.get -> int
+Mapperion.IMapperConfigurationExpression.RecursionLimit.set -> void
+Mapperion.IMapperConfigurationExpression.ValidateOnBuild.get -> bool
+Mapperion.IMapperConfigurationExpression.ValidateOnBuild.set -> void
+Mapperion.IMappingAction<TSource, TDestination>
+Mapperion.IMappingAction<TSource, TDestination>.Process(TSource source, TDestination destination, Mapperion.ResolutionContext context) -> void
+Mapperion.IMappingExpression<TSource, TDestination>
+Mapperion.IMappingExpression<TSource, TDestination>.AfterMap(System.Action<TSource, TDestination, Mapperion.ResolutionContext>! action) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.AfterMap(System.Action<TSource, TDestination>! action) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.AfterMap<TMappingAction>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.BeforeMap(System.Action<TSource, TDestination, Mapperion.ResolutionContext>! action) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.BeforeMap(System.Action<TSource, TDestination>! action) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.BeforeMap<TMappingAction>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ConstructUsing(System.Func<TSource, Mapperion.ResolutionContext, TDestination>! factory) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ConstructUsing(System.Func<TSource, TDestination>! factory) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ConvertUsing<TTypeConverter>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForCtorParam(string! constructorParameterName, System.Action<Mapperion.ICtorParamConfigurationExpression<TSource>!>! parameterOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForMember<TMember>(System.Linq.Expressions.Expression<System.Func<TDestination, TMember>!>! destinationMember, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForPath<TMember>(System.Linq.Expressions.Expression<System.Func<TDestination, TMember>!>! destinationPath, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>!>! pathOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.Include<TDerivedSource, TDerivedDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.IncludeBase<TBaseSource, TBaseDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.IncludeMembers(params System.Linq.Expressions.Expression<System.Func<TSource, object?>!>![]! members) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.MaxDepth(int depth) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.PreserveReferences() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ReverseMap() -> Mapperion.IMappingExpression<TDestination, TSource>!
+Mapperion.IMappingExpression<TSource, TDestination>.ValidateMemberList(Mapperion.Model.MemberListValidation validation) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingOperationOptions
+Mapperion.IMappingOperationOptions.Items.get -> System.Collections.Generic.IDictionary<string!, object?>!
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.Condition(System.Linq.Expressions.Expression<System.Func<TSource, bool>!>! condition) -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.ConvertUsing<TValueConverter, TSourceMember>() -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.Ignore() -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom<TSourceMember>(System.Linq.Expressions.Expression<System.Func<TSource, TSourceMember>!>! sourceMember) -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom<TValueResolver>() -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.NullSubstitute(object! value) -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.PreCondition(System.Linq.Expressions.Expression<System.Func<TSource, bool>!>! condition) -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.SetMappingOrder(int order) -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.UseDestinationValue() -> void
+Mapperion.IOpenMappingExpression
+Mapperion.IOpenMappingExpression.IgnoreMember(string! destinationMemberName) -> Mapperion.IOpenMappingExpression!
+Mapperion.IOpenMappingExpression.MaxDepth(int depth) -> Mapperion.IOpenMappingExpression!
+Mapperion.IOpenMappingExpression.PreserveReferences() -> Mapperion.IOpenMappingExpression!
+Mapperion.IOpenMappingExpression.ValidateMemberList(Mapperion.Model.MemberListValidation validation) -> Mapperion.IOpenMappingExpression!
+Mapperion.ITypeConverter<TSource, TDestination>
+Mapperion.ITypeConverter<TSource, TDestination>.Convert(TSource source, TDestination destination, Mapperion.ResolutionContext context) -> TDestination
+Mapperion.IValueConverter<TSourceMember, TDestinationMember>
+Mapperion.IValueConverter<TSourceMember, TDestinationMember>.Convert(TSourceMember sourceMember, Mapperion.ResolutionContext context) -> TDestinationMember
+Mapperion.IValueResolver<TSource, TDestination, TDestinationMember>
+Mapperion.IValueResolver<TSource, TDestination, TDestinationMember>.Resolve(TSource source, TDestination destination, TDestinationMember destinationMember, Mapperion.ResolutionContext context) -> TDestinationMember
+Mapperion.MapperConfiguration
+Mapperion.MapperConfiguration.AssertConfigurationIsValid() -> void
+Mapperion.MapperConfiguration.AssertIsValid() -> void
+Mapperion.MapperConfiguration.CreateMapper() -> Mapperion.IMapper!
+Mapperion.MapperConfiguration.CreateMapper(System.IServiceProvider! services) -> Mapperion.IMapper!
+Mapperion.MapperConfiguration.MapperConfiguration(System.Action<Mapperion.IMapperConfigurationExpression!>! configure) -> void
+Mapperion.MapperConfiguration.Model.get -> Mapperion.Model.MapperModel!
+Mapperion.MapperConfiguration.Options.get -> Mapperion.Model.MapperOptions!
+Mapperion.MapperConfigurationException
+Mapperion.MapperConfigurationException.Errors.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Mapperion.MapperConfigurationException.MapperConfigurationException() -> void
+Mapperion.MapperConfigurationException.MapperConfigurationException(string! message) -> void
+Mapperion.MapperConfigurationException.MapperConfigurationException(string! message, System.Collections.Generic.IReadOnlyList<string!>! errors) -> void
+Mapperion.MapperConfigurationException.MapperConfigurationException(string! message, System.Exception! innerException) -> void
+Mapperion.MapperExtensions
+Mapperion.MapperHost
+Mapperion.MapperionException
+Mapperion.MapperionException.MapperionException() -> void
+Mapperion.MapperionException.MapperionException(string! message) -> void
+Mapperion.MapperionException.MapperionException(string! message, System.Exception! innerException) -> void
+Mapperion.MappingException
+Mapperion.MappingException.MappingException() -> void
+Mapperion.MappingException.MappingException(string! message) -> void
+Mapperion.MappingException.MappingException(string! message, System.Exception! innerException) -> void
+Mapperion.MappingException.MappingException(string! message, string! memberPath, System.Exception! innerException) -> void
+Mapperion.MappingException.MemberPath.get -> string?
+Mapperion.Model.ConstantSource
+Mapperion.Model.ConstantSource.ConstantSource(object? value, System.Type! valueType) -> void
+Mapperion.Model.ConstantSource.Value.get -> object?
+Mapperion.Model.ConstructorParameterDefinition
+Mapperion.Model.ConstructorParameterDefinition.ConstructorParameterDefinition(string! name, System.Type! parameterType, int position) -> void
+Mapperion.Model.ConstructorParameterDefinition.DefaultValue.get -> object?
+Mapperion.Model.ConstructorParameterDefinition.DefaultValue.init -> void
+Mapperion.Model.ConstructorParameterDefinition.HasDefaultValue.get -> bool
+Mapperion.Model.ConstructorParameterDefinition.HasDefaultValue.init -> void
+Mapperion.Model.ConstructorParameterDefinition.IsExplicit.get -> bool
+Mapperion.Model.ConstructorParameterDefinition.IsExplicit.init -> void
+Mapperion.Model.ConstructorParameterDefinition.Name.get -> string!
+Mapperion.Model.ConstructorParameterDefinition.ParameterType.get -> System.Type!
+Mapperion.Model.ConstructorParameterDefinition.Position.get -> int
+Mapperion.Model.ConstructorParameterDefinition.Source.get -> Mapperion.Model.MemberSource?
+Mapperion.Model.ConstructorParameterDefinition.Source.init -> void
+Mapperion.Model.CustomSource
+Mapperion.Model.CustomSource.CustomSource(object! payload, System.Type! valueType, string? description = null) -> void
+Mapperion.Model.CustomSource.Description.get -> string?
+Mapperion.Model.CustomSource.Payload.get -> object!
+Mapperion.Model.EnumMappingPolicy
+Mapperion.Model.EnumMappingPolicy.ByName = 1 -> Mapperion.Model.EnumMappingPolicy
+Mapperion.Model.EnumMappingPolicy.ByNameThenValue = 0 -> Mapperion.Model.EnumMappingPolicy
+Mapperion.Model.EnumMappingPolicy.ByValue = 2 -> Mapperion.Model.EnumMappingPolicy
+Mapperion.Model.IncludedMemberSource
+Mapperion.Model.IncludedMemberSource.IncludedMemberSource(Mapperion.Model.MemberPath! prefix, Mapperion.Model.MemberSource! inner) -> void
+Mapperion.Model.IncludedMemberSource.Inner.get -> Mapperion.Model.MemberSource!
+Mapperion.Model.IncludedMemberSource.Prefix.get -> Mapperion.Model.MemberPath!
+Mapperion.Model.MapperModel
+Mapperion.Model.MapperModel.Contains(Mapperion.Model.TypeMapKey key) -> bool
+Mapperion.Model.MapperModel.Count.get -> int
+Mapperion.Model.MapperModel.MapperModel(Mapperion.Model.MapperOptions! options, System.Collections.Generic.IEnumerable<Mapperion.Model.TypeMapDefinition!>! typeMaps) -> void
+Mapperion.Model.MapperModel.Options.get -> Mapperion.Model.MapperOptions!
+Mapperion.Model.MapperModel.TryGetTypeMap(Mapperion.Model.TypeMapKey key, out Mapperion.Model.TypeMapDefinition? definition) -> bool
+Mapperion.Model.MapperModel.TryGetTypeMap(System.Type! sourceType, System.Type! destinationType, out Mapperion.Model.TypeMapDefinition? definition) -> bool
+Mapperion.Model.MapperModel.TypeMaps.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.TypeMapDefinition!>!
+Mapperion.Model.MapperOptions
+Mapperion.Model.MapperOptions.AllowNullCollections.get -> bool
+Mapperion.Model.MapperOptions.AllowNullCollections.init -> void
+Mapperion.Model.MapperOptions.AllowNullDestinationValues.get -> bool
+Mapperion.Model.MapperOptions.AllowNullDestinationValues.init -> void
+Mapperion.Model.MapperOptions.DestinationPostfixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Mapperion.Model.MapperOptions.DestinationPostfixes.init -> void
+Mapperion.Model.MapperOptions.DestinationPrefixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Mapperion.Model.MapperOptions.DestinationPrefixes.init -> void
+Mapperion.Model.MapperOptions.EnumMapping.get -> Mapperion.Model.EnumMappingPolicy
+Mapperion.Model.MapperOptions.EnumMapping.init -> void
+Mapperion.Model.MapperOptions.IncludeFields.get -> bool
+Mapperion.Model.MapperOptions.IncludeFields.init -> void
+Mapperion.Model.MapperOptions.IncludeSourceMethods.get -> bool
+Mapperion.Model.MapperOptions.IncludeSourceMethods.init -> void
+Mapperion.Model.MapperOptions.MapperOptions() -> void
+Mapperion.Model.MapperOptions.MaxFlatteningDepth.get -> int
+Mapperion.Model.MapperOptions.MaxFlatteningDepth.init -> void
+Mapperion.Model.MapperOptions.MemberListValidation.get -> Mapperion.Model.MemberListValidation
+Mapperion.Model.MapperOptions.MemberListValidation.init -> void
+Mapperion.Model.MapperOptions.NameComparison.get -> Mapperion.Model.MemberNameComparison
+Mapperion.Model.MapperOptions.NameComparison.init -> void
+Mapperion.Model.MapperOptions.NameStringComparison.get -> System.StringComparison
+Mapperion.Model.MapperOptions.RecursionLimit.get -> int
+Mapperion.Model.MapperOptions.RecursionLimit.init -> void
+Mapperion.Model.MapperOptions.SourcePostfixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Mapperion.Model.MapperOptions.SourcePostfixes.init -> void
+Mapperion.Model.MapperOptions.SourcePrefixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
+Mapperion.Model.MapperOptions.SourcePrefixes.init -> void
+Mapperion.Model.MapperOptions.ValidateOnBuild.get -> bool
+Mapperion.Model.MapperOptions.ValidateOnBuild.init -> void
+Mapperion.Model.MemberDefinition
+Mapperion.Model.MemberDefinition.Condition.get -> object?
+Mapperion.Model.MemberDefinition.Condition.init -> void
+Mapperion.Model.MemberDefinition.DestinationMember.get -> Mapperion.Model.MemberDescriptor!
+Mapperion.Model.MemberDefinition.DestinationPath.get -> Mapperion.Model.MemberPath?
+Mapperion.Model.MemberDefinition.DestinationPath.init -> void
+Mapperion.Model.MemberDefinition.HasNullSubstitute.get -> bool
+Mapperion.Model.MemberDefinition.HasNullSubstitute.init -> void
+Mapperion.Model.MemberDefinition.IsExplicit.get -> bool
+Mapperion.Model.MemberDefinition.IsExplicit.init -> void
+Mapperion.Model.MemberDefinition.IsIgnored.get -> bool
+Mapperion.Model.MemberDefinition.IsIgnored.init -> void
+Mapperion.Model.MemberDefinition.IsPath.get -> bool
+Mapperion.Model.MemberDefinition.MappingOrder.get -> int
+Mapperion.Model.MemberDefinition.MappingOrder.init -> void
+Mapperion.Model.MemberDefinition.MemberDefinition(Mapperion.Model.MemberDescriptor! destinationMember) -> void
+Mapperion.Model.MemberDefinition.NullSubstitute.get -> object?
+Mapperion.Model.MemberDefinition.NullSubstitute.init -> void
+Mapperion.Model.MemberDefinition.PreCondition.get -> object?
+Mapperion.Model.MemberDefinition.PreCondition.init -> void
+Mapperion.Model.MemberDefinition.Source.get -> Mapperion.Model.MemberSource?
+Mapperion.Model.MemberDefinition.Source.init -> void
+Mapperion.Model.MemberDefinition.UseDestinationValue.get -> bool
+Mapperion.Model.MemberDefinition.UseDestinationValue.init -> void
+Mapperion.Model.MemberDefinition.ValueConverterType.get -> System.Type?
+Mapperion.Model.MemberDefinition.ValueConverterType.init -> void
+Mapperion.Model.MemberDescriptor
+Mapperion.Model.MemberDescriptor.CanRead.get -> bool
+Mapperion.Model.MemberDescriptor.CanWrite.get -> bool
+Mapperion.Model.MemberDescriptor.DeclaringType.get -> System.Type!
+Mapperion.Model.MemberDescriptor.Equals(Mapperion.Model.MemberDescriptor? other) -> bool
+Mapperion.Model.MemberDescriptor.Kind.get -> Mapperion.Model.MemberKind
+Mapperion.Model.MemberDescriptor.Member.get -> System.Reflection.MemberInfo!
+Mapperion.Model.MemberDescriptor.MemberType.get -> System.Type!
+Mapperion.Model.MemberDescriptor.Name.get -> string!
+Mapperion.Model.MemberKind
+Mapperion.Model.MemberKind.Field = 1 -> Mapperion.Model.MemberKind
+Mapperion.Model.MemberKind.Method = 2 -> Mapperion.Model.MemberKind
+Mapperion.Model.MemberKind.Property = 0 -> Mapperion.Model.MemberKind
+Mapperion.Model.MemberListValidation
+Mapperion.Model.MemberListValidation.Destination = 1 -> Mapperion.Model.MemberListValidation
+Mapperion.Model.MemberListValidation.None = 0 -> Mapperion.Model.MemberListValidation
+Mapperion.Model.MemberListValidation.Source = 2 -> Mapperion.Model.MemberListValidation
+Mapperion.Model.MemberNameComparison
+Mapperion.Model.MemberNameComparison.Ordinal = 1 -> Mapperion.Model.MemberNameComparison
+Mapperion.Model.MemberNameComparison.OrdinalIgnoreCase = 0 -> Mapperion.Model.MemberNameComparison
+Mapperion.Model.MemberPath
+Mapperion.Model.MemberPath.Append(Mapperion.Model.MemberDescriptor! member) -> Mapperion.Model.MemberPath!
+Mapperion.Model.MemberPath.Equals(Mapperion.Model.MemberPath? other) -> bool
+Mapperion.Model.MemberPath.IsFlattened.get -> bool
+Mapperion.Model.MemberPath.Leaf.get -> Mapperion.Model.MemberDescriptor!
+Mapperion.Model.MemberPath.Length.get -> int
+Mapperion.Model.MemberPath.MemberPath(System.Collections.Generic.IEnumerable<Mapperion.Model.MemberDescriptor!>! steps) -> void
+Mapperion.Model.MemberPath.MemberType.get -> System.Type!
+Mapperion.Model.MemberPath.Steps.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.MemberDescriptor!>!
+Mapperion.Model.MemberPathSource
+Mapperion.Model.MemberPathSource.MemberPathSource(Mapperion.Model.MemberPath! path) -> void
+Mapperion.Model.MemberPathSource.Path.get -> Mapperion.Model.MemberPath!
+Mapperion.Model.MemberSource
+Mapperion.Model.MemberSource.ValueType.get -> System.Type!
+Mapperion.Model.MemberSourceKind
+Mapperion.Model.MemberSourceKind.Constant = 2 -> Mapperion.Model.MemberSourceKind
+Mapperion.Model.MemberSourceKind.Custom = 3 -> Mapperion.Model.MemberSourceKind
+Mapperion.Model.MemberSourceKind.IncludedMember = 4 -> Mapperion.Model.MemberSourceKind
+Mapperion.Model.MemberSourceKind.MemberPath = 0 -> Mapperion.Model.MemberSourceKind
+Mapperion.Model.MemberSourceKind.ValueResolver = 1 -> Mapperion.Model.MemberSourceKind
+Mapperion.Model.TypeMapDefinition
+Mapperion.Model.TypeMapDefinition.AfterMapActions.get -> System.Collections.Generic.IReadOnlyList<object!>!
+Mapperion.Model.TypeMapDefinition.AfterMapActions.init -> void
+Mapperion.Model.TypeMapDefinition.BaseMaps.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.TypeMapKey>!
+Mapperion.Model.TypeMapDefinition.BaseMaps.init -> void
+Mapperion.Model.TypeMapDefinition.BeforeMapActions.get -> System.Collections.Generic.IReadOnlyList<object!>!
+Mapperion.Model.TypeMapDefinition.BeforeMapActions.init -> void
+Mapperion.Model.TypeMapDefinition.ConstructUsing.get -> object?
+Mapperion.Model.TypeMapDefinition.ConstructUsing.init -> void
+Mapperion.Model.TypeMapDefinition.Constructor.get -> System.Reflection.ConstructorInfo?
+Mapperion.Model.TypeMapDefinition.Constructor.init -> void
+Mapperion.Model.TypeMapDefinition.ConstructorParameters.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.ConstructorParameterDefinition!>!
+Mapperion.Model.TypeMapDefinition.ConstructorParameters.init -> void
+Mapperion.Model.TypeMapDefinition.DerivedMaps.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.TypeMapKey>!
+Mapperion.Model.TypeMapDefinition.DerivedMaps.init -> void
+Mapperion.Model.TypeMapDefinition.DestinationType.get -> System.Type!
+Mapperion.Model.TypeMapDefinition.FindMember(string! memberName) -> Mapperion.Model.MemberDefinition?
+Mapperion.Model.TypeMapDefinition.HasTypeConverter.get -> bool
+Mapperion.Model.TypeMapDefinition.IncludedMembers.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.MemberPath!>!
+Mapperion.Model.TypeMapDefinition.IncludedMembers.init -> void
+Mapperion.Model.TypeMapDefinition.IsReverse.get -> bool
+Mapperion.Model.TypeMapDefinition.IsReverse.init -> void
+Mapperion.Model.TypeMapDefinition.Key.get -> Mapperion.Model.TypeMapKey
+Mapperion.Model.TypeMapDefinition.MaxDepth.get -> int?
+Mapperion.Model.TypeMapDefinition.MaxDepth.init -> void
+Mapperion.Model.TypeMapDefinition.MemberListValidation.get -> Mapperion.Model.MemberListValidation
+Mapperion.Model.TypeMapDefinition.MemberListValidation.init -> void
+Mapperion.Model.TypeMapDefinition.Members.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.MemberDefinition!>!
+Mapperion.Model.TypeMapDefinition.Members.init -> void
+Mapperion.Model.TypeMapDefinition.PreserveReferences.get -> bool
+Mapperion.Model.TypeMapDefinition.PreserveReferences.init -> void
+Mapperion.Model.TypeMapDefinition.SourceType.get -> System.Type!
+Mapperion.Model.TypeMapDefinition.TypeConverterType.get -> System.Type?
+Mapperion.Model.TypeMapDefinition.TypeConverterType.init -> void
+Mapperion.Model.TypeMapDefinition.TypeMapDefinition(Mapperion.Model.TypeMapKey key) -> void
+Mapperion.Model.TypeMapKey
+Mapperion.Model.TypeMapKey.DestinationType.get -> System.Type!
+Mapperion.Model.TypeMapKey.Equals(Mapperion.Model.TypeMapKey other) -> bool
+Mapperion.Model.TypeMapKey.SourceType.get -> System.Type!
+Mapperion.Model.TypeMapKey.TypeMapKey() -> void
+Mapperion.Model.TypeMapKey.TypeMapKey(System.Type! sourceType, System.Type! destinationType) -> void
+Mapperion.Model.ValueResolverSource
+Mapperion.Model.ValueResolverSource.ResolverType.get -> System.Type!
+Mapperion.Model.ValueResolverSource.ValueResolverSource(System.Type! resolverType, System.Type! valueType) -> void
+Mapperion.Profile
+Mapperion.Profile.CreateMap(System.Type! sourceType, System.Type! destinationType) -> Mapperion.IOpenMappingExpression!
+Mapperion.Profile.CreateMap<TSource, TDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.Profile.Profile() -> void
+Mapperion.QueryableExtensions
+Mapperion.RecursionLimitException
+Mapperion.RecursionLimitException.Limit.get -> int
+Mapperion.RecursionLimitException.Map.get -> string?
+Mapperion.RecursionLimitException.RecursionLimitException() -> void
+Mapperion.RecursionLimitException.RecursionLimitException(string! message) -> void
+Mapperion.RecursionLimitException.RecursionLimitException(string! message, System.Exception! innerException) -> void
+Mapperion.ResolutionContext
+Mapperion.ResolutionContext.Items.get -> System.Collections.Generic.IDictionary<string!, object?>!
+Mapperion.ResolutionContext.Mapper.get -> Mapperion.IMapper!
+Mapperion.ResolutionContext.ResolutionContext() -> void
+abstract Mapperion.Model.MemberSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.ConstantSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.ConstantSource.ToString() -> string!
+override Mapperion.Model.ConstructorParameterDefinition.ToString() -> string!
+override Mapperion.Model.CustomSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.CustomSource.ToString() -> string!
+override Mapperion.Model.IncludedMemberSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.IncludedMemberSource.ToString() -> string!
+override Mapperion.Model.MemberDefinition.ToString() -> string!
+override Mapperion.Model.MemberDescriptor.Equals(object? obj) -> bool
+override Mapperion.Model.MemberDescriptor.GetHashCode() -> int
+override Mapperion.Model.MemberDescriptor.ToString() -> string!
+override Mapperion.Model.MemberPath.Equals(object? obj) -> bool
+override Mapperion.Model.MemberPath.GetHashCode() -> int
+override Mapperion.Model.MemberPath.ToString() -> string!
+override Mapperion.Model.MemberPathSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.MemberPathSource.ToString() -> string!
+override Mapperion.Model.TypeMapDefinition.ToString() -> string!
+override Mapperion.Model.TypeMapKey.Equals(object? obj) -> bool
+override Mapperion.Model.TypeMapKey.GetHashCode() -> int
+override Mapperion.Model.TypeMapKey.ToString() -> string!
+override Mapperion.Model.ValueResolverSource.Kind.get -> Mapperion.Model.MemberSourceKind
+override Mapperion.Model.ValueResolverSource.ToString() -> string!
+static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source) -> TDestination
+static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source, TDestination destination) -> TDestination
+static Mapperion.MapperHost.Initialize(Mapperion.IMapper! mapper) -> void
+static Mapperion.MapperHost.Instance.get -> Mapperion.IMapper!
+static Mapperion.MapperHost.IsInitialized.get -> bool
+static Mapperion.MapperHost.Reset() -> void
+static Mapperion.Model.MapperOptions.Defaults.get -> Mapperion.Model.MapperOptions!
+static Mapperion.Model.MemberDescriptor.ForField(System.Reflection.FieldInfo! field) -> Mapperion.Model.MemberDescriptor!
+static Mapperion.Model.MemberDescriptor.ForMethod(System.Reflection.MethodInfo! method) -> Mapperion.Model.MemberDescriptor!
+static Mapperion.Model.MemberDescriptor.ForProperty(System.Reflection.PropertyInfo! property) -> Mapperion.Model.MemberDescriptor!
+static Mapperion.Model.MemberPath.Of(Mapperion.Model.MemberDescriptor! member) -> Mapperion.Model.MemberPath!
+static Mapperion.Model.TypeMapKey.operator !=(Mapperion.Model.TypeMapKey left, Mapperion.Model.TypeMapKey right) -> bool
+static Mapperion.Model.TypeMapKey.operator ==(Mapperion.Model.TypeMapKey left, Mapperion.Model.TypeMapKey right) -> bool
+static Mapperion.QueryableExtensions.ProjectTo<TDestination>(this System.Linq.IQueryable! source, Mapperion.MapperConfiguration! configuration) -> System.Linq.IQueryable<TDestination>!
