@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.ExceptionServices;
 using Mapperion.Compilation;
 using Mapperion.Model;
 
@@ -15,6 +16,74 @@ namespace Mapperion.Execution
     [RequiresDynamicCode("Mapping compiles plans at run time.")]
     internal static class MappingRuntime
     {
+        internal static int Enter(TypeMapKey map, MappingContext context)
+        {
+            return State(context).Enter(map);
+        }
+
+        internal static void Exit(TypeMapKey map, MappingContext context)
+        {
+            State(context).Exit(map);
+        }
+
+        internal static object? Preserved(object source, Type destinationType, MappingContext context)
+        {
+            return State(context).Preserved(source, destinationType);
+        }
+
+        internal static void Preserve(
+            object source,
+            Type destinationType,
+            object destination,
+            MappingContext context)
+        {
+            State(context).Preserve(source, destinationType, destination);
+        }
+
+        private static MappingState State(MappingContext context)
+        {
+            return context.State ?? throw new MappingException(
+                "This operation needs per-operation state that was not created. Start the mapping " +
+                "through IMapper rather than invoking a compiled plan directly.");
+        }
+
+        internal static TDestination Fail<TDestination>(string member, string map, Exception error)
+        {
+            if (error is MapperConfigurationException)
+            {
+                ExceptionDispatchInfo.Capture(error).Throw();
+            }
+
+            string path = Combine(member, error);
+
+            throw new MappingException(
+                "Mapping " + map + " failed at '" + path + "'. See the inner exception.",
+                path,
+                error);
+        }
+
+        private static string Combine(string outer, Exception error)
+        {
+            if (error is MappingException inner && !string.IsNullOrEmpty(inner.MemberPath))
+            {
+                return inner.MemberPath![0] == '['
+                    ? outer + inner.MemberPath
+                    : outer + "." + inner.MemberPath;
+            }
+
+            return outer;
+        }
+
+        private static MappingException AtIndex(int index, Exception error)
+        {
+            string path = Combine("[" + index.ToString(CultureInfo.InvariantCulture) + "]", error);
+
+            return new MappingException(
+                "Mapping the element at " + path + " failed. See the inner exception.",
+                path,
+                error);
+        }
+
         internal static TDestination MapValue<TSource, TDestination>(TSource source, MappingContext context)
         {
             MapPlan plan = context.Engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
@@ -28,6 +97,46 @@ namespace Mapperion.Execution
         {
             MapPlan plan = context.Engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
             return ((MapDelegate<TSource, TDestination>)plan.Typed)(source, destination, context);
+        }
+
+        internal static TDestination ConvertType<TSource, TDestination>(
+            Type converterType,
+            TSource source,
+            TDestination destination,
+            MappingContext context)
+        {
+            var converter = (ITypeConverter<TSource, TDestination>)context.Services.Resolve(converterType);
+            return converter.Convert(source, destination, new ResolutionContext(context));
+        }
+
+        internal static void RunAction<TSource, TDestination>(
+            Type actionType,
+            TSource source,
+            TDestination destination,
+            MappingContext context)
+        {
+            var action = (IMappingAction<TSource, TDestination>)context.Services.Resolve(actionType);
+            action.Process(source, destination, new ResolutionContext(context));
+        }
+
+        internal static TDestinationMember ConvertValue<TSourceMember, TDestinationMember>(
+            Type converterType,
+            TSourceMember value,
+            MappingContext context)
+        {
+            var converter = (IValueConverter<TSourceMember, TDestinationMember>)context.Services.Resolve(converterType);
+            return converter.Convert(value, new ResolutionContext(context));
+        }
+
+        internal static TDestinationMember Resolve<TSource, TDestination, TDestinationMember>(
+            Type resolverType,
+            TSource source,
+            TDestination destination,
+            TDestinationMember current,
+            MappingContext context)
+        {
+            var resolver = (IValueResolver<TSource, TDestination, TDestinationMember>)context.Services.Resolve(resolverType);
+            return resolver.Resolve(source, destination, current, new ResolutionContext(context));
         }
 
         internal static List<TDestination> ToList<TSource, TDestination>(
@@ -45,9 +154,19 @@ namespace Mapperion.Execution
                 ? new List<TDestination>(known.Count)
                 : new List<TDestination>();
 
-            foreach (TSource item in source)
+            int index = 0;
+
+            try
             {
-                result.Add(convert(item, context));
+                foreach (TSource item in source)
+                {
+                    result.Add(convert(item, context));
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
             }
 
             return result;
@@ -67,6 +186,42 @@ namespace Mapperion.Execution
             return ToList(source, context, convert, false).ToArray();
         }
 
+        internal static Dictionary<TDestinationKey, TDestinationValue> ToDictionary<
+            TSourceKey,
+            TSourceValue,
+            TDestinationKey,
+            TDestinationValue>(
+            IEnumerable<KeyValuePair<TSourceKey, TSourceValue>>? source,
+            MappingContext context,
+            Func<TSourceKey, MappingContext, TDestinationKey> key,
+            Func<TSourceValue, MappingContext, TDestinationValue> value,
+            bool allowNull)
+            where TDestinationKey : notnull
+        {
+            if (source is null)
+            {
+                return allowNull ? null! : new Dictionary<TDestinationKey, TDestinationValue>();
+            }
+
+            var result = new Dictionary<TDestinationKey, TDestinationValue>();
+            int index = 0;
+
+            try
+            {
+                foreach (KeyValuePair<TSourceKey, TSourceValue> entry in source)
+                {
+                    result[key(entry.Key, context)] = value(entry.Value, context);
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
+            }
+
+            return result;
+        }
+
         internal static HashSet<TDestination> ToHashSet<TSource, TDestination>(
             IEnumerable<TSource>? source,
             MappingContext context,
@@ -79,10 +234,19 @@ namespace Mapperion.Execution
             }
 
             var result = new HashSet<TDestination>();
+            int index = 0;
 
-            foreach (TSource item in source)
+            try
             {
-                result.Add(convert(item, context));
+                foreach (TSource item in source)
+                {
+                    result.Add(convert(item, context));
+                    index++;
+                }
+            }
+            catch (Exception error) when (!(error is MapperConfigurationException))
+            {
+                throw AtIndex(index, error);
             }
 
             return result;

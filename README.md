@@ -68,6 +68,28 @@ public sealed record EmployeeDto(string Name, int Age);
 cfg.CreateMap<Employee, EmployeeDto>();
 ```
 
+Queries are projected in the database rather than materialised:
+
+```csharp
+List<BookDto> books = await context.Books
+    .Where(b => b.Pages > 200)
+    .ProjectTo<BookDto>(configuration)
+    .ToListAsync();
+```
+
+Anything a query provider cannot run — type converters, value converters, resolvers, `BeforeMap`
+and `AfterMap` — is reported rather than skipped. AutoMapper skips them silently, which lets a
+projection quietly disagree with the same map run through `Map`.
+
+In an ASP.NET Core application:
+
+```csharp
+builder.Services.AddMapperion(typeof(Program).Assembly);
+```
+
+That registers the configuration as a singleton and `IMapper` as scoped, so a resolver may depend
+on scoped services. Every mapper shares the same compiled plans, so one per request costs nothing.
+
 Profiles work the way you already know them:
 
 ```csharp
@@ -91,24 +113,31 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `MapperConfiguration(cfg => ...)` | same |
 | `Profile`, `CreateMap<S,D>()` | same |
 | `ForMember(d => d.X, o => o.MapFrom(...))` | same |
-| `Ignore()`, `Condition()`, `NullSubstitute()` | same |
+| `Ignore()`, `Condition()`, `PreCondition()`, `NullSubstitute()` | same |
 | `MaxDepth()`, `PreserveReferences()` | same |
 | `AddProfile<T>()`, `AddProfiles(assembly)` | same |
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
 | `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `ReverseMap()` | same, minus unflattening |
+| `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
+| `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
+| `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
+| `AddAutoMapper(...)` | `AddMapperion(...)` |
+| `ProjectTo<T>(configuration)` | same, and on `IMapper` too |
 | `RecognizePrefixes` / `RecognizePostfixes` | `RecognizeSourcePrefixes` / `RecognizeDestinationPostfixes` |
 | `AssertConfigurationIsValid()` | same name works, or the shorter `AssertIsValid()` |
-| `AddAutoMapper(...)` | `AddMapperion(...)` *(not implemented yet)* |
 
 Deliberate difference: a type pair with no `CreateMap` is an error rather than an implicit map.
 Validation stays opt-in, exactly as in AutoMapper.
 
 ## Supported frameworks
 
-Currently built for `netstandard2.0`, `net8.0`, `net9.0` and `net10.0`.
-`net472` and `netstandard2.1` are next, so .NET Framework consumers get a native target instead of
-the netstandard compatibility shims.
+Built for `netstandard2.0`, `netstandard2.1`, `net472`, `net8.0`, `net9.0` and `net10.0`.
+
+.NET Framework gets a native `net472` target rather than the netstandard shims, so a project on
+4.7.2 or 4.8 does not drag in dozens of `System.*` compatibility packages. A slice of the test
+suite runs on net472 and net48 on every build, so Framework support is verified rather than
+assumed.
 
 Trimming and AOT: the runtime engine resolves members by reflection and is annotated
 `[RequiresUnreferencedCode]` accordingly. A source generator mode with full AOT support is planned.
@@ -124,19 +153,32 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Validation: `AssertIsValid()` reports every problem at once — unmapped destination members,
   missing nested maps (looking through nullables and collections), and, with
   `MemberListValidation.Source`, source members nobody reads.
+- Failures at run time name the member that caused them, with the path through nested maps and
+  collections: `Batch.Readings[0].Ratio`.
+- Object graphs that loop, through `PreserveReferences` or `MaxDepth`. A cycle with neither is
+  reported by `AssertIsValid()` rather than left to exhaust the stack.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
-  conversions, enums by name or value, `ToString`, `IConvertible`, and collections into arrays,
-  `List<>`, `HashSet<>` and the sequence interfaces.
+  conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
+  `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
+  converted.
 - Records and any destination built through a constructor, with `ForCtorParam` to override an
   argument and parameter defaults filling what the source does not provide.
 - `ReverseMap()`, which inverts renamed members and leaves the rest to the conventions.
+- Type converters, value converters and value resolvers, each created once and reused. They need
+  a parameterless constructor until dependency injection support lands.
+- `BeforeMap` and `AfterMap`, as a lambda or as an `IMappingAction` type. A map with a type
+  converter runs neither: the converter replaces the whole map.
+- `Mapperion.Extensions.DependencyInjection`, which registers the mapper and lets converters and
+  resolvers take their dependencies from the container.
+- `ProjectTo`, which rewrites a query so the database returns only the columns the destination
+  needs. Verified against EF Core with SQLite, not just built.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
 
 ## Not yet
 
-Dictionaries, value resolvers and type converters, `BeforeMap` and `AfterMap`, `MaxDepth` and
-`PreserveReferences` at run time, `ProjectTo`, dependency injection integration, inheritance, and
-the source generator. `ReverseMap` does not unflatten: a member mapped from a nested path is
+Inheritance, open generics, `ResolutionContext.Items`, a static entry point for .NET Framework
+without a container, `string` to `Guid` and the date types, EF6, and the source generator. A
+projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

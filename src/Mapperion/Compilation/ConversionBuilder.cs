@@ -14,6 +14,12 @@ namespace Mapperion.Compilation
     /// Everything it emits is typed: nothing here boxes a value or falls back to <c>object</c>
     /// unless the conversion itself has no other way through.
     /// </summary>
+    /// <remarks>
+    /// Sequences are looked at before anything else, including before the source and destination
+    /// types being the same or assignable. A destination that shared the source's list would let a
+    /// change to one show up in the other, and it would also slip past
+    /// <c>AllowNullCollections</c>; a collection is always rebuilt.
+    /// </remarks>
     [RequiresUnreferencedCode("Building a conversion inspects types by reflection.")]
     [RequiresDynamicCode("Building a conversion emits code at run time.")]
     internal static class ConversionBuilder
@@ -32,6 +38,18 @@ namespace Mapperion.Compilation
             ParameterExpression context)
         {
             Type sourceType = value.Type;
+
+            if (TypeClassifier.IsSequence(sourceType))
+            {
+                Expression? copied =
+                    TryDictionary(value, sourceType, destinationType, engine, context)
+                    ?? TryCollection(value, sourceType, destinationType, engine, context);
+
+                if (copied is not null)
+                {
+                    return copied;
+                }
+            }
 
             if (sourceType == destinationType)
             {
@@ -60,7 +78,6 @@ namespace Mapperion.Compilation
                 TryEnum(value, sourceType, destinationType, engine)
                 ?? TryNumeric(value, sourceType, destinationType)
                 ?? TryToString(value, sourceType, destinationType)
-                ?? TryCollection(value, sourceType, destinationType, engine, context)
                 ?? TryNestedMap(value, sourceType, destinationType, engine, context)
                 ?? TryChangeType(value, sourceType, destinationType);
 
@@ -182,6 +199,82 @@ namespace Mapperion.Compilation
                 call);
         }
 
+        private static Expression? TryDictionary(
+            Expression value,
+            Type sourceType,
+            Type destinationType,
+            MapperEngine engine,
+            ParameterExpression context)
+        {
+            if (!TypeClassifier.TryGetDictionaryTypes(sourceType, out Type? sourceKey, out Type? sourceValue))
+            {
+                return null;
+            }
+
+            if (!TryGetDestinationDictionary(destinationType, out Type? destinationKey, out Type? destinationValue))
+            {
+                return null;
+            }
+
+            Delegate keyConverter = ElementConverter(sourceKey, destinationKey!, engine, out Type keyConverterType);
+            Delegate valueConverter = ElementConverter(sourceValue, destinationValue!, engine, out Type valueConverterType);
+
+            Type entryType = typeof(KeyValuePair<,>).MakeGenericType(sourceKey, sourceValue);
+            Expression entries = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(entryType));
+
+            Expression built = Expression.Call(
+                Method(nameof(MappingRuntime.ToDictionary))
+                    .MakeGenericMethod(sourceKey, sourceValue, destinationKey!, destinationValue!),
+                entries,
+                context,
+                Expression.Constant(keyConverter, keyConverterType),
+                Expression.Constant(valueConverter, valueConverterType),
+                Expression.Constant(engine.Model.Options.AllowNullCollections));
+
+            return built.Type == destinationType ? built : Expression.Convert(built, destinationType);
+        }
+
+        private static bool TryGetDestinationDictionary(
+            Type destinationType,
+            out Type? keyType,
+            out Type? valueType)
+        {
+            if (destinationType.IsGenericType)
+            {
+                Type definition = destinationType.GetGenericTypeDefinition();
+
+                if (definition == typeof(Dictionary<,>) ||
+                    definition == typeof(IDictionary<,>) ||
+                    definition == typeof(IReadOnlyDictionary<,>))
+                {
+                    Type[] arguments = destinationType.GetGenericArguments();
+                    keyType = arguments[0];
+                    valueType = arguments[1];
+                    return true;
+                }
+            }
+
+            keyType = null;
+            valueType = null;
+            return false;
+        }
+
+        private static Delegate ElementConverter(
+            Type sourceType,
+            Type destinationType,
+            MapperEngine engine,
+            out Type converterType)
+        {
+            ParameterExpression element = Expression.Parameter(sourceType, "element");
+            ParameterExpression elementContext = Expression.Parameter(typeof(MappingContext), "context");
+
+            converterType = typeof(Func<,,>).MakeGenericType(sourceType, typeof(MappingContext), destinationType);
+
+            return Expression
+                .Lambda(converterType, Build(element, destinationType, engine, elementContext), element, elementContext)
+                .Compile();
+        }
+
         private static Expression? TryCollection(
             Expression value,
             Type sourceType,
@@ -199,13 +292,7 @@ namespace Mapperion.Compilation
                 return null;
             }
 
-            ParameterExpression element = Expression.Parameter(sourceElement, "element");
-            ParameterExpression elementContext = Expression.Parameter(typeof(MappingContext), "context");
-
-            Type converterType = typeof(Func<,,>).MakeGenericType(sourceElement, typeof(MappingContext), destinationElement!);
-            Delegate converter = Expression
-                .Lambda(converterType, Build(element, destinationElement!, engine, elementContext), element, elementContext)
-                .Compile();
+            Delegate converter = ElementConverter(sourceElement, destinationElement!, engine, out Type converterType);
 
             Expression sequence = Expression.Convert(value, typeof(IEnumerable<>).MakeGenericType(sourceElement));
 

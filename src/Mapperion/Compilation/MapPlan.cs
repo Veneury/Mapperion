@@ -1,4 +1,6 @@
 using System;
+using Mapperion.Execution;
+using Mapperion.Internal;
 
 namespace Mapperion.Compilation
 {
@@ -23,12 +25,25 @@ namespace Mapperion.Compilation
     /// </summary>
     internal readonly struct MappingContext
     {
-        internal MappingContext(MapperEngine engine)
+        internal MappingContext(
+            MapperEngine engine,
+            IServiceResolver services,
+            IMapper mapper,
+            MappingState? state)
         {
             Engine = engine;
+            Services = services;
+            Mapper = mapper;
+            State = state;
         }
 
         internal MapperEngine Engine { get; }
+
+        internal IServiceResolver Services { get; }
+
+        internal IMapper Mapper { get; }
+
+        internal MappingState? State { get; }
     }
 
     /// <summary>

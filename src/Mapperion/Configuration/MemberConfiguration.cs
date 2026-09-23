@@ -25,6 +25,8 @@ namespace Mapperion.Configuration
         private bool hasNullSubstitute;
         private object? nullSubstitute;
         private object? condition;
+        private object? preCondition;
+        private Type? valueConverterType;
         private int mappingOrder;
 
         internal MemberConfiguration(MemberDescriptor destinationMember)
@@ -42,6 +44,19 @@ namespace Mapperion.Configuration
             isIgnored = false;
         }
 
+        public void MapFrom<TValueResolver>()
+            where TValueResolver : IValueResolver<TSource, TDestination, TMember>
+        {
+            source = new ValueResolverSource(typeof(TValueResolver), typeof(TMember));
+            isIgnored = false;
+        }
+
+        public void ConvertUsing<TValueConverter, TSourceMember>()
+            where TValueConverter : IValueConverter<TSourceMember, TMember>
+        {
+            valueConverterType = typeof(TValueConverter);
+        }
+
         public void Ignore()
         {
             isIgnored = true;
@@ -51,6 +66,11 @@ namespace Mapperion.Configuration
         public void Condition(Expression<Func<TSource, bool>> condition)
         {
             this.condition = Guard.NotNull(condition, nameof(condition));
+        }
+
+        public void PreCondition(Expression<Func<TSource, bool>> condition)
+        {
+            preCondition = Guard.NotNull(condition, nameof(condition));
         }
 
         public void NullSubstitute(object value)
@@ -81,6 +101,8 @@ namespace Mapperion.Configuration
                 HasNullSubstitute = hasNullSubstitute,
                 NullSubstitute = nullSubstitute,
                 Condition = condition,
+                PreCondition = preCondition,
+                ValueConverterType = valueConverterType,
             };
         }
     }

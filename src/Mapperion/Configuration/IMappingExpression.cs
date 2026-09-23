@@ -44,6 +44,51 @@ namespace Mapperion
         /// <exception cref="MapperConfigurationException">The reverse pair was already declared.</exception>
         IMappingExpression<TDestination, TSource> ReverseMap();
 
+        /// <summary>
+        /// Replaces this map entirely with a converter. Member configuration stops applying: the
+        /// converter produces the destination on its own.
+        /// </summary>
+        /// <typeparam name="TTypeConverter">The converter, which needs a parameterless constructor.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> ConvertUsing<TTypeConverter>()
+            where TTypeConverter : ITypeConverter<TSource, TDestination>;
+
+        /// <summary>Runs a step before the members are assigned, once the destination exists.</summary>
+        /// <param name="action">The step to run.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> BeforeMap(Action<TSource, TDestination> action);
+
+        /// <summary>Runs a step before the members are assigned, with access to the running mapper.</summary>
+        /// <param name="action">The step to run.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> BeforeMap(Action<TSource, TDestination, ResolutionContext> action);
+
+        /// <summary>Runs a step of its own type before the members are assigned.</summary>
+        /// <typeparam name="TMappingAction">The step, which needs a parameterless constructor.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> BeforeMap<TMappingAction>()
+            where TMappingAction : IMappingAction<TSource, TDestination>;
+
+        /// <summary>Runs a step once every member has been assigned.</summary>
+        /// <param name="action">The step to run.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> AfterMap(Action<TSource, TDestination> action);
+
+        /// <summary>Runs a step once every member has been assigned, with access to the running mapper.</summary>
+        /// <param name="action">The step to run.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> AfterMap(Action<TSource, TDestination, ResolutionContext> action);
+
+        /// <summary>Runs a step of its own type once every member has been assigned.</summary>
+        /// <typeparam name="TMappingAction">The step, which needs a parameterless constructor.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> AfterMap<TMappingAction>()
+            where TMappingAction : IMappingAction<TSource, TDestination>;
+
         /// <summary>Sets which side must be fully covered for this map to validate.</summary>
         /// <param name="validation">The validation mode.</param>
         /// <returns>This expression, for chaining.</returns>

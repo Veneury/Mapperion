@@ -39,6 +39,55 @@ namespace Mapperion.Internal
                 ;
         }
 
+        internal static bool IsSequence(Type type)
+        {
+            return TryGetElementType(type, out _) || TryGetDictionaryTypes(type, out _, out _);
+        }
+
+        internal static bool TryGetDictionaryTypes(
+            Type type,
+            [NotNullWhen(true)] out Type? keyType,
+            [NotNullWhen(true)] out Type? valueType)
+        {
+            if (IsDictionaryOf(type, out keyType, out valueType))
+            {
+                return true;
+            }
+
+            foreach (Type contract in type.GetInterfaces())
+            {
+                if (IsDictionaryOf(contract, out keyType, out valueType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsDictionaryOf(
+            Type type,
+            [NotNullWhen(true)] out Type? keyType,
+            [NotNullWhen(true)] out Type? valueType)
+        {
+            if (type.IsGenericType)
+            {
+                Type definition = type.GetGenericTypeDefinition();
+
+                if (definition == typeof(IDictionary<,>) || definition == typeof(IReadOnlyDictionary<,>))
+                {
+                    Type[] arguments = type.GetGenericArguments();
+                    keyType = arguments[0];
+                    valueType = arguments[1];
+                    return true;
+                }
+            }
+
+            keyType = null;
+            valueType = null;
+            return false;
+        }
+
         internal static bool TryGetElementType(Type type, [NotNullWhen(true)] out Type? elementType)
         {
             elementType = null;

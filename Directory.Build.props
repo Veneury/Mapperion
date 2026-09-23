@@ -14,6 +14,7 @@
 
   <PropertyGroup>
     <Product>Mapperion</Product>
+    <VersionPrefix>0.2.0</VersionPrefix>
     <Authors>Mapperion contributors</Authors>
     <Copyright>Copyright (c) Mapperion contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -24,6 +25,10 @@
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
+  </ItemGroup>
 
   <PropertyGroup Condition="'$(CI)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>

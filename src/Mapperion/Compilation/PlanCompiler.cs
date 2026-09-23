@@ -28,24 +28,69 @@ namespace Mapperion.Compilation
             ParameterExpression context = Expression.Parameter(typeof(MappingContext), "context");
             ParameterExpression result = Expression.Variable(destinationType, "result");
 
-            var body = new List<Expression>
-            {
-                Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
-            };
+            Expression block;
 
-            foreach (MemberDefinition member in Ordered(definition.Members))
+            if (definition.TypeConverterType is not null)
             {
-                Expression? assignment = BuildAssignment(member, result, source, context, engine);
-
-                if (assignment is not null)
-                {
-                    body.Add(assignment);
-                }
+                block = BuildTypeConverterCall(definition, source, destination, context);
             }
+            else
+            {
+                ParameterExpression step = Expression.Variable(typeof(string), "step");
 
-            body.Add(result);
+                var body = new List<Expression>
+                {
+                    Expression.Assign(step, Expression.Constant("(constructing)")),
+                    Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
+                };
 
-            Expression block = Expression.Block(new[] { result }, body);
+                if (definition.PreserveReferences)
+                {
+                    body.Add(Expression.Call(
+                        Method(nameof(MappingRuntime.Preserve)),
+                        Expression.Convert(source, typeof(object)),
+                        Expression.Constant(destinationType, typeof(Type)),
+                        Expression.Convert(result, typeof(object)),
+                        context));
+                }
+
+                foreach (object action in definition.BeforeMapActions)
+                {
+                    body.Add(Expression.Assign(step, Expression.Constant("(before step)")));
+                    body.Add(BuildAction(action, definition, source, result, context));
+                }
+
+                foreach (MemberDefinition member in Ordered(definition.Members))
+                {
+                    Expression? assignment = BuildAssignment(member, result, source, context, engine);
+
+                    if (assignment is not null)
+                    {
+                        body.Add(Expression.Assign(
+                            step,
+                            Expression.Constant(member.DestinationMember.Name)));
+
+                        body.Add(assignment);
+                    }
+                }
+
+                foreach (object action in definition.AfterMapActions)
+                {
+                    body.Add(Expression.Assign(step, Expression.Constant("(after step)")));
+                    body.Add(BuildAction(action, definition, source, result, context));
+                }
+
+                body.Add(result);
+
+                Expression core = Expression.Block(new[] { result }, body);
+                core = WithPreservedShortCircuit(core, definition, source, context);
+                core = WithDepthLimit(core, definition, context);
+
+                block = Expression.Block(
+                    new[] { step },
+                    Expression.Assign(step, Expression.Constant("(constructing)")),
+                    Reporting(core, step, definition));
+            }
 
             if (!sourceType.IsValueType)
             {
@@ -59,6 +104,174 @@ namespace Mapperion.Compilation
             Delegate typed = Expression.Lambda(delegateType, block, source, destination, context).Compile();
 
             return new MapPlan(typed, BuildBoxed(typed, sourceType, destinationType));
+        }
+
+        /// <summary>
+        /// Returns the destination already built for this source instance, when the map asks for
+        /// references to be preserved. Registering happens right after the destination is created
+        /// and before any member is mapped, which is what lets a cycle find its way back.
+        /// </summary>
+        private static Expression WithPreservedShortCircuit(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression context)
+        {
+            if (!definition.PreserveReferences)
+            {
+                return core;
+            }
+
+            ParameterExpression existing = Expression.Variable(typeof(object), "preserved");
+
+            return Expression.Block(
+                new[] { existing },
+                Expression.Assign(
+                    existing,
+                    Expression.Call(
+                        Method(nameof(MappingRuntime.Preserved)),
+                        Expression.Convert(source, typeof(object)),
+                        Expression.Constant(definition.DestinationType, typeof(Type)),
+                        context)),
+                Expression.Condition(
+                    Expression.Equal(existing, Expression.Constant(null, typeof(object))),
+                    core,
+                    Expression.Convert(existing, definition.DestinationType)));
+        }
+
+        /// <summary>
+        /// Stops recursing once this map is nested deeper than it allows, yielding the default
+        /// instead. The counter is released in a finally so an exception does not leave it raised.
+        /// </summary>
+        private static Expression WithDepthLimit(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression context)
+        {
+            if (definition.MaxDepth is not int maximum)
+            {
+                return core;
+            }
+
+            ParameterExpression depth = Expression.Variable(typeof(int), "depth");
+            ConstantExpression key = Expression.Constant(definition.Key, typeof(TypeMapKey));
+
+            return Expression.Block(
+                new[] { depth },
+                Expression.Assign(
+                    depth,
+                    Expression.Call(Method(nameof(MappingRuntime.Enter)), key, context)),
+                Expression.TryFinally(
+                    Expression.Condition(
+                        Expression.GreaterThan(depth, Expression.Constant(maximum)),
+                        Expression.Default(definition.DestinationType),
+                        core),
+                    Expression.Call(Method(nameof(MappingRuntime.Exit)), key, context)));
+        }
+
+        /// <remarks>
+        /// The catch carries no exception filter. A filter compiles to an IL filter block, and
+        /// <c>DynamicMethod</c> on .NET Framework refuses those, so the decision of what to rethrow
+        /// untouched lives in <see cref="MappingRuntime.Fail{TDestination}"/> instead.
+        /// </remarks>
+        private static TryExpression Reporting(
+            Expression body,
+            ParameterExpression step,
+            TypeMapDefinition definition)
+        {
+            ParameterExpression error = Expression.Parameter(typeof(Exception), "error");
+
+            MethodCallExpression fail = Expression.Call(
+                Method(nameof(MappingRuntime.Fail)).MakeGenericMethod(definition.DestinationType),
+                step,
+                Expression.Constant(definition.Key.ToString()),
+                error);
+
+            return Expression.TryCatch(body, Expression.Catch(error, fail));
+        }
+
+        private static Expression BuildTypeConverterCall(
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression destination,
+            ParameterExpression context)
+        {
+            Type[] arguments = InterfaceArguments(
+                definition.TypeConverterType!,
+                typeof(ITypeConverter<,>),
+                "ITypeConverter<TSource, TDestination>");
+
+            Expression call = Expression.Call(
+                Method(nameof(MappingRuntime.ConvertType)).MakeGenericMethod(arguments[0], arguments[1]),
+                Expression.Constant(definition.TypeConverterType, typeof(Type)),
+                Expression.Convert(source, arguments[0]),
+                Expression.Convert(destination, arguments[1]),
+                context);
+
+            return arguments[1] == definition.DestinationType
+                ? call
+                : Expression.Convert(call, definition.DestinationType);
+        }
+
+        private static Expression BuildAction(
+            object action,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression result,
+            ParameterExpression context)
+        {
+            if (action is Delegate handler)
+            {
+                int parameters = handler.GetType().GetMethod("Invoke")!.GetParameters().Length;
+
+                return parameters == 3
+                    ? Expression.Invoke(Expression.Constant(handler), source, result, NewResolutionContext(context))
+                    : Expression.Invoke(Expression.Constant(handler), source, result);
+            }
+
+            if (action is Type actionType)
+            {
+                return Expression.Call(
+                    Method(nameof(MappingRuntime.RunAction))
+                        .MakeGenericMethod(definition.SourceType, definition.DestinationType),
+                    Expression.Constant(actionType, typeof(Type)),
+                    source,
+                    result,
+                    context);
+            }
+
+            throw new MapperConfigurationException(
+                definition.Key + ": a before or after step must be a delegate or an IMappingAction type.");
+        }
+
+        private static NewExpression NewResolutionContext(ParameterExpression context)
+        {
+            ConstructorInfo constructor = typeof(ResolutionContext).GetConstructor(
+                BindingFlags.NonPublic | BindingFlags.Instance,
+                null,
+                new[] { typeof(MappingContext) },
+                null)!;
+
+            return Expression.New(constructor, context);
+        }
+
+        private static Type[] InterfaceArguments(Type implementation, Type contract, string expected)
+        {
+            foreach (Type implemented in implementation.GetInterfaces())
+            {
+                if (implemented.IsGenericType && implemented.GetGenericTypeDefinition() == contract)
+                {
+                    return implemented.GetGenericArguments();
+                }
+            }
+
+            throw new MapperConfigurationException(
+                implementation.Name + " does not implement " + expected + ".");
+        }
+
+        private static MethodInfo Method(string name)
+        {
+            return typeof(MappingRuntime).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Static)!;
         }
 
         private static IEnumerable<MemberDefinition> Ordered(IReadOnlyList<MemberDefinition> members)
@@ -147,7 +360,11 @@ namespace Mapperion.Compilation
                 }
 
                 arguments[i] = ConversionBuilder.Build(
-                    ReadSource(parameter.Source, source),
+                    ReadSource(
+                        parameter.Source,
+                        source,
+                        Expression.Default(definition.DestinationType),
+                        context),
                     parameter.ParameterType,
                     engine,
                     context);
@@ -168,25 +385,109 @@ namespace Mapperion.Compilation
                 return null;
             }
 
-            Expression value = ReadSource(member.Source, source);
+            Expression value = ReadSource(member.Source, source, result, context);
             value = ApplyNullSubstitute(member, value);
 
             Type destinationType = member.DestinationMember.MemberType;
             Expression target = Access(result, member.DestinationMember);
 
-            Expression converted = member.UseDestinationValue &&
-                engine.Model.Contains(new TypeMapKey(value.Type, destinationType))
-                    ? MapIntoExisting(value, target, destinationType, context)
-                    : ConversionBuilder.Build(value, destinationType, engine, context);
+            Expression converted;
 
-            Expression assignment = Expression.Assign(target, converted);
+            if (member.ValueConverterType is not null)
+            {
+                converted = BuildValueConverterCall(member.ValueConverterType, value, destinationType, context, engine);
+            }
+            else if (member.UseDestinationValue &&
+                engine.Model.Contains(new TypeMapKey(value.Type, destinationType)))
+            {
+                converted = MapIntoExisting(value, target, destinationType, context);
+            }
+            else
+            {
+                converted = ConversionBuilder.Build(value, destinationType, engine, context);
+            }
+
+            converted = WithoutNullDestination(converted, engine.Model.Options);
+
+            Expression assignment;
 
             if (member.Condition is LambdaExpression condition)
             {
-                assignment = Expression.IfThen(ParameterReplacer.Inline(condition, source), assignment);
+                ParameterExpression resolved = Expression.Variable(destinationType, "resolved");
+
+                assignment = Expression.Block(
+                    new[] { resolved },
+                    Expression.Assign(resolved, converted),
+                    Expression.IfThen(
+                        ParameterReplacer.Inline(condition, source),
+                        Expression.Assign(target, resolved)));
+            }
+            else
+            {
+                assignment = Expression.Assign(target, converted);
+            }
+
+            if (member.PreCondition is LambdaExpression preCondition)
+            {
+                assignment = Expression.IfThen(ParameterReplacer.Inline(preCondition, source), assignment);
             }
 
             return assignment;
+        }
+
+        /// <summary>
+        /// Replaces a null with the destination type's empty content when the configuration says
+        /// destinations should not hold nulls. Collections are left alone: AllowNullCollections is
+        /// the setting that speaks for them.
+        /// </summary>
+        private static Expression WithoutNullDestination(Expression converted, MapperOptions options)
+        {
+            if (options.AllowNullDestinationValues || converted.Type.IsValueType)
+            {
+                return converted;
+            }
+
+            Expression? empty = EmptyContent(converted.Type);
+            return empty is null ? converted : Expression.Coalesce(converted, empty);
+        }
+
+        private static Expression? EmptyContent(Type type)
+        {
+            if (type == typeof(string))
+            {
+                return Expression.Constant(string.Empty);
+            }
+
+            if (TypeClassifier.IsSequence(type))
+            {
+                return null;
+            }
+
+            ConstructorInfo? parameterless = type.GetConstructor(Type.EmptyTypes);
+            return parameterless is null ? null : Expression.New(parameterless);
+        }
+
+        private static Expression BuildValueConverterCall(
+            Type converterType,
+            Expression value,
+            Type destinationType,
+            ParameterExpression context,
+            MapperEngine engine)
+        {
+            Type[] arguments = InterfaceArguments(
+                converterType,
+                typeof(IValueConverter<,>),
+                "IValueConverter<TSourceMember, TDestinationMember>");
+
+            Expression input = ConversionBuilder.Build(value, arguments[0], engine, context);
+
+            Expression produced = Expression.Call(
+                Method(nameof(MappingRuntime.ConvertValue)).MakeGenericMethod(arguments[0], arguments[1]),
+                Expression.Constant(converterType, typeof(Type)),
+                input,
+                context);
+
+            return ConversionBuilder.Build(produced, destinationType, engine, context);
         }
 
         private static Expression MapIntoExisting(
@@ -231,7 +532,11 @@ namespace Mapperion.Compilation
                 : value;
         }
 
-        private static Expression ReadSource(MemberSource source, ParameterExpression sourceParameter)
+        private static Expression ReadSource(
+            MemberSource source,
+            ParameterExpression sourceParameter,
+            Expression destinationInstance,
+            ParameterExpression context)
         {
             switch (source)
             {
@@ -245,12 +550,31 @@ namespace Mapperion.Compilation
                     return Expression.Constant(constant.Value, constant.ValueType);
 
                 case ValueResolverSource resolver:
-                    throw new MapperConfigurationException(
-                        "Value resolvers are not implemented yet: " + resolver.ResolverType.Name + ".");
+                    return BuildResolverCall(resolver, sourceParameter, destinationInstance, context);
 
                 default:
                     throw new MapperConfigurationException("Unsupported member source: " + source.Kind + ".");
             }
+        }
+
+        private static MethodCallExpression BuildResolverCall(
+            ValueResolverSource resolver,
+            ParameterExpression sourceParameter,
+            Expression destinationInstance,
+            ParameterExpression context)
+        {
+            Type[] arguments = InterfaceArguments(
+                resolver.ResolverType,
+                typeof(IValueResolver<,,>),
+                "IValueResolver<TSource, TDestination, TDestinationMember>");
+
+            return Expression.Call(
+                Method(nameof(MappingRuntime.Resolve)).MakeGenericMethod(arguments[0], arguments[1], arguments[2]),
+                Expression.Constant(resolver.ResolverType, typeof(Type)),
+                Expression.Convert(sourceParameter, arguments[0]),
+                Expression.Convert(destinationInstance, arguments[1]),
+                Expression.Default(arguments[2]),
+                context);
         }
 
         private static Expression ReadPath(Expression instance, IReadOnlyList<MemberDescriptor> steps, int index)

@@ -1,8 +1,10 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using Mapperion.Compilation;
 using Mapperion.Configuration;
 using Mapperion.Execution;
 using System.Collections.Generic;
+using System.Threading;
 using Mapperion.Internal;
 using Mapperion.Model;
 using Mapperion.Validation;
@@ -36,6 +38,9 @@ namespace Mapperion
             }
         }
 
+        private readonly ActivatorServiceResolver activator = new ActivatorServiceResolver();
+        private MapperEngine? engine;
+
         /// <summary>Gets the frozen configuration model the compiler turns into executable plans.</summary>
         public MapperModel Model { get; }
 
@@ -49,7 +54,38 @@ namespace Mapperion
         /// <returns>An immutable mapper safe to share between threads.</returns>
         [RequiresUnreferencedCode("Mapping resolves members by reflection.")]
         [RequiresDynamicCode("Mapping compiles plans at run time.")]
-        public IMapper CreateMapper() => new Mapper(Model);
+        public IMapper CreateMapper() => new Mapper(Engine(), activator);
+
+        /// <summary>
+        /// Builds a mapper that takes its converters, resolvers and mapping actions from the given
+        /// container, falling back to construction for the ones it does not know. Mappers built
+        /// from the same configuration share their compiled plans, so one per scope is cheap.
+        /// </summary>
+        /// <param name="services">The container to ask.</param>
+        /// <returns>An immutable mapper bound to that container.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="services"/> is <see langword="null"/>.</exception>
+        [RequiresUnreferencedCode("Mapping resolves members by reflection.")]
+        [RequiresDynamicCode("Mapping compiles plans at run time.")]
+        public IMapper CreateMapper(IServiceProvider services)
+        {
+            Guard.NotNull(services, nameof(services));
+            return new Mapper(Engine(), new ServiceProviderResolver(services, activator));
+        }
+
+        [RequiresUnreferencedCode("Compiling a map inspects types by reflection.")]
+        [RequiresDynamicCode("Compiling a map emits code at run time.")]
+        private MapperEngine Engine()
+        {
+            MapperEngine? existing = Volatile.Read(ref engine);
+
+            if (existing is not null)
+            {
+                return existing;
+            }
+
+            var created = new MapperEngine(Model);
+            return Interlocked.CompareExchange(ref engine, created, null) ?? created;
+        }
 
         /// <summary>
         /// Throws when the configuration has problems, listing every one of them rather than

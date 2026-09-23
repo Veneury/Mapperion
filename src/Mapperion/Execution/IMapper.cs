@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace Mapperion
 {
@@ -35,6 +36,16 @@ namespace Mapperion
         /// <param name="destination">The destination instance to populate.</param>
         /// <returns>The populated destination instance.</returns>
         TDestination Map<TSource, TDestination>(TSource source, TDestination destination);
+
+        /// <summary>
+        /// Rewrites a query so the provider selects <typeparamref name="TDestination"/> directly,
+        /// without materialising the source. Only maps a query provider can translate work here:
+        /// converters, resolvers and the before and after steps are reported, not skipped.
+        /// </summary>
+        /// <typeparam name="TDestination">The type to project to.</typeparam>
+        /// <param name="source">The query over the source type.</param>
+        /// <returns>The projected query.</returns>
+        IQueryable<TDestination> ProjectTo<TDestination>(IQueryable source);
 
         /// <summary>
         /// Maps <paramref name="source"/> to <paramref name="destinationType"/> without generics.

@@ -1,5 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using System.Linq.Expressions;
 using Mapperion.Compilation;
 using Mapperion.Internal;
 using Mapperion.Model;
@@ -7,8 +9,9 @@ using Mapperion.Model;
 namespace Mapperion.Execution
 {
     /// <summary>
-    /// The mapper handed to callers. Immutable and safe to share: all it holds is the engine that
-    /// owns the compiled plans.
+    /// The mapper handed to callers. Immutable and safe to share. Several mappers can sit on the
+    /// same engine, which is what makes one per container scope cheap: the compiled plans are
+    /// shared, and only the place converters and resolvers come from differs.
     /// </summary>
     internal sealed class Mapper : IMapper
     {
@@ -17,12 +20,19 @@ namespace Mapperion.Execution
             "with RequiresUnreferencedCode and RequiresDynamicCode.";
 
         private readonly MapperEngine engine;
+        private readonly IServiceResolver services;
 
         [RequiresUnreferencedCode("Mapping resolves plans that inspect types by reflection.")]
         [RequiresDynamicCode("Mapping compiles plans at run time.")]
         internal Mapper(MapperModel model)
+            : this(new MapperEngine(model), new ActivatorServiceResolver())
         {
-            engine = new MapperEngine(model);
+        }
+
+        internal Mapper(MapperEngine engine, IServiceResolver services)
+        {
+            this.engine = engine;
+            this.services = services;
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
@@ -35,7 +45,7 @@ namespace Mapperion.Execution
             }
 
             var key = new TypeMapKey(source.GetType(), typeof(TDestination));
-            object? mapped = engine.GetPlan(key).Boxed(source, null, new MappingContext(engine));
+            object? mapped = engine.GetPlan(key).Boxed(source, null, Context());
 
             return (TDestination)mapped!;
         }
@@ -71,7 +81,7 @@ namespace Mapperion.Execution
             }
 
             var key = new TypeMapKey(sourceType, destinationType);
-            return engine.GetPlan(key).Boxed(source, null, new MappingContext(engine));
+            return engine.GetPlan(key).Boxed(source, null, Context());
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
@@ -81,7 +91,35 @@ namespace Mapperion.Execution
             MapPlan plan = engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
             var typed = (MapDelegate<TSource, TDestination>)plan.Typed;
 
-            return typed(source, destination, new MappingContext(engine));
+            return typed(source, destination, Context());
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        public IQueryable<TDestination> ProjectTo<TDestination>(IQueryable source)
+        {
+            Guard.NotNull(source, nameof(source));
+
+            LambdaExpression selector = engine.GetProjection(
+                new TypeMapKey(source.ElementType, typeof(TDestination)));
+
+            MethodCallExpression select = Expression.Call(
+                typeof(Queryable),
+                nameof(Queryable.Select),
+                new[] { source.ElementType, typeof(TDestination) },
+                source.Expression,
+                Expression.Quote(selector));
+
+            return source.Provider.CreateQuery<TDestination>(select);
+        }
+
+        private MappingContext Context()
+        {
+            return new MappingContext(
+                engine,
+                services,
+                this,
+                engine.RequiresState ? new MappingState() : null);
         }
     }
 }
