@@ -3,6 +3,18 @@
 Object-to-object mapper for .NET, **MIT licensed**, built as a drop-in alternative to AutoMapper
 for commercial projects.
 
+[![Mapperion](https://img.shields.io/nuget/vpre/Mapperion?label=Mapperion)](https://www.nuget.org/packages/Mapperion)
+[![Mapperion.Extensions.DependencyInjection](https://img.shields.io/nuget/vpre/Mapperion.Extensions.DependencyInjection?label=DependencyInjection)](https://www.nuget.org/packages/Mapperion.Extensions.DependencyInjection)
+[![Mapperion.SourceGenerator](https://img.shields.io/nuget/vpre/Mapperion.SourceGenerator?label=SourceGenerator)](https://www.nuget.org/packages/Mapperion.SourceGenerator)
+[![CI](https://github.com/Veneury/Mapperion/actions/workflows/ci.yml/badge.svg)](https://github.com/Veneury/Mapperion/actions/workflows/ci.yml)
+
+**[Documentation](https://veneury.github.io/Mapperion/)** — getting started, migrating from
+AutoMapper, ahead-of-time, performance, and the full API reference.
+
+```
+dotnet add package Mapperion --prerelease
+```
+
 > **Status: pre-release.** Everything listed below works and is covered by the test suite, which
 > runs on .NET Framework 4.7.2 and 4.8 as well as .NET 8, 9 and 10. There is nothing left that
 > AutoMapper does and Mapperion does not. What is still missing is the thing no amount of code
@@ -13,7 +25,7 @@ for commercial projects.
 MIT, and every version already published stays MIT: an MIT grant cannot be withdrawn from something
 already released. There is no contributor licence agreement here and no copyright assignment, which
 is what would make relicensing future versions possible for one party to decide alone.
-[GOVERNANCE.md](GOVERNANCE.md) explains the mechanism, and is honest about where that protection is
+[GOVERNANCE.md](https://github.com/Veneury/Mapperion/blob/main/GOVERNANCE.md) explains the mechanism, and is honest about where that protection is
 still thin.
 
 ## Why
@@ -255,4 +267,4 @@ Requires the .NET 10 SDK, pinned in `global.json`. The build treats warnings as 
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](https://github.com/Veneury/Mapperion/blob/main/LICENSE).
