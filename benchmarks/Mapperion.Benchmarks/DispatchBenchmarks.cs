@@ -54,6 +54,10 @@ namespace Mapperion.Benchmarks
         [Benchmark]
         public FlatDto ThroughTheConcreteMapper() => concrete.Map<Flat, FlatDto>(source);
 
+        /// <summary>What MapFast gives back, still holding the mapper as an IMapper.</summary>
+        [Benchmark]
+        public FlatDto ThroughMapFast() => mapper.MapFast<Flat, FlatDto>(source);
+
         /// <summary>Looking the plan up the old way, by key.</summary>
         [Benchmark]
         public object FindingThePlanByKey() =>

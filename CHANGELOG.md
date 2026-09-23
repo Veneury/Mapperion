@@ -7,6 +7,18 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ## [Unreleased]
 
+### Added
+
+- `MapFast`, un método de extensión sobre `IMapper` que hace el mismo mapeo evitando el coste de
+  llamar a un método genérico a través de una interfaz. Reconoce el mapper que construye la
+  librería y lo llama directamente; con cualquier otra implementación, como un decorador, cae de
+  vuelta a la interfaz y sigue funcionando. No cambia nada de `IMapper`, así que el `Map` de
+  siempre queda igual.
+- En el escenario plano baja de 28,1 ns a 18,7 ns, de 2,75x a 1,83x sobre el mapeo a mano, que
+  empata con Mapster dentro de las barras de error. El ahorro es un coste fijo por llamada, así
+  que cuanto más trabajo tenga el mapeo menos pesa. Para un camino realmente caliente el source
+  generator sigue siendo mejor respuesta: está en 0,93x.
+
 ### Changed
 
 - El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array

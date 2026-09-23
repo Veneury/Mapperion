@@ -98,6 +98,9 @@ namespace Mapperion.Benchmarks
         public FlatDto Mapperion_Runtime() => Mapperion.Map<Flat, FlatDto>(source);
 
         [Benchmark]
+        public FlatDto Mapperion_RuntimeFast() => Mapperion.MapFast<Flat, FlatDto>(source);
+
+        [Benchmark]
         public FlatDto Mapperion_SourceGen() => MapperionSourceGen.ToDto(source);
 
         [Benchmark]
