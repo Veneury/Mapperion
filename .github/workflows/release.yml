@@ -95,10 +95,29 @@ jobs:
         with:
           user: ${{ secrets.NUGET_USER }}
 
+      # The packages are listed here rather than handed to the CLI as a wildcard: dotnet nuget
+      # push does not expand one, and answers a pattern it cannot find with "File does not exist",
+      # which reads like the packages were never built.
+      #
       # --skip-duplicate so re-running a job that failed partway does not fail on the packages that
-      # already went up.
+      # already went up. The symbol package beside each one goes up with it.
       - name: Push to NuGet
-        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        shell: pwsh
+        run: |
+          $packages = Get-ChildItem artifacts/*.nupkg
+
+          if ($packages.Count -eq 0) {
+            throw 'No packages were found in artifacts/. The pack step should have failed before this.'
+          }
+
+          foreach ($package in $packages) {
+            Write-Host "Pushing $($package.Name)"
+            dotnet nuget push $package.FullName --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+            if ($LASTEXITCODE -ne 0) {
+              throw "Pushing $($package.Name) failed."
+            }
+          }
 
       - name: Create the GitHub release
         env:

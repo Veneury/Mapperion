@@ -5,7 +5,7 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
-## [0.8.0-preview.2] - 2026-09-23
+## [0.8.0-preview.3] - 2026-09-23
 
 Primera versión pública. Todo lo de abajo se acumuló antes de publicar nada, así que esta
 entrada es larga por una vez; las siguientes no lo serán.
