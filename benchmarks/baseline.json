@@ -1,0 +1,31 @@
+{
+  "comment": [
+    "Each ratio is how many times slower than the same mapping written by hand, measured in the",
+    "same run. Times are not compared: a shared runner is slow and erratic in ways that move the",
+    "hand-written baseline too, so the ratio survives what the nanoseconds do not.",
+    "",
+    "The tolerance is deliberately loose to begin with. A check that cries wolf gets ignored, and",
+    "there is no data yet on how much these move between runners. What it has to catch is a",
+    "regression of the size that actually happens: switching off the inlining puts the collection",
+    "back from 1.79x to 2.65x, and losing the plan cache costs a third of a flat map. Both are far",
+    "outside 25 per cent. Tighten this once a few runs have shown what the real spread is.",
+    "",
+    "A scenario may set its own tolerance, for when one of them turns out to be steadier or",
+    "noisier than the rest. Nested has one: at 25 per cent a run with the inlining switched off",
+    "measured 2.80x and passed, which is not much of a guard, so it is held tighter.",
+    "",
+    "Raising a number here is how a change that is meant to cost something gets agreed. Do it in",
+    "the same pull request, never afterwards."
+  ],
+  "tolerance": 0.25,
+  "scenarios": [
+    { "type": "FlatBenchmarks", "method": "Mapperion_Runtime", "ratio": 2.82 },
+    { "type": "FlatBenchmarks", "method": "Mapperion_RuntimeFast", "ratio": 1.91 },
+    { "type": "FlatBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.04 },
+    { "type": "NestedBenchmarks", "method": "Mapperion_Runtime", "ratio": 2.36, "tolerance": 0.15 },
+    { "type": "CollectionBenchmarks", "method": "Mapperion_Runtime", "ratio": 1.79 },
+    { "type": "CollectionBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.26 },
+    { "type": "ConstructorBenchmarks", "method": "Mapperion_Runtime", "ratio": 3.67 },
+    { "type": "ConstructorBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.01 }
+  ]
+}

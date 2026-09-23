@@ -5,6 +5,20 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
+## [Unreleased]
+
+### Added
+
+- Presupuesto de regresión de rendimiento en la CI. Los tests dicen qué devuelve un mapeo; nada
+  decía cuánto tarda, y las dos cosas se separan con facilidad: un cambio puede dejar todos los
+  resultados idénticos y duplicar el tiempo con la suite entera en verde. Estuvo a punto de pasar
+  al escribir la opción de la ruta de error, y solo lo evitó releer el código.
+- Se compara el múltiplo sobre el mapeo a mano medido en la misma corrida, nunca el tiempo: un
+  runner compartido mueve las dos cifras a la vez, así que la proporción aguanta lo que los
+  nanosegundos no. La línea base está en `benchmarks/baseline.json` y se sube a mano.
+- Comprobado en los dos sentidos: con el árbol limpio pasa, y desactivando el inlining a propósito
+  falla en la colección y en el anidado diciendo cuál y cuánto.
+
 ## [0.9.0-preview.1] - 2026-09-23
 
 Una minor y no un parche porque el nombre seguro cambia la identidad de los ensamblados, que es
