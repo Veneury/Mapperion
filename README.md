@@ -60,6 +60,15 @@ config.AssertIsValid();
 //   2. Sale -> SaleDto: member 'Lines' needs a map from 'Line' to 'LineDto'. Declare it with CreateMap<Line, LineDto>().
 ```
 
+One map covers every closing of a generic pair:
+
+```csharp
+cfg.CreateMap(typeof(Page<>), typeof(PageDto<>));
+cfg.CreateMap<Order, OrderDto>();
+
+PageDto<OrderDto> page = mapper.Map<Page<Order>, PageDto<OrderDto>>(source);
+```
+
 Records are built through their constructor, matching parameter names against source members:
 
 ```csharp
@@ -90,6 +99,23 @@ builder.Services.AddMapperion(typeof(Program).Assembly);
 That registers the configuration as a singleton and `IMapper` as scoped, so a resolver may depend
 on scoped services. Every mapper shares the same compiled plans, so one per request costs nothing.
 
+For a trimmed or ahead-of-time compiled application, the same mapping can be written at compile
+time instead, with no reflection anywhere:
+
+```csharp
+[Mapper]
+public partial class OrderMapper
+{
+    [MapProperty("Customer.Address.City", "CustomerCity")]
+    public partial OrderDto ToDto(Order source);
+
+    public partial LineDto ToDto(Line source);
+}
+```
+
+The generator writes the bodies and reports what it cannot write as a compiler error rather than
+leaving it to fail later.
+
 Profiles work the way you already know them:
 
 ```csharp
@@ -119,6 +145,8 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
 | `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `ReverseMap()` | same, minus unflattening |
+| `Include<,>()`, `IncludeBase<,>()` | same |
+| `CreateMap(typeof(A<>), typeof(B<>))` | same |
 | `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
 | `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
@@ -157,6 +185,12 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   collections: `Batch.Readings[0].Ratio`.
 - Object graphs that loop, through `PreserveReferences` or `MaxDepth`. A cycle with neither is
   reported by `AssertIsValid()` rather than left to exhaust the stack.
+- Inheritance: `Include` dispatches to the derived map so a base reference still produces the right
+  destination, and `IncludeBase` takes the base map's configuration as a starting point.
+- Open generics: one `CreateMap(typeof(Page<>), typeof(PageDto<>))` serves every closing of the
+  pair, worked out on first use and kept.
+- A source generator that writes mappers at compile time, for trimmed and AOT applications. Its
+  output is checked against the run-time engine's on the same cases.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
@@ -176,9 +210,10 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 
 ## Not yet
 
-Inheritance, open generics, `ResolutionContext.Items`, a static entry point for .NET Framework
-without a container, `string` to `Guid` and the date types, EF6, and the source generator. A
-projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
+`ResolutionContext.Items`, a static entry point for .NET Framework without a container, `string`
+to `Guid` and the date types, and EF6. A projection cannot build a dictionary or dispatch to a
+derived map: its shape is fixed before any row is read. The source generator covers the common
+shapes but not yet dictionaries, value resolvers or inheritance. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

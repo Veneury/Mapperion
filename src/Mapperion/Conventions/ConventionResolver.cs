@@ -31,7 +31,7 @@ namespace Mapperion.Conventions
 
         internal TypeMapDefinition Complete(TypeMapDefinition definition)
         {
-            if (definition.HasTypeConverter)
+            if (definition.HasTypeConverter || IsTemplate(definition))
             {
                 return definition;
             }
@@ -67,6 +67,11 @@ namespace Mapperion.Conventions
             }
 
             return definition.WithResolved(completed.ToArray(), constructor, parameters);
+        }
+
+        internal static bool IsTemplate(TypeMapDefinition definition)
+        {
+            return definition.SourceType.IsGenericTypeDefinition || definition.DestinationType.IsGenericTypeDefinition;
         }
 
         private MemberDefinition Resolve(MemberDefinition configured, TypeMapDefinition definition)

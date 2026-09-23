@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Mapperion.Benchmarks</RootNamespace>
+    <Optimize>true</Optimize>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <!--
+      AutoMapper 14.0.0 is the last MIT release and carries CVE-2026-32933, a denial of service
+      through uncontrolled recursion that will never be patched on 14.x. It is referenced here only
+      as a measuring stick in a project that is never shipped and never run in production, so the
+      advisory is acknowledged rather than acted on.
+    -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="AgileObjects.AgileMapper" />
+    <PackageReference Include="Riok.Mapperly" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
+    <ProjectReference Include="../../src/Mapperion.SourceGenerator/Mapperion.SourceGenerator.csproj"
+                     OutputItemType="Analyzer"
+                     ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

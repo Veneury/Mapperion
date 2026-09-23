@@ -9,6 +9,46 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- Herencia y polimorfismo. `Include<TDerivedSource,TDerivedDestination>()` hace que mapear a través
+  de una referencia base produzca el destino derivado que corresponde; las comprobaciones se emiten
+  de más derivado a menos, así que una jerarquía de varios niveles elige la coincidencia más
+  cercana y no la primera que encaje.
+- `IncludeBase<TBaseSource,TBaseDestination>()` toma la configuración de miembros del mapa base
+  antes de que corran las convenciones. Lo que el mapa derivado configure gana.
+- Una colección del tipo base mapea cada elemento a su propio tipo derivado.
+- La validación reporta un `Include` o un `IncludeBase` hacia un mapa no declarado, y un `Include`
+  cuyo destino derivado no hereda del destino base.
+- Una proyección reporta un mapa polimórfico: la forma de una proyección se fija antes de leer
+  ninguna fila, así que no puede depender del tipo en tiempo de ejecución.
+- Genéricos abiertos: `CreateMap(typeof(Page<>), typeof(PageDto<>))` declara una plantilla que el
+  motor cierra la primera vez que llega un par que encaja, y guarda el resultado. Funciona igual
+  dentro de un `Profile` y con varios argumentos de tipo.
+- Un mapa cerrado declarado a mano tiene prioridad sobre la plantilla que también encajaría.
+- `IOpenMappingExpression` expone solo lo que se puede decir sin conocer los tipos:
+  `IgnoreMember(nombre)`, `ValidateMemberList`, `MaxDepth` y `PreserveReferences`. Configurar un
+  miembro con una expresión contra un tipo que aún no tiene argumentos no tendría sentido, así que
+  los miembros quedan en manos de las convenciones al cerrar.
+- Las plantillas quedan fuera de la validación de miembros y de la detección de ciclos, que no
+  significan nada sobre un tipo sin cerrar. Sí se comprueba que las dos partes tengan el mismo
+  número de argumentos de tipo, y que no se mezcle un tipo abierto con uno cerrado.
+- Paquete `Mapperion.SourceGenerator`: un generador incremental de Roslyn que escribe el cuerpo de
+  los métodos `partial` de una clase marcada con `[Mapper]`. La salida es C# corriente, sin
+  reflexión y sin emisión de código en ejecución, que es lo que la hace válida bajo trimming y AOT.
+- Emparejamiento por nombre exacto y luego sin distinguir mayúsculas, igual que el motor de
+  runtime; `[MapProperty("Customer.Address.City", "CustomerCity")]` para rutas explícitas, con
+  guarda de nulos en cada paso; `[MapperIgnore]` para saltarse un miembro.
+- Cubre objetos anidados llamando a otro método del mismo mapeador, colecciones con `Select` y
+  `ToList`/`ToArray`/`ToHashSet`, nullables, enums, conversiones numéricas, `ToString` y
+  construcción por constructor, incluidos los records.
+- Seis diagnósticos, `MPR0001` a `MPR0006`, para lo que no puede escribir: clase no `partial`,
+  miembro sin origen, conversión inexistente, destino que no se puede construir, firma no
+  soportada, y atributo que nombra un miembro inexistente.
+- Los atributos los emite el propio generador en cada compilación, `internal`, así que el paquete
+  no arrastra dependencia en ejecución y dos ensamblados nunca chocan.
+- `BothEnginesAgreeTests` pasa los mismos casos por los dos motores y compara los resultados. Es la
+  garantía que ADR-0005 dejó como condición: los dos no comparten una línea de código, así que lo
+  único que los mantiene honestos es ejecutarlos contra lo mismo.
+
 - Documentación de planeación completa (`docs/`), incluidos 4 ADRs.
 - Esqueleto de la solución: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package
   Management, `.editorconfig` con estilo obligatorio y warnings como errores.
@@ -147,6 +187,11 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.
 
 ### Fixed
+
+- `MemberDescriptor` se compara por tipo declarante, clase y nombre, no por el `MemberInfo` en
+  bruto. La reflexión devuelve un `MemberInfo` distinto para la misma propiedad según el tipo por
+  el que se llegue a ella, así que una propiedad heredada aparecía como dos miembros distintos y se
+  mapeaba dos veces. Solo salía a la luz con herencia, pero el fallo estaba desde el principio.
 
 - `MaxDepth` y `PreserveReferences` **funcionan**. Se configuraban, se guardaban en el modelo y el
   compilador las ignoraba por completo: eran no-ops silenciosos desde que existe la API fluida.

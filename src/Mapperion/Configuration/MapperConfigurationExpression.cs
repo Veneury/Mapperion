@@ -54,6 +54,17 @@ namespace Mapperion.Configuration
             typeMaps.Add(configuration);
         }
 
+        public IOpenMappingExpression CreateMap(Type sourceType, Type destinationType)
+        {
+            Guard.NotNull(sourceType, nameof(sourceType));
+            Guard.NotNull(destinationType, nameof(destinationType));
+
+            var configuration = new OpenTypeMapConfiguration(sourceType, destinationType);
+            EnsureNotDeclared(configuration.Key);
+            typeMaps.Add(configuration);
+            return configuration;
+        }
+
         public void AddProfile(Profile profile)
         {
             Guard.NotNull(profile, nameof(profile));
@@ -107,7 +118,14 @@ namespace Mapperion.Configuration
             var definitions = new TypeMapDefinition[typeMaps.Count];
             for (int i = 0; i < typeMaps.Count; i++)
             {
-                definitions[i] = resolver.Complete(typeMaps[i].Build(options));
+                definitions[i] = typeMaps[i].Build(options);
+            }
+
+            BaseMapInheritance.Apply(definitions);
+
+            for (int i = 0; i < definitions.Length; i++)
+            {
+                definitions[i] = resolver.Complete(definitions[i]);
             }
 
             return new MapperModel(options, definitions);

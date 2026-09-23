@@ -31,12 +31,19 @@ namespace Mapperion.Validation
 
             foreach (TypeMapDefinition map in model.TypeMaps)
             {
+                if (ConventionResolver.IsTemplate(map))
+                {
+                    ValidateTemplate(map, errors);
+                    continue;
+                }
+
                 if (map.HasTypeConverter)
                 {
                     continue;
                 }
 
                 ValidateReferences(map, errors);
+                ValidateHierarchy(map, model, errors);
                 ValidateConstructor(map, model, errors);
                 ValidateDestination(map, model, errors);
 
@@ -51,13 +58,29 @@ namespace Mapperion.Validation
             return errors;
         }
 
+        private static void ValidateTemplate(TypeMapDefinition map, List<string> errors)
+        {
+            int source = map.SourceType.GetGenericArguments().Length;
+            int destination = map.DestinationType.GetGenericArguments().Length;
+
+            if (source != destination)
+            {
+                errors.Add(
+                    map.Key + ": the template takes " + source + " type argument(s) on the source and " +
+                    destination + " on the destination. Closing it would have nothing to close with.");
+            }
+        }
+
         private static void ValidateCycles(MapperModel model, List<string> errors)
         {
             var reported = new HashSet<TypeMapKey>();
 
             foreach (TypeMapDefinition map in model.TypeMaps)
             {
-                Walk(map.Key, model, new List<TypeMapKey>(), reported, errors);
+                if (!ConventionResolver.IsTemplate(map))
+                {
+                    Walk(map.Key, model, new List<TypeMapKey>(), reported, errors);
+                }
             }
         }
 
@@ -180,6 +203,38 @@ namespace Mapperion.Validation
             }
 
             return text.ToString();
+        }
+
+        private static void ValidateHierarchy(TypeMapDefinition map, MapperModel model, List<string> errors)
+        {
+            foreach (TypeMapKey derived in map.DerivedMaps)
+            {
+                if (!model.Contains(derived))
+                {
+                    errors.Add(
+                        map.Key + " includes " + derived + ", which is not declared. Add CreateMap<" +
+                        derived.SourceType.Name + ", " + derived.DestinationType.Name + ">().");
+                    continue;
+                }
+
+                if (!map.DestinationType.IsAssignableFrom(derived.DestinationType))
+                {
+                    errors.Add(
+                        map.Key + " includes " + derived + ", but " + derived.DestinationType.Name +
+                        " does not derive from " + map.DestinationType.Name +
+                        ", so it could not be returned in its place.");
+                }
+            }
+
+            foreach (TypeMapKey baseKey in map.BaseMaps)
+            {
+                if (!model.Contains(baseKey))
+                {
+                    errors.Add(
+                        map.Key + " inherits from " + baseKey + ", which is not declared. Add CreateMap<" +
+                        baseKey.SourceType.Name + ", " + baseKey.DestinationType.Name + ">().");
+                }
+            }
         }
 
         private static void ValidateReferences(TypeMapDefinition map, List<string> errors)

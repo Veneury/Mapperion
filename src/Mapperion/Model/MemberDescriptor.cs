@@ -92,16 +92,33 @@ namespace Mapperion.Model
         }
 
         /// <inheritdoc />
+        /// <remarks>
+        /// Compared by declaring type, kind and name rather than by the reflection member itself.
+        /// Reflection hands out a different <see cref="MemberInfo"/> for the same property depending
+        /// on the type it was reached through, and two descriptors for one inherited property must
+        /// count as the same member or it would be mapped twice.
+        /// </remarks>
         public bool Equals(MemberDescriptor? other)
         {
-            return other is not null && Member.Equals(other.Member);
+            return other is not null
+                && Kind == other.Kind
+                && DeclaringType == other.DeclaringType
+                && string.Equals(Name, other.Name, StringComparison.Ordinal);
         }
 
         /// <inheritdoc />
         public override bool Equals(object? obj) => Equals(obj as MemberDescriptor);
 
         /// <inheritdoc />
-        public override int GetHashCode() => Member.GetHashCode();
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = DeclaringType.GetHashCode();
+                hash = (hash * 397) ^ Name.GetHashCode();
+                return (hash * 397) ^ (int)Kind;
+            }
+        }
 
         /// <inheritdoc />
         public override string ToString() => DeclaringType.Name + "." + Name;

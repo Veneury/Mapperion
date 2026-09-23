@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mapperion.Internal;
 using Mapperion.Model;
@@ -13,6 +14,7 @@ namespace Mapperion.Configuration
     {
         TypeMapKey Key { get; }
 
+        [RequiresUnreferencedCode("Resolving a member by name inspects types by reflection.")]
         TypeMapDefinition Build(MapperOptions options);
     }
 
@@ -33,6 +35,8 @@ namespace Mapperion.Configuration
         private readonly ITypeMapRegistry registry;
         private MemberListValidation? validation;
         private Type? typeConverterType;
+        private readonly List<TypeMapKey> derivedMaps = new List<TypeMapKey>();
+        private readonly List<TypeMapKey> baseMaps = new List<TypeMapKey>();
         private readonly List<object> beforeMapActions = new List<object>();
         private readonly List<object> afterMapActions = new List<object>();
         private int? maxDepth;
@@ -151,6 +155,20 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        public IMappingExpression<TSource, TDestination> Include<TDerivedSource, TDerivedDestination>()
+            where TDerivedSource : TSource
+            where TDerivedDestination : TDestination
+        {
+            derivedMaps.Add(new TypeMapKey(typeof(TDerivedSource), typeof(TDerivedDestination)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> IncludeBase<TBaseSource, TBaseDestination>()
+        {
+            baseMaps.Add(new TypeMapKey(typeof(TBaseSource), typeof(TBaseDestination)));
+            return this;
+        }
+
         public IMappingExpression<TSource, TDestination> ValidateMemberList(MemberListValidation validation)
         {
             this.validation = validation;
@@ -174,6 +192,7 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        [RequiresUnreferencedCode("Resolving a member by name inspects types by reflection.")]
         public TypeMapDefinition Build(MapperOptions options)
         {
             var definitions = new MemberDefinition[members.Count];
@@ -200,6 +219,8 @@ namespace Mapperion.Configuration
                 MemberListValidation = validation ?? options.MemberListValidation,
                 IsReverse = IsReverse,
                 TypeConverterType = typeConverterType,
+                DerivedMaps = derivedMaps.ToArray(),
+                BaseMaps = baseMaps.ToArray(),
                 BeforeMapActions = beforeMapActions.ToArray(),
                 AfterMapActions = afterMapActions.ToArray(),
                 MaxDepth = maxDepth,

@@ -78,6 +78,14 @@ namespace Mapperion.Projection
                     "Project to a type without one, or query the entities and map them in memory.");
             }
 
+            if (definition.DerivedMaps.Count != 0)
+            {
+                throw new MapperConfigurationException(
+                    definition.Key + " dispatches to derived maps, which a query provider cannot do: " +
+                    "the shape of a projection is fixed before any row is read. Project the derived " +
+                    "types separately, or query the entities and map them in memory.");
+            }
+
             if (definition.BeforeMapActions.Count != 0 || definition.AfterMapActions.Count != 0)
             {
                 throw new MapperConfigurationException(
@@ -362,7 +370,7 @@ namespace Mapperion.Projection
         {
             var key = new TypeMapKey(sourceType, destinationType);
 
-            if (!engine.Model.TryGetTypeMap(key, out TypeMapDefinition? nested))
+            if (!engine.TryGetDefinition(key, out TypeMapDefinition? nested))
             {
                 return null;
             }
