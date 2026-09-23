@@ -30,6 +30,27 @@
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
+  <!--
+    Strong naming, because a strong-named assembly on .NET Framework can only reference other
+    strong-named assemblies: without this, a signed codebase on net472 cannot use Mapperion at all,
+    and .NET Framework is a target this library goes out of its way to support.
+
+    The key is in the repository on purpose. A strong name is an identity, not a security boundary:
+    anyone can strip one and re-sign with a key of their own, so keeping the private half secret
+    buys nothing and costs delay signing and verification skipping for everyone who builds. This is
+    what the .NET projects themselves do.
+  -->
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)mapperion.snk</AssemblyOriginatorKeyFile>
+    <!--
+      The public half of the same key. A strong-named assembly may only open its internals to a
+      friend it names together with a key, so every InternalsVisibleTo has to carry this. It is
+      derived from the file beside it and changes only if that file does.
+    -->
+    <MapperionPublicKey>00240000048000001401000006020000002400005253413100080000010001004d8773745ba0e664a5e73839facc1508cd542e51daaf6c37eb2ff8c5f0d9e27eac06971e418bc61ad9d77462043072b06b07982e06066342f08a07ccb7fb70fa32fbd913b83a37a060879a29e2f4887329126f77226f8d41de25caf7915d8bdd40e90ab42f176ddc2517d58ebe4dfc864c996a96ec98adffd10d9198a5c4aa4457e977ab4fd5f61a6028c06d02930508e56df768eed25da4627b23383343abbc3ac540863b159f6c3a967fa881c71c08653f12a3392cbaeb019aa9e8215e5331cb25cc4105517730ac04e448593f9faf81404c8b45741e7ea77bf1e2781858aebcf04ece868c288c91800359deb6580e77ec26b8a8b369ff5f0a5a092ef194b4</MapperionPublicKey>
+  </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" PrivateAssets="all" />
   </ItemGroup>

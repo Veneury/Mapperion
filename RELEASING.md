@@ -72,6 +72,33 @@ The version comes from the tag, so nothing needs editing to release. `VersionPre
 - **The tag was wrong.** Deleting a tag does not unpublish anything. If the workflow had already
   pushed, treat it as the case above.
 
+## Signing
+
+Two different things go by that name, and only one of them is done here.
+
+**Strong naming is automatic.** Every assembly is signed with `mapperion.snk`, which is in the
+repository. That is deliberate: a strong name is an identity, not a security boundary, since anyone
+can strip one and re-sign with a key of their own. Keeping the private half secret would buy
+nothing and would cost delay signing and verification skipping for everyone who builds. It is there
+because a strong-named assembly on .NET Framework can only reference other strong-named assemblies,
+so without it a signed codebase on net472 cannot use Mapperion at all.
+
+Changing that key changes the identity of every assembly and breaks everyone who references them.
+It should not be changed.
+
+**Author signing the packages is not done, and needs money rather than work.** nuget.org requires a
+code signing certificate that chains to a root trusted by Windows; it rejects self-issued ones.
+Those now come with a hardware token or a cloud HSM, so there is no way to add this without buying
+one and holding it somewhere the release job can reach.
+
+What exists without it: nuget.org repository-signs every package it accepts, automatically, so the
+published packages already carry a signature proving they have not been altered since upload. What
+is missing is the author signature, which would additionally prove they came from whoever holds the
+certificate.
+
+If a certificate is bought later, the work is a `dotnet nuget sign` step between packing and
+pushing, and registering the certificate on the nuget.org account beforehand.
+
 ## Version numbers
 
 Semantic versioning, with the caveat already in `CHANGELOG.md`: before 1.0 a minor version may
