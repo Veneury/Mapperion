@@ -29,6 +29,14 @@ generator tests.
   member without XML documentation does not build.
 - Comments in code are XML documentation and nothing else.
 
+## Copyright
+
+You keep the copyright in what you write. There is no contributor licence agreement and nothing to
+sign: opening a pull request licenses your contribution under the same MIT terms as the rest.
+
+That is deliberate, and [GOVERNANCE.md](GOVERNANCE.md) explains why it is the thing that makes the
+licence promise worth anything.
+
 ## Releasing
 
 See [RELEASING.md](RELEASING.md).
