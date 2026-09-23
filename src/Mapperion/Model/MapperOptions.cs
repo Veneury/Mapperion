@@ -25,7 +25,16 @@ namespace Mapperion.Model
         /// <summary>Gets a value indicating whether a null source collection maps to null instead of an empty one.</summary>
         public bool AllowNullCollections { get; init; }
 
-        /// <summary>Gets a value indicating whether null values are written to the destination.</summary>
+        /// <summary>
+        /// Gets a value indicating whether a member whose source resolves to null is left null.
+        /// </summary>
+        /// <remarks>
+        /// Turning it off replaces a null with the destination type's empty content: an empty
+        /// string, or a new instance when the type has a parameterless constructor. Value types are
+        /// untouched, since they already carry their own default, and collections keep answering to
+        /// <see cref="AllowNullCollections"/>, which is the setting about them. In a projection only
+        /// the string case applies: a query provider cannot build an object out of nothing.
+        /// </remarks>
         public bool AllowNullDestinationValues { get; init; } = true;
 
         /// <summary>Gets a value indicating whether public fields are considered alongside properties.</summary>

@@ -39,6 +39,11 @@ namespace Mapperion.Internal
                 ;
         }
 
+        internal static bool IsSequence(Type type)
+        {
+            return TryGetElementType(type, out _) || TryGetDictionaryTypes(type, out _, out _);
+        }
+
         internal static bool TryGetDictionaryTypes(
             Type type,
             [NotNullWhen(true)] out Type? keyType,

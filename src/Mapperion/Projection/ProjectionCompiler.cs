@@ -167,6 +167,11 @@ namespace Mapperion.Projection
 
             Expression converted = Convert(value, destinationType, engine, open);
 
+            if (!engine.Model.Options.AllowNullDestinationValues && destinationType == typeof(string))
+            {
+                converted = Expression.Coalesce(converted, Expression.Constant(string.Empty));
+            }
+
             if (member.Condition is LambdaExpression condition)
             {
                 converted = Expression.Condition(

@@ -407,6 +407,8 @@ namespace Mapperion.Compilation
                 converted = ConversionBuilder.Build(value, destinationType, engine, context);
             }
 
+            converted = WithoutNullDestination(converted, engine.Model.Options);
+
             Expression assignment;
 
             if (member.Condition is LambdaExpression condition)
@@ -431,6 +433,38 @@ namespace Mapperion.Compilation
             }
 
             return assignment;
+        }
+
+        /// <summary>
+        /// Replaces a null with the destination type's empty content when the configuration says
+        /// destinations should not hold nulls. Collections are left alone: AllowNullCollections is
+        /// the setting that speaks for them.
+        /// </summary>
+        private static Expression WithoutNullDestination(Expression converted, MapperOptions options)
+        {
+            if (options.AllowNullDestinationValues || converted.Type.IsValueType)
+            {
+                return converted;
+            }
+
+            Expression? empty = EmptyContent(converted.Type);
+            return empty is null ? converted : Expression.Coalesce(converted, empty);
+        }
+
+        private static Expression? EmptyContent(Type type)
+        {
+            if (type == typeof(string))
+            {
+                return Expression.Constant(string.Empty);
+            }
+
+            if (TypeClassifier.IsSequence(type))
+            {
+                return null;
+            }
+
+            ConstructorInfo? parameterless = type.GetConstructor(Type.EmptyTypes);
+            return parameterless is null ? null : Expression.New(parameterless);
         }
 
         private static Expression BuildValueConverterCall(
