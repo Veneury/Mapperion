@@ -3,9 +3,10 @@
 Object-to-object mapper for .NET, **MIT licensed**, built as a drop-in alternative to AutoMapper
 for commercial projects.
 
-> **Status: early development.** Configuration, conventions, validation and the mapping engine
-> work, including records. Dependency injection, `ProjectTo` and the source generator do not exist
-> yet. Not published to NuGet.
+> **Status: pre-release.** Everything listed below works and is covered by the test suite, which
+> runs on .NET Framework 4.7.2 and 4.8 as well as .NET 8, 9 and 10. There is nothing left that
+> AutoMapper does and Mapperion does not. What is still missing is the thing no amount of code
+> supplies: nobody has yet migrated a real project onto it, so the API may still move before 1.0.
 
 ## Why
 
