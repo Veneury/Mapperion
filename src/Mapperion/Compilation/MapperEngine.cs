@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -23,6 +24,9 @@ namespace Mapperion.Compilation
     {
         private readonly ConcurrentDictionary<TypeMapKey, MapPlan> plans =
             new ConcurrentDictionary<TypeMapKey, MapPlan>();
+
+        private readonly object growing = new object();
+        private MapPlan?[] slots = new MapPlan?[16];
 
         private readonly ConcurrentDictionary<TypeMapKey, LambdaExpression> projections =
             new ConcurrentDictionary<TypeMapKey, LambdaExpression>();
@@ -255,6 +259,58 @@ namespace Mapperion.Compilation
         internal MapPlan GetPlan(TypeMapKey key)
         {
             return plans.GetOrAdd(key, compile);
+        }
+
+        /// <summary>
+        /// Returns the compiled map for a pair known at compile time, reaching it through the
+        /// pair's slot rather than by looking a key up.
+        /// </summary>
+        /// <remarks>
+        /// The dictionary stays the one place a plan is created and stored; this is a cache in
+        /// front of it. A slot holds a plan the dictionary already produced, so a race between two
+        /// threads filling the same slot writes the same instance twice and is harmless.
+        /// </remarks>
+        internal MapDelegate<TSource, TDestination> GetTyped<TSource, TDestination>()
+        {
+            int slot = TypeMapSlot<TSource, TDestination>.Index;
+            MapPlan?[] current = Volatile.Read(ref slots);
+
+            if ((uint)slot < (uint)current.Length && current[slot] is MapPlan cached)
+            {
+                return (MapDelegate<TSource, TDestination>)cached.Typed;
+            }
+
+            return (MapDelegate<TSource, TDestination>)Fill(slot, typeof(TSource), typeof(TDestination)).Typed;
+        }
+
+        private MapPlan Fill(int slot, Type sourceType, Type destinationType)
+        {
+            MapPlan plan = GetPlan(new TypeMapKey(sourceType, destinationType));
+
+            lock (growing)
+            {
+                if (slots.Length <= slot)
+                {
+                    int length = slots.Length;
+
+                    while (length <= slot)
+                    {
+                        length *= 2;
+                    }
+
+                    var grown = new MapPlan?[length];
+                    Array.Copy(slots, grown, slots.Length);
+                    grown[slot] = plan;
+
+                    Volatile.Write(ref slots, grown);
+                }
+                else
+                {
+                    Volatile.Write(ref slots[slot], plan);
+                }
+            }
+
+            return plan;
         }
 
         private MapPlan CompilePlan(TypeMapKey key)

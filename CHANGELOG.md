@@ -7,7 +7,41 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ## [Unreleased]
 
+### Changed
+
+- El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array
+  en vez de buscando una clave en un diccionario. El número es un `static readonly` de un tipo
+  genérico, que el JIT pliega a una constante, así que no hay clave que construir ni hash que
+  calcular: 6,1 ns a 3,2 ns. El diccionario sigue siendo el único sitio donde se crea un plan;
+  esto es una caché delante.
+- El contexto de una operación que no necesita estado se construye una vez al crear el mapper, no
+  en cada llamada.
+- Sobre el mapeo a mano: el record por constructor pasa de 5,45x a 3,46x, el destino existente de
+  4,52x a 3,27x, el aplanado de 4,27x a 3,40x y el plano de 3,50x a 3,01x. Las mejoras grandes
+  están donde el coste fijo pesaba más, que son los mapas con pocos miembros.
+
 ### Added
+
+- `IncludeMembers(s => s.Applicant, s => s.Employment)` construye un destino a partir de varios
+  objetos anidados del origen. El mapa se mira primero: lo que configura explícitamente y lo que
+  resuelven sus propias convenciones gana, y solo lo que queda sin origen se ofrece a los miembros
+  incluidos, en el orden dado. El primero que tenga algo que decir lo aporta, y un miembro que el
+  mapa incluido ignora cuenta como no tener nada que decir.
+- Si hay un mapa declarado para el tipo incluido se usa, así que sus renombrados y sus
+  `IValueConverter` viajan con él; si no lo hay, el miembro se empareja contra el tipo incluido por
+  las mismas convenciones de siempre, sin obligar a declarar un mapa que nadie necesitaría.
+- Un `IValueResolver` del mapa incluido recibe la instancia incluida, no el origen de fuera. Una
+  condición sí se reporta en vez de descartarse: está escrita contra el tipo incluido y no hay
+  forma de trasladarla al de fuera.
+- Un miembro incluido a nulo deja a cero lo que habría rellenado, igual que ya hace una ruta
+  aplanada con un nulo por el camino.
+- `ProjectTo` atraviesa los miembros incluidos cuando lo que aportan es una ruta o una expresión.
+
+- `samples/Mapperion.Aot`, una aplicación publicada con `PublishAot=true` que mapea con el código
+  generado y comprueba su propio resultado, saliendo con código distinto de cero si algo no cuadra.
+  Lleva los analizadores de trimming y AOT activados, así que un build corriente ya falla ante
+  cualquier cosa que el trimmer no pueda seguir, y la CI la publica en nativo y la ejecuta. Hasta
+  ahora el soporte AOT era una afirmación sin nada que la respaldara; ahora se mide en cada build.
 
 - `ForPath(d => d.Address.Street, ...)` escribe un miembro que está dentro del destino en vez de
   sobre él. Los objetos del camino se crean si faltan; uno que no se pueda escribir y esté a nulo

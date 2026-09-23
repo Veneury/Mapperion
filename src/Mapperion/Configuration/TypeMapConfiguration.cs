@@ -38,6 +38,7 @@ namespace Mapperion.Configuration
         private object? constructUsing;
         private readonly List<TypeMapKey> derivedMaps = new List<TypeMapKey>();
         private readonly List<TypeMapKey> baseMaps = new List<TypeMapKey>();
+        private readonly List<MemberPath> includedMembers = new List<MemberPath>();
         private readonly List<object> beforeMapActions = new List<object>();
         private readonly List<object> afterMapActions = new List<object>();
         private int? maxDepth;
@@ -83,6 +84,20 @@ namespace Mapperion.Configuration
             MemberConfiguration<TSource, TDestination, TMember> configuration = FindOrAddPath<TMember>(path);
 
             pathOptions(configuration);
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> IncludeMembers(
+            params Expression<Func<TSource, object?>>[] members)
+        {
+            Guard.NotNull(members, nameof(members));
+
+            foreach (Expression<Func<TSource, object?>> member in members)
+            {
+                Guard.NotNull(member, nameof(members));
+                includedMembers.Add(MemberExpressionParser.ParseIncludedMember(member));
+            }
+
             return this;
         }
 
@@ -265,6 +280,7 @@ namespace Mapperion.Configuration
                 ConstructUsing = constructUsing,
                 DerivedMaps = derivedMaps.ToArray(),
                 BaseMaps = baseMaps.ToArray(),
+                IncludedMembers = includedMembers.ToArray(),
                 BeforeMapActions = beforeMapActions.ToArray(),
                 AfterMapActions = afterMapActions.ToArray(),
                 MaxDepth = maxDepth,

@@ -130,6 +130,8 @@ namespace Mapperion.Configuration
                 definitions[i] = resolver.Complete(definitions[i]);
             }
 
+            IncludedMemberResolver.Apply(definitions, options);
+
             return new MapperModel(options, definitions);
         }
 

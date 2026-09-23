@@ -156,6 +156,31 @@ namespace Mapperion
             where TDerivedDestination : TDestination;
 
         /// <summary>
+        /// Names source members whose own maps to this destination fill in whatever this map leaves
+        /// unresolved, which is how one destination is built out of several nested source objects.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This map is looked at first: anything it configures explicitly, and anything its own
+        /// conventions resolve, wins. Only members still without a source are offered to the
+        /// included members, in the order given here, and the first one that has something to say
+        /// provides it. A member the included map ignores counts as having nothing to say.
+        /// </para>
+        /// <para>
+        /// A map declared for the included type is used when there is one, so its renames and
+        /// converters carry over. When there is none, the member is matched against the included
+        /// type by the same conventions as anywhere else. A null included member leaves the members
+        /// it would have filled at their default.
+        /// </para>
+        /// </remarks>
+        /// <param name="members">Source members, each a plain member access such as <c>s =&gt; s.Inner</c>.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="members"/>, or one of its entries, is <see langword="null"/>.</exception>
+        /// <exception cref="MapperConfigurationException">An entry is not a chain of member accesses.</exception>
+        IMappingExpression<TSource, TDestination> IncludeMembers(
+            params Expression<Func<TSource, object?>>[] members);
+
+        /// <summary>
         /// Takes the member configuration of the base map as a starting point. Anything configured
         /// here wins over what the base said.
         /// </summary>

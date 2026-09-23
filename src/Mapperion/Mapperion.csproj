@@ -29,6 +29,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="Mapperion.Extensions.DependencyInjection" />
     <InternalsVisibleTo Include="Mapperion.Tests" />
+    <InternalsVisibleTo Include="Mapperion.Benchmarks" />
     <InternalsVisibleTo Include="Mapperion.Tests.Behavior" />
   </ItemGroup>
 

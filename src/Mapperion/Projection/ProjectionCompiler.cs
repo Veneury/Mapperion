@@ -236,6 +236,13 @@ namespace Mapperion.Projection
                 case ConstantSource constant:
                     return Expression.Constant(constant.Value, constant.ValueType);
 
+                case IncludedMemberSource included when included.Inner is not ValueResolverSource:
+                    return Read(
+                        definition,
+                        what,
+                        included.Inner,
+                        ReadPath(source, new MemberPathSource(included.Prefix)));
+
                 case ValueResolverSource resolver:
                     throw new MapperConfigurationException(
                         definition.Key + ": '" + what + "' uses the resolver " + resolver.ResolverType.Name +
