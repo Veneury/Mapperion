@@ -1,7 +1,24 @@
+using System.Collections.Generic;
 using Mapperion.Compilation;
 
 namespace Mapperion
 {
+    /// <summary>
+    /// What the caller can set for one mapping operation, as opposed to for the configuration.
+    /// </summary>
+    public interface IMappingOperationOptions
+    {
+        /// <summary>
+        /// Gets the values shared with every converter, resolver and step taking part in this
+        /// operation. Use it to hand context down that is not part of the source object, such as
+        /// the current user or tenant.
+        /// </summary>
+        /// <remarks>
+        /// The dictionary belongs to one operation and is not shared with another, so nothing put
+        /// here leaks between two calls to the same mapper. Keys are compared exactly.
+        /// </remarks>
+        IDictionary<string, object?> Items { get; }
+    }
     /// <summary>
     /// What a converter or resolver is given about the operation it takes part in. Mostly a way
     /// back into the mapper, so user code can map nested values without holding a reference itself.
@@ -17,6 +34,19 @@ namespace Mapperion
 
         /// <summary>Gets the mapper running the current operation.</summary>
         public IMapper Mapper => context.Mapper;
+
+        /// <summary>
+        /// Gets the values the caller passed for this operation, and anything another converter or
+        /// resolver has put there since.
+        /// </summary>
+        /// <exception cref="MappingException">
+        /// The operation was started by invoking a compiled plan directly rather than through
+        /// <see cref="IMapper"/>, so it has nowhere to keep them.
+        /// </exception>
+        public IDictionary<string, object?> Items =>
+            (context.State ?? throw new MappingException(
+                "This operation has no shared items because it was not started through IMapper."))
+            .Items;
     }
 
     /// <summary>

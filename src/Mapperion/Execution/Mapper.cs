@@ -39,13 +39,27 @@ namespace Mapperion.Execution
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
         public TDestination Map<TDestination>(object? source)
         {
+            return Map<TDestination>(source, (MappingState?)null);
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        public TDestination Map<TDestination>(object? source, Action<IMappingOperationOptions> options)
+        {
+            return Map<TDestination>(source, Requested(options));
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        private TDestination Map<TDestination>(object? source, MappingState? state)
+        {
             if (source is null)
             {
                 return default!;
             }
 
             var key = new TypeMapKey(source.GetType(), typeof(TDestination));
-            object? mapped = engine.GetPlan(key).Boxed(source, null, Context());
+            object? mapped = engine.GetPlan(key).Boxed(source, null, Context(state));
 
             return (TDestination)mapped!;
         }
@@ -54,14 +68,33 @@ namespace Mapperion.Execution
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
         public TDestination Map<TSource, TDestination>(TSource source)
         {
-            return Invoke<TSource, TDestination>(source, default!);
+            return Invoke<TSource, TDestination>(source, default!, null);
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        public TDestination Map<TSource, TDestination>(
+            TSource source,
+            Action<IMappingOperationOptions> options)
+        {
+            return Invoke<TSource, TDestination>(source, default!, Requested(options));
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
         public TDestination Map<TSource, TDestination>(TSource source, TDestination destination)
         {
-            return Invoke(source, destination);
+            return Invoke(source, destination, null);
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        public TDestination Map<TSource, TDestination>(
+            TSource source,
+            TDestination destination,
+            Action<IMappingOperationOptions> options)
+        {
+            return Invoke(source, destination, Requested(options));
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
@@ -72,6 +105,32 @@ namespace Mapperion.Execution
             Justification = "Only reached for a value type, which always has a default constructor.")]
         public object? Map(object? source, Type sourceType, Type destinationType)
         {
+            return Map(source, sourceType, destinationType, (MappingState?)null);
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2067",
+            Justification = "Only reached for a value type, which always has a default constructor.")]
+        public object? Map(
+            object? source,
+            Type sourceType,
+            Type destinationType,
+            Action<IMappingOperationOptions> options)
+        {
+            return Map(source, sourceType, destinationType, Requested(options));
+        }
+
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage(
+            "Trimming",
+            "IL2067",
+            Justification = "Only reached for a value type, which always has a default constructor.")]
+        private object? Map(object? source, Type sourceType, Type destinationType, MappingState? state)
+        {
             Guard.NotNull(sourceType, nameof(sourceType));
             Guard.NotNull(destinationType, nameof(destinationType));
 
@@ -81,17 +140,34 @@ namespace Mapperion.Execution
             }
 
             var key = new TypeMapKey(sourceType, destinationType);
-            return engine.GetPlan(key).Boxed(source, null, Context());
+            return engine.GetPlan(key).Boxed(source, null, Context(state));
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
-        private TDestination Invoke<TSource, TDestination>(TSource source, TDestination destination)
+        private TDestination Invoke<TSource, TDestination>(
+            TSource source,
+            TDestination destination,
+            MappingState? state)
         {
             MapPlan plan = engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
             var typed = (MapDelegate<TSource, TDestination>)plan.Typed;
 
-            return typed(source, destination, Context());
+            return typed(source, destination, Context(state));
+        }
+
+        /// <summary>
+        /// Builds the state for an operation the caller set up. It is created whatever the
+        /// configuration would have needed, because the caller asking for it is reason enough.
+        /// </summary>
+        private static MappingState Requested(Action<IMappingOperationOptions> options)
+        {
+            Guard.NotNull(options, nameof(options));
+
+            var state = new MappingState();
+            options(state);
+
+            return state;
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
@@ -113,13 +189,13 @@ namespace Mapperion.Execution
             return source.Provider.CreateQuery<TDestination>(select);
         }
 
-        private MappingContext Context()
+        private MappingContext Context(MappingState? state)
         {
             return new MappingContext(
                 engine,
                 services,
                 this,
-                engine.RequiresState ? new MappingState() : null);
+                state ?? (engine.RequiresState ? new MappingState() : null));
         }
     }
 }

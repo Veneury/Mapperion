@@ -14,10 +14,14 @@ namespace Mapperion.Execution
     /// <c>MaxDepth</c> nor <c>PreserveReferences</c> never allocates one, and the dictionaries
     /// inside are created on first use so a map that only needs one does not pay for the other.
     /// </remarks>
-    internal sealed class MappingState
+    internal sealed class MappingState : IMappingOperationOptions
     {
+        private Dictionary<string, object?>? items;
         private Dictionary<TypeMapKey, int>? depths;
         private Dictionary<ReferenceKey, object>? references;
+
+        public IDictionary<string, object?> Items =>
+            items ??= new Dictionary<string, object?>(StringComparer.Ordinal);
 
         internal int Enter(TypeMapKey key)
         {
