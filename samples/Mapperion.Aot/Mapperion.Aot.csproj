@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Mapperion.Aot</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <!--
+      The analysers are what make this sample a test rather than a demo: they run during an
+      ordinary build, on every machine, and report anything the trimmer or the AOT compiler could
+      not follow. The native publish in CI then proves the result actually starts.
+    -->
+    <IsAotCompatible>true</IsAotCompatible>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
+    <ProjectReference Include="../../src/Mapperion.SourceGenerator/Mapperion.SourceGenerator.csproj"
+                     OutputItemType="Analyzer"
+                     ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>

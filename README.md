@@ -167,8 +167,14 @@ Built for `netstandard2.0`, `netstandard2.1`, `net472`, `net8.0`, `net9.0` and `
 suite runs on net472 and net48 on every build, so Framework support is verified rather than
 assumed.
 
-Trimming and AOT: the runtime engine resolves members by reflection and is annotated
-`[RequiresUnreferencedCode]` accordingly. A source generator mode with full AOT support is planned.
+Trimming and AOT: the runtime engine compiles expression trees, so it is annotated
+`[RequiresUnreferencedCode]` and `[RequiresDynamicCode]` and is not for a trimmed or
+ahead-of-time application. The source generator is, and writes plain C# with no reflection in it.
+
+`samples/Mapperion.Aot` is an application published with `PublishAot=true` that maps with the
+generated code and checks its own output. It builds with the trimming and AOT analysers turned on,
+and every build publishes it natively and runs it, so what this section claims is measured rather
+than asserted.
 
 ## What works today
 
@@ -184,13 +190,21 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 - Failures at run time name the member that caused them, with the path through nested maps and
   collections: `Batch.Readings[0].Ratio`.
 - Object graphs that loop, through `PreserveReferences` or `MaxDepth`. A cycle with neither is
-  reported by `AssertIsValid()` rather than left to exhaust the stack.
+  reported by `AssertIsValid()`, and bounded at run time regardless, so it fails with an exception
+  the caller can catch rather than exhausting the stack.
 - Inheritance: `Include` dispatches to the derived map so a base reference still produces the right
   destination, and `IncludeBase` takes the base map's configuration as a starting point.
 - Open generics: one `CreateMap(typeof(Page<>), typeof(PageDto<>))` serves every closing of the
   pair, worked out on first use and kept.
 - A source generator that writes mappers at compile time, for trimmed and AOT applications. Its
-  output is checked against the run-time engine's on the same cases.
+  output is checked against the run-time engine's on the same cases, and a sample published with
+  `PublishAot=true` runs on every build.
+- `ConstructUsing` to build the destination with a factory, and `ForPath` to assign a member that
+  sits inside it.
+- Per-operation values through `IMappingOperationOptions.Items`, read back from a converter,
+  resolver or step as `ResolutionContext.Items`.
+- A recursion ceiling on any map that can reach itself, so a looping object graph raises
+  `RecursionLimitException` instead of taking the process down with the stack.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values

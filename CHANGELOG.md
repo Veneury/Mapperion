@@ -9,6 +9,12 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- `samples/Mapperion.Aot`, una aplicación publicada con `PublishAot=true` que mapea con el código
+  generado y comprueba su propio resultado, saliendo con código distinto de cero si algo no cuadra.
+  Lleva los analizadores de trimming y AOT activados, así que un build corriente ya falla ante
+  cualquier cosa que el trimmer no pueda seguir, y la CI la publica en nativo y la ejecuta. Hasta
+  ahora el soporte AOT era una afirmación sin nada que la respaldara; ahora se mide en cada build.
+
 - `ForPath(d => d.Address.Street, ...)` escribe un miembro que está dentro del destino en vez de
   sobre él. Los objetos del camino se crean si faltan; uno que no se pueda escribir y esté a nulo
   tiene que venir puesto, y el mapa dice cuál era. Las rutas se asignan después de todos los
