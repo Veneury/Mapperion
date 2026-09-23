@@ -1,0 +1,91 @@
+name: Release
+
+# Publishing to NuGet cannot be undone: a version can be delisted but never replaced. So the tag
+# does not publish on its own. The whole suite runs again here, on the exact commit being shipped,
+# and the push waits on the `nuget` environment, which is where a required reviewer belongs.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: publish
+    # Windows because the suite covers net472 and net48, which need the .NET Framework runtime to
+    # run rather than just reference assemblies to build against.
+    runs-on: windows-latest
+    environment: nuget
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Read the version from the tag
+        id: version
+        shell: pwsh
+        run: |
+          $version = '${{ github.ref_name }}' -replace '^v', ''
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "The tag '${{ github.ref_name }}' is not a version. Tag a release as v1.2.3 or v1.2.3-preview.1."
+          }
+          "value=$version" >> $env:GITHUB_OUTPUT
+          Write-Host "Publishing $version"
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Test
+        run: dotnet test --no-build --configuration Release
+
+      # The AOT sample is a claim the packages make, so it is proved again on what is being shipped
+      # rather than trusted from the last run on main.
+      - name: Publish the ahead-of-time sample
+        run: dotnet publish samples/Mapperion.Aot/Mapperion.Aot.csproj --configuration Release --runtime win-x64 --output samples/Mapperion.Aot/publish
+
+      - name: Run the native executable
+        run: ./samples/Mapperion.Aot/publish/Mapperion.Aot.exe
+
+      - name: Pack
+        run: |
+          dotnet pack src/Mapperion/Mapperion.csproj --no-build --configuration Release --output artifacts -p:Version=${{ steps.version.outputs.value }}
+          dotnet pack src/Mapperion.Extensions.DependencyInjection/Mapperion.Extensions.DependencyInjection.csproj --no-build --configuration Release --output artifacts -p:Version=${{ steps.version.outputs.value }}
+          dotnet pack src/Mapperion.SourceGenerator/Mapperion.SourceGenerator.csproj --no-build --configuration Release --output artifacts -p:Version=${{ steps.version.outputs.value }}
+
+      - name: Keep the packages with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: packages-${{ steps.version.outputs.value }}
+          path: artifacts/*
+
+      # --skip-duplicate so re-running a job that failed partway does not fail on the packages that
+      # already went up.
+      - name: Push to NuGet
+        run: dotnet nuget push "artifacts/*.nupkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $packages = (Get-ChildItem artifacts/*.nupkg).FullName
+          $arguments = @('release', 'create', '${{ github.ref_name }}') + $packages +
+            @('--title', '${{ github.ref_name }}', '--generate-notes',
+              '--notes', 'What changed in this version is in CHANGELOG.md.')
+
+          if ('${{ steps.version.outputs.value }}' -match '-') { $arguments += '--prerelease' }
+
+          & gh @arguments
