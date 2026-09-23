@@ -17,6 +17,13 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Suite propia en `tests/Mapperion.EntityFramework6.Tests`, sobre net472 y sin base de datos: EF6
   genera el SQL desde su modelo y `ToString()` sobre la consulta lo devuelve, así que el SQL es la
   aserción y no hace falta un servidor en el build.
+- `Explain()` describe, miembro a miembro, en qué quedó un mapa y de dónde sale cada valor. Separa
+  lo configurado a mano de lo que decidió una convención, que es de donde viene casi toda la
+  confusión cuando un miembro trae algo inesperado, y deja bien visible el que se quedó sin origen,
+  que es por lo que uno mira esto en primer lugar. Hay tres formas: por tipos genéricos, por
+  `Type`, y sin argumentos para todos los mapas declarados.
+- Es texto para leer, no para parsear: la redacción cambiará cuando aparezca una mejor. No ejecuta
+  ningún mapeo, solo lee el modelo ya construido.
 - Presupuesto de regresión de rendimiento en la CI. Los tests dicen qué devuelve un mapeo; nada
   decía cuánto tarda, y las dos cosas se separan con facilidad: un cambio puede dejar todos los
   resultados idénticos y duplicar el tiempo con la suite entera en verde. Estuvo a punto de pasar
