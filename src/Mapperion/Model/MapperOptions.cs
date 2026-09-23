@@ -37,6 +37,27 @@ namespace Mapperion.Model
         /// </remarks>
         public bool AllowNullDestinationValues { get; init; } = true;
 
+        /// <summary>
+        /// Gets how many levels deep a map that can reach itself may recurse before the operation
+        /// fails with <see cref="RecursionLimitException"/>.
+        /// </summary>
+        /// <remarks>
+        /// Only the maps that close a loop with nothing else to stop them are counted, so a
+        /// configuration whose types cannot recurse pays nothing for this. The ceiling exists so a
+        /// looping object graph raises an exception the caller can catch instead of a
+        /// <see cref="StackOverflowException"/>, which it cannot. Raise it for a graph that really
+        /// is deeper than this; zero or less removes the ceiling and brings the stack overflow
+        /// back.
+        /// </remarks>
+        /// <remarks>
+        /// The default matches what <c>System.Text.Json</c> and Newtonsoft use for the same kind of
+        /// protection. It has to stay well under the depth at which the stack itself gives out,
+        /// which for a compiled plan on a one-megabyte stack is only a few hundred levels, and it
+        /// counts one pair rather than total nesting, so a loop through several maps reaches a
+        /// deeper stack for the same count.
+        /// </remarks>
+        public int RecursionLimit { get; init; } = 64;
+
         /// <summary>Gets a value indicating whether public fields are considered alongside properties.</summary>
         public bool IncludeFields { get; init; }
 

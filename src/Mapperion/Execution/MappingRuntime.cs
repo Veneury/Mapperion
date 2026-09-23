@@ -47,9 +47,14 @@ namespace Mapperion.Execution
                 "through IMapper rather than invoking a compiled plan directly.");
         }
 
+        internal static TDestination TooDeep<TDestination>(string map, int limit)
+        {
+            throw new RecursionLimitException(map, limit);
+        }
+
         internal static TDestination Fail<TDestination>(string member, string map, Exception error)
         {
-            if (error is MapperConfigurationException)
+            if (error is MapperConfigurationException || error is RecursionLimitException)
             {
                 ExceptionDispatchInfo.Capture(error).Throw();
             }
@@ -83,7 +88,7 @@ namespace Mapperion.Execution
         /// <param name="error">The failure to wrap.</param>
         internal static TDestination FailAtIndex<TDestination>(int index, string member, Exception error)
         {
-            if (error is MapperConfigurationException)
+            if (error is MapperConfigurationException || error is RecursionLimitException)
             {
                 ExceptionDispatchInfo.Capture(error).Throw();
             }

@@ -79,7 +79,7 @@ namespace Mapperion
     /// <summary>
     /// Thrown when a mapping fails at run time. Carries the full member path that failed.
     /// </summary>
-    public sealed class MappingException : MapperionException
+    public class MappingException : MapperionException
     {
         /// <summary>Initializes a new instance with a default message.</summary>
         public MappingException()
@@ -116,5 +116,55 @@ namespace Mapperion
 
         /// <summary>Gets the destination member path that failed, when known.</summary>
         public string? MemberPath { get; }
+    }
+
+    /// <summary>
+    /// Thrown when a map that can reach itself has recursed past the configured limit, which means
+    /// the object graph loops and nothing in the configuration stops it.
+    /// </summary>
+    /// <remarks>
+    /// Without the limit the recursion would end in a <see cref="StackOverflowException"/>, which
+    /// cannot be caught and takes the process down with it. That is the shape of the denial of
+    /// service a mapper is exposed to whenever it maps a graph it did not build itself. Here it is
+    /// an ordinary exception, so a request that carries a looping graph can be rejected instead.
+    /// </remarks>
+    public class RecursionLimitException : MappingException
+    {
+        /// <summary>Initializes a new instance with a default message.</summary>
+        public RecursionLimitException()
+            : base("A map recursed past the configured limit.")
+        {
+        }
+
+        /// <summary>Initializes a new instance with the specified message.</summary>
+        /// <param name="message">The error message.</param>
+        public RecursionLimitException(string message)
+            : base(message)
+        {
+        }
+
+        /// <summary>Initializes a new instance with the specified message and inner exception.</summary>
+        /// <param name="message">The error message.</param>
+        /// <param name="innerException">The exception that caused this one.</param>
+        public RecursionLimitException(string message, Exception innerException)
+            : base(message, innerException)
+        {
+        }
+
+        internal RecursionLimitException(string map, int limit)
+            : base("Mapping " + map + " recursed more than " + limit + " levels deep. The object " +
+                  "graph loops and nothing in the configuration stops it. Add MaxDepth or " +
+                  "PreserveReferences to one of the maps on the loop, ignore the member that " +
+                  "closes it, or raise RecursionLimit if the graph really is this deep.")
+        {
+            Map = map;
+            Limit = limit;
+        }
+
+        /// <summary>Gets the map that hit the limit.</summary>
+        public string? Map { get; }
+
+        /// <summary>Gets the limit that was reached.</summary>
+        public int Limit { get; }
     }
 }

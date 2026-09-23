@@ -22,7 +22,6 @@ namespace Mapperion.Validation
     internal static class ConfigurationValidator
     {
         private const int MaxElementDepth = 4;
-        private const int MaxCycleDepth = 64;
 
         internal static IReadOnlyList<string> Validate(MapperModel model)
         {
@@ -73,121 +72,23 @@ namespace Mapperion.Validation
 
         private static void ValidateCycles(MapperModel model, List<string> errors)
         {
-            var reported = new HashSet<TypeMapKey>();
-
-            foreach (TypeMapDefinition map in model.TypeMaps)
+            foreach (TypeMapKey[] cycle in CycleFinder.Unguarded(model))
             {
-                if (!ConventionResolver.IsTemplate(map))
+                var text = new StringBuilder();
+
+                for (int i = 0; i < cycle.Length - 1; i++)
                 {
-                    Walk(map.Key, model, new List<TypeMapKey>(), reported, errors);
+                    text.Append(cycle[i]).Append(" -> ");
                 }
+
+                text.Append(cycle[cycle.Length - 1]);
+
+                errors.Add(
+                    "The maps " + text + " form a cycle with nothing to stop it. Mapping an object " +
+                    "graph that loops would recurse until it hits the recursion limit and then " +
+                    "fail. Add MaxDepth or PreserveReferences to one of them, or ignore the member " +
+                    "that closes the cycle.");
             }
-        }
-
-        private static void Walk(
-            TypeMapKey key,
-            MapperModel model,
-            List<TypeMapKey> path,
-            HashSet<TypeMapKey> reported,
-            List<string> errors)
-        {
-            int start = path.IndexOf(key);
-
-            if (start >= 0)
-            {
-                ReportCycle(key, model, path, start, reported, errors);
-                return;
-            }
-
-            if (path.Count > MaxCycleDepth || !model.TryGetTypeMap(key, out TypeMapDefinition? definition))
-            {
-                return;
-            }
-
-            path.Add(key);
-
-            foreach (MemberDefinition member in definition!.Members)
-            {
-                if (!member.IsIgnored && member.Source is not null &&
-                    TryResolveNested(member.Source.ValueType, member.DestinationMember.MemberType, model, out TypeMapKey nested))
-                {
-                    Walk(nested, model, path, reported, errors);
-                }
-            }
-
-            foreach (ConstructorParameterDefinition parameter in definition.ConstructorParameters)
-            {
-                if (parameter.Source is not null &&
-                    TryResolveNested(parameter.Source.ValueType, parameter.ParameterType, model, out TypeMapKey nested))
-                {
-                    Walk(nested, model, path, reported, errors);
-                }
-            }
-
-            path.RemoveAt(path.Count - 1);
-        }
-
-        private static void ReportCycle(
-            TypeMapKey key,
-            MapperModel model,
-            List<TypeMapKey> path,
-            int start,
-            HashSet<TypeMapKey> reported,
-            List<string> errors)
-        {
-            for (int i = start; i < path.Count; i++)
-            {
-                if (model.TryGetTypeMap(path[i], out TypeMapDefinition? guard) &&
-                    (guard!.MaxDepth is not null || guard.PreserveReferences))
-                {
-                    return;
-                }
-            }
-
-            if (!reported.Add(key))
-            {
-                return;
-            }
-
-            var cycle = new StringBuilder();
-
-            for (int i = start; i < path.Count; i++)
-            {
-                cycle.Append(path[i]).Append(" -> ");
-            }
-
-            cycle.Append(key);
-
-            errors.Add(
-                "The maps " + cycle + " form a cycle with nothing to stop it. Mapping an object " +
-                "graph that loops would recurse until the stack runs out. Add MaxDepth or " +
-                "PreserveReferences to one of them, or ignore the member that closes the cycle.");
-        }
-
-        private static bool TryResolveNested(
-            Type source,
-            Type destination,
-            MapperModel model,
-            out TypeMapKey key)
-        {
-            Type actualSource = TypeClassifier.Underlying(source);
-            Type actualDestination = TypeClassifier.Underlying(destination);
-
-            if (TypeClassifier.TryGetDictionaryTypes(actualSource, out _, out Type? sourceValue) &&
-                TypeClassifier.TryGetDictionaryTypes(actualDestination, out _, out Type? destinationValue))
-            {
-                actualSource = sourceValue;
-                actualDestination = destinationValue;
-            }
-            else if (TypeClassifier.TryGetElementType(actualSource, out Type? sourceElement) &&
-                TypeClassifier.TryGetElementType(actualDestination, out Type? destinationElement))
-            {
-                actualSource = sourceElement;
-                actualDestination = destinationElement;
-            }
-
-            key = new TypeMapKey(actualSource, actualDestination);
-            return model.Contains(key);
         }
 
         internal static string BuildMessage(IReadOnlyList<string> errors)

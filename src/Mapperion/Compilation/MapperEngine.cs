@@ -8,6 +8,7 @@ using Mapperion.Conventions;
 using Mapperion.Internal;
 using Mapperion.Model;
 using Mapperion.Projection;
+using Mapperion.Validation;
 
 namespace Mapperion.Compilation
 {
@@ -29,6 +30,9 @@ namespace Mapperion.Compilation
         private readonly Dictionary<TypeMapKey, TypeMapDefinition> closedTemplates =
             new Dictionary<TypeMapKey, TypeMapDefinition>();
 
+        private static readonly HashSet<TypeMapKey> Empty = new HashSet<TypeMapKey>();
+
+        private readonly HashSet<TypeMapKey> ceilings;
         private readonly object closing = new object();
         private readonly ConventionResolver resolver;
         private readonly Func<TypeMapKey, MapPlan> compile;
@@ -37,7 +41,10 @@ namespace Mapperion.Compilation
         internal MapperEngine(MapperModel model)
         {
             Model = model;
-            RequiresState = NeedsState(model);
+            ceilings = model.Options.RecursionLimit > 0
+                ? CycleFinder.Closing(model)
+                : Empty;
+            RequiresState = NeedsState(model) || ceilings.Count > 0;
             resolver = new ConventionResolver(model.Options);
             compile = CompilePlan;
             project = CompileProjection;
@@ -108,6 +115,15 @@ namespace Mapperion.Compilation
                 closedTemplates[key] = definition!;
                 return true;
             }
+        }
+
+        /// <summary>
+        /// Answers whether a map closes a loop that nothing else stops, and so needs counting to
+        /// keep a looping graph from recursing without end.
+        /// </summary>
+        internal bool NeedsCeiling(TypeMapKey key)
+        {
+            return ceilings.Contains(key);
         }
 
         internal bool CanMap(TypeMapKey key)

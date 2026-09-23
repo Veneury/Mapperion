@@ -86,6 +86,7 @@ namespace Mapperion.Compilation
                 Expression core = Expression.Block(new[] { result }, body);
                 core = WithPreservedShortCircuit(core, definition, source, context);
                 core = WithDepthLimit(core, definition, context);
+                core = WithRecursionCeiling(core, definition, context, engine);
                 core = WithDerivedDispatch(core, definition, source, scope);
 
                 block = Expression.Block(
@@ -224,6 +225,49 @@ namespace Mapperion.Compilation
                     Expression.Condition(
                         Expression.GreaterThan(depth, Expression.Constant(maximum)),
                         Expression.Default(definition.DestinationType),
+                        core),
+                    Expression.Call(Method(nameof(MappingRuntime.Exit)), key, context)));
+        }
+
+        /// <summary>
+        /// Bounds a map that can reach itself, so a graph that loops fails with an exception the
+        /// caller can catch rather than recursing until the stack runs out, which cannot be caught
+        /// and takes the process with it.
+        /// </summary>
+        /// <remarks>
+        /// Only the maps that close an unguarded loop get this, so a map whose types cannot recurse
+        /// pays nothing, and one that already asked for <c>MaxDepth</c> or <c>PreserveReferences</c>
+        /// keeps what it asked for. The counter is released in a finally so a failure does not
+        /// leave it raised.
+        /// </remarks>
+        private static Expression WithRecursionCeiling(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression context,
+            MapperEngine engine)
+        {
+            if (!engine.NeedsCeiling(definition.Key))
+            {
+                return core;
+            }
+
+            int limit = engine.Model.Options.RecursionLimit;
+            ParameterExpression depth = Expression.Variable(typeof(int), "recursion");
+            ConstantExpression key = Expression.Constant(definition.Key, typeof(TypeMapKey));
+
+            return Expression.Block(
+                new[] { depth },
+                Expression.Assign(
+                    depth,
+                    Expression.Call(Method(nameof(MappingRuntime.Enter)), key, context)),
+                Expression.TryFinally(
+                    Expression.Condition(
+                        Expression.GreaterThan(depth, Expression.Constant(limit)),
+                        Expression.Call(
+                            Method(nameof(MappingRuntime.TooDeep))
+                                .MakeGenericMethod(definition.DestinationType),
+                            Expression.Constant(definition.Key.ToString()),
+                            Expression.Constant(limit)),
                         core),
                     Expression.Call(Method(nameof(MappingRuntime.Exit)), key, context)));
         }

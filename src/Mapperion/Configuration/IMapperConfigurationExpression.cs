@@ -61,6 +61,13 @@ namespace Mapperion
         /// <summary>Gets or sets a value indicating whether null values are written to the destination.</summary>
         bool AllowNullDestinationValues { get; set; }
 
+        /// <summary>
+        /// Gets or sets how many levels deep a map that can reach itself may recurse before the
+        /// operation fails with <see cref="RecursionLimitException"/>. Zero or less removes the
+        /// ceiling, which brings back an uncatchable stack overflow on a looping graph.
+        /// </summary>
+        int RecursionLimit { get; set; }
+
         /// <summary>Gets or sets a value indicating whether public fields are considered alongside properties.</summary>
         bool IncludeFields { get; set; }
 

@@ -9,6 +9,20 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- Un grafo de objetos que se cierra sobre sí mismo ya no tumba el proceso. El mapa que cierra el
+  bucle cuenta su propia profundidad y lanza `RecursionLimitException` al pasar de
+  `RecursionLimit`, que por defecto son 64 niveles, el mismo valor que usan `System.Text.Json` y
+  Newtonsoft para la misma protección. Antes la recursión terminaba en un `StackOverflowException`,
+  que no se puede capturar y se lleva el proceso por delante: es la forma del CVE-2026-32933 de
+  AutoMapper, que no se va a parchear en su línea MIT.
+- Solo cuentan los mapas que cierran un bucle sin `MaxDepth` ni `PreserveReferences`, así que una
+  configuración cuyos tipos no pueden recurrir no paga nada por esto, y un mapa que ya se protege
+  conserva su propio comportamiento.
+- `RecursionLimit` en la configuración, para subirlo cuando el grafo de verdad es más profundo.
+  Cero o menos quita el techo y devuelve el desbordamiento de pila.
+- `RecursionLimitException` deriva de `MappingException`, así que un `catch` existente la sigue
+  atrapando, y lleva el mapa y el límite que se alcanzó.
+
 - Herencia y polimorfismo. `Include<TDerivedSource,TDerivedDestination>()` hace que mapear a través
   de una referencia base produzca el destino derivado que corresponde; las comprobaciones se emiten
   de más derivado a menos, así que una jerarquía de varios niveles elige la coincidencia más
