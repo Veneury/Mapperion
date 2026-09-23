@@ -9,6 +9,14 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- `ProjectTo` sobre Entity Framework 6. Resultó que ya funcionaba casi entero —es el mismo método
+  del core, que no depende de ningún ORM—, salvo por un detalle: la proyección emitía nodos
+  `Expression.Default` para el valor de un miembro que no se puede leer, y el traductor de EF6 se
+  planta con «Unknown LINQ expression of type 'Default'». EF Core sí los acepta, así que nunca
+  había salido. Ahora emite una constante, que entienden los dos y cualquier otro proveedor.
+- Suite propia en `tests/Mapperion.EntityFramework6.Tests`, sobre net472 y sin base de datos: EF6
+  genera el SQL desde su modelo y `ToString()` sobre la consulta lo devuelve, así que el SQL es la
+  aserción y no hace falta un servidor en el build.
 - Presupuesto de regresión de rendimiento en la CI. Los tests dicen qué devuelve un mapeo; nada
   decía cuánto tarda, y las dos cosas se separan con facilidad: un cambio puede dejar todos los
   resultados idénticos y duplicar el tiempo con la suite entera en verde. Estuvo a punto de pasar

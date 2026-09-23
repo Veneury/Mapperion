@@ -205,7 +205,7 @@ namespace Mapperion.Projection
                 converted = Expression.Condition(
                     ParameterReplacer.Inline(condition, source),
                     converted,
-                    Expression.Default(destinationType));
+                    Absent(destinationType));
             }
 
             if (member.PreCondition is LambdaExpression preCondition)
@@ -213,7 +213,7 @@ namespace Mapperion.Projection
                 converted = Expression.Condition(
                     ParameterReplacer.Inline(preCondition, source),
                     converted,
-                    Expression.Default(destinationType));
+                    Absent(destinationType));
             }
 
             return converted;
@@ -252,6 +252,22 @@ namespace Mapperion.Projection
                     throw new MapperConfigurationException(
                         definition.Key + ": '" + what + "' cannot be projected.");
             }
+        }
+
+        /// <summary>
+        /// The value a member takes when there is nothing to read, written as a constant.
+        /// </summary>
+        /// <remarks>
+        /// <c>Expression.Default</c> would say the same thing more directly, and Entity Framework
+        /// Core translates it, but Entity Framework 6 does not: its provider stops at
+        /// "Unknown LINQ expression of type 'Default'". A constant is understood by both, and by
+        /// every other provider, so the projection emits one.
+        /// </remarks>
+        private static ConstantExpression Absent(Type type)
+        {
+            return Expression.Constant(
+                type.IsValueType ? Activator.CreateInstance(type) : null,
+                type);
         }
 
         private static Expression ReadPath(Expression source, MemberPathSource path)
@@ -418,7 +434,7 @@ namespace Mapperion.Projection
                 ? instance
                 : Expression.Condition(
                     Expression.Equal(value, Expression.Constant(null, sourceType)),
-                    Expression.Default(destinationType),
+                    Absent(destinationType),
                     instance);
         }
     }
