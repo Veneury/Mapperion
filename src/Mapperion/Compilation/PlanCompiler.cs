@@ -456,7 +456,7 @@ namespace Mapperion.Compilation
                 converted = BuildValueConverterCall(member.ValueConverterType, value, destinationType, context, engine);
             }
             else if (member.UseDestinationValue &&
-                engine.Model.Contains(new TypeMapKey(value.Type, destinationType)))
+                engine.CanMap(new TypeMapKey(value.Type, destinationType)))
             {
                 converted = MapIntoExisting(value, target, destinationType, context);
             }

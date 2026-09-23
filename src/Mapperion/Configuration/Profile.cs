@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Mapperion.Configuration;
 
@@ -26,6 +27,19 @@ namespace Mapperion
         protected IMappingExpression<TSource, TDestination> CreateMap<TSource, TDestination>()
         {
             var configuration = new TypeMapConfiguration<TSource, TDestination>(this);
+            typeMaps.Add(configuration);
+            return configuration;
+        }
+
+        /// <summary>
+        /// Declares a map with types rather than type arguments, for an open generic pair.
+        /// </summary>
+        /// <param name="sourceType">The source type.</param>
+        /// <param name="destinationType">The destination type.</param>
+        /// <returns>The expression used to configure the map.</returns>
+        protected IOpenMappingExpression CreateMap(Type sourceType, Type destinationType)
+        {
+            var configuration = new OpenTypeMapConfiguration(sourceType, destinationType);
             typeMaps.Add(configuration);
             return configuration;
         }

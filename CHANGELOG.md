@@ -20,6 +20,17 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   cuyo destino derivado no hereda del destino base.
 - Una proyección reporta un mapa polimórfico: la forma de una proyección se fija antes de leer
   ninguna fila, así que no puede depender del tipo en tiempo de ejecución.
+- Genéricos abiertos: `CreateMap(typeof(Page<>), typeof(PageDto<>))` declara una plantilla que el
+  motor cierra la primera vez que llega un par que encaja, y guarda el resultado. Funciona igual
+  dentro de un `Profile` y con varios argumentos de tipo.
+- Un mapa cerrado declarado a mano tiene prioridad sobre la plantilla que también encajaría.
+- `IOpenMappingExpression` expone solo lo que se puede decir sin conocer los tipos:
+  `IgnoreMember(nombre)`, `ValidateMemberList`, `MaxDepth` y `PreserveReferences`. Configurar un
+  miembro con una expresión contra un tipo que aún no tiene argumentos no tendría sentido, así que
+  los miembros quedan en manos de las convenciones al cerrar.
+- Las plantillas quedan fuera de la validación de miembros y de la detección de ciclos, que no
+  significan nada sobre un tipo sin cerrar. Sí se comprueba que las dos partes tengan el mismo
+  número de argumentos de tipo, y que no se mezcle un tipo abierto con uno cerrado.
 
 - Documentación de planeación completa (`docs/`), incluidos 4 ADRs.
 - Esqueleto de la solución: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package

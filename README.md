@@ -60,6 +60,15 @@ config.AssertIsValid();
 //   2. Sale -> SaleDto: member 'Lines' needs a map from 'Line' to 'LineDto'. Declare it with CreateMap<Line, LineDto>().
 ```
 
+One map covers every closing of a generic pair:
+
+```csharp
+cfg.CreateMap(typeof(Page<>), typeof(PageDto<>));
+cfg.CreateMap<Order, OrderDto>();
+
+PageDto<OrderDto> page = mapper.Map<Page<Order>, PageDto<OrderDto>>(source);
+```
+
 Records are built through their constructor, matching parameter names against source members:
 
 ```csharp
@@ -120,6 +129,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `ReverseMap()` | same, minus unflattening |
 | `Include<,>()`, `IncludeBase<,>()` | same |
+| `CreateMap(typeof(A<>), typeof(B<>))` | same |
 | `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
 | `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
@@ -160,6 +170,8 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   reported by `AssertIsValid()` rather than left to exhaust the stack.
 - Inheritance: `Include` dispatches to the derived map so a base reference still produces the right
   destination, and `IncludeBase` takes the base map's configuration as a starting point.
+- Open generics: one `CreateMap(typeof(Page<>), typeof(PageDto<>))` serves every closing of the
+  pair, worked out on first use and kept.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
@@ -179,9 +191,9 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 
 ## Not yet
 
-Open generics, `ResolutionContext.Items`, a static entry point for .NET Framework without a
-container, `string` to `Guid` and the date types, EF6, and the source generator. A projection
-cannot build a dictionary or dispatch to a derived map: its shape is fixed before any row is read. `ReverseMap` does not unflatten: a member mapped from a nested path is
+`ResolutionContext.Items`, a static entry point for .NET Framework without a container, `string`
+to `Guid` and the date types, EF6, and the source generator. A projection cannot build a dictionary
+or dispatch to a derived map: its shape is fixed before any row is read. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

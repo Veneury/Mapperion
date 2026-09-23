@@ -54,6 +54,17 @@ namespace Mapperion.Configuration
             typeMaps.Add(configuration);
         }
 
+        public IOpenMappingExpression CreateMap(Type sourceType, Type destinationType)
+        {
+            Guard.NotNull(sourceType, nameof(sourceType));
+            Guard.NotNull(destinationType, nameof(destinationType));
+
+            var configuration = new OpenTypeMapConfiguration(sourceType, destinationType);
+            EnsureNotDeclared(configuration.Key);
+            typeMaps.Add(configuration);
+            return configuration;
+        }
+
         public void AddProfile(Profile profile)
         {
             Guard.NotNull(profile, nameof(profile));

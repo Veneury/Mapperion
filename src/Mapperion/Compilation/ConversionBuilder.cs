@@ -353,7 +353,7 @@ namespace Mapperion.Compilation
             MapperEngine engine,
             ParameterExpression context)
         {
-            if (!engine.Model.Contains(new TypeMapKey(sourceType, destinationType)))
+            if (!engine.CanMap(new TypeMapKey(sourceType, destinationType)))
             {
                 return null;
             }

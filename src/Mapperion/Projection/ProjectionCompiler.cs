@@ -370,7 +370,7 @@ namespace Mapperion.Projection
         {
             var key = new TypeMapKey(sourceType, destinationType);
 
-            if (!engine.Model.TryGetTypeMap(key, out TypeMapDefinition? nested))
+            if (!engine.TryGetDefinition(key, out TypeMapDefinition? nested))
             {
                 return null;
             }

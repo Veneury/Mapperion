@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using Mapperion.Internal;
 using Mapperion.Model;
@@ -13,6 +14,7 @@ namespace Mapperion.Configuration
     {
         TypeMapKey Key { get; }
 
+        [RequiresUnreferencedCode("Resolving a member by name inspects types by reflection.")]
         TypeMapDefinition Build(MapperOptions options);
     }
 
@@ -190,6 +192,7 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        [RequiresUnreferencedCode("Resolving a member by name inspects types by reflection.")]
         public TypeMapDefinition Build(MapperOptions options)
         {
             var definitions = new MemberDefinition[members.Count];

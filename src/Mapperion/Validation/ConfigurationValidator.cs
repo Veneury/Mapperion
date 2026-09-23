@@ -31,6 +31,12 @@ namespace Mapperion.Validation
 
             foreach (TypeMapDefinition map in model.TypeMaps)
             {
+                if (ConventionResolver.IsTemplate(map))
+                {
+                    ValidateTemplate(map, errors);
+                    continue;
+                }
+
                 if (map.HasTypeConverter)
                 {
                     continue;
@@ -52,13 +58,29 @@ namespace Mapperion.Validation
             return errors;
         }
 
+        private static void ValidateTemplate(TypeMapDefinition map, List<string> errors)
+        {
+            int source = map.SourceType.GetGenericArguments().Length;
+            int destination = map.DestinationType.GetGenericArguments().Length;
+
+            if (source != destination)
+            {
+                errors.Add(
+                    map.Key + ": the template takes " + source + " type argument(s) on the source and " +
+                    destination + " on the destination. Closing it would have nothing to close with.");
+            }
+        }
+
         private static void ValidateCycles(MapperModel model, List<string> errors)
         {
             var reported = new HashSet<TypeMapKey>();
 
             foreach (TypeMapDefinition map in model.TypeMaps)
             {
-                Walk(map.Key, model, new List<TypeMapKey>(), reported, errors);
+                if (!ConventionResolver.IsTemplate(map))
+                {
+                    Walk(map.Key, model, new List<TypeMapKey>(), reported, errors);
+                }
             }
         }
 

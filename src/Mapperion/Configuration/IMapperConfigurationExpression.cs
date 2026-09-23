@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using Mapperion.Model;
@@ -16,6 +17,18 @@ namespace Mapperion
         /// <returns>The expression used to configure the map.</returns>
         /// <exception cref="MapperConfigurationException">The pair was already declared.</exception>
         IMappingExpression<TSource, TDestination> CreateMap<TSource, TDestination>();
+
+        /// <summary>
+        /// Declares a map with types rather than type arguments. Pass two generic type definitions,
+        /// such as <c>typeof(Page&lt;&gt;)</c> and <c>typeof(PageDto&lt;&gt;)</c>, to declare a
+        /// template the engine closes the first time a matching pair is mapped.
+        /// </summary>
+        /// <param name="sourceType">The source type.</param>
+        /// <param name="destinationType">The destination type.</param>
+        /// <returns>The expression used to configure the map.</returns>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        /// <exception cref="MapperConfigurationException">The pair was already declared, or only one side is open.</exception>
+        IOpenMappingExpression CreateMap(Type sourceType, Type destinationType);
 
         /// <summary>Registers an already-built profile.</summary>
         /// <param name="profile">The profile whose maps are added.</param>
