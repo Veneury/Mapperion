@@ -31,4 +31,16 @@
     <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!--
+    The public surface is written down in PublicAPI.Shipped.txt and checked against the code on
+    every build, so adding, removing or changing anything public has to be done on purpose and
+    shows up in the diff. Anything new goes into PublicAPI.Unshipped.txt and moves across when it
+    is released.
+  -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
+
 </Project>

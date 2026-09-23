@@ -1,0 +1,5 @@
+#nullable enable
+Mapperion.ServiceCollectionExtensions
+static Mapperion.ServiceCollectionExtensions.AddMapperion(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Mapperion.IMapperConfigurationExpression!>! configure, Microsoft.Extensions.DependencyInjection.ServiceLifetime mapperLifetime = Microsoft.Extensions.DependencyInjection.ServiceLifetime.Scoped) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Mapperion.ServiceCollectionExtensions.AddMapperion(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Reflection.Assembly![]! assemblies) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
+static Mapperion.ServiceCollectionExtensions.AddMapperion(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, params System.Type![]! markers) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
