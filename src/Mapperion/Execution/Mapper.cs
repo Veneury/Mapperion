@@ -21,6 +21,7 @@ namespace Mapperion.Execution
 
         private readonly MapperEngine engine;
         private readonly IServiceResolver services;
+        private readonly MappingContext stateless;
 
         [RequiresUnreferencedCode("Mapping resolves plans that inspect types by reflection.")]
         [RequiresDynamicCode("Mapping compiles plans at run time.")]
@@ -33,6 +34,7 @@ namespace Mapperion.Execution
         {
             this.engine = engine;
             this.services = services;
+            stateless = new MappingContext(engine, services, this, null);
         }
 
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
@@ -150,10 +152,7 @@ namespace Mapperion.Execution
             TDestination destination,
             MappingState? state)
         {
-            MapPlan plan = engine.GetPlan(new TypeMapKey(typeof(TSource), typeof(TDestination)));
-            var typed = (MapDelegate<TSource, TDestination>)plan.Typed;
-
-            return typed(source, destination, Context(state));
+            return engine.GetTyped<TSource, TDestination>()(source, destination, Context(state));
         }
 
         /// <summary>
@@ -189,13 +188,20 @@ namespace Mapperion.Execution
             return source.Provider.CreateQuery<TDestination>(select);
         }
 
+        /// <remarks>
+        /// An operation that needs no state carries the same four references every time, so the
+        /// context is built once in the constructor and handed out as it stands.
+        /// </remarks>
         private MappingContext Context(MappingState? state)
         {
-            return new MappingContext(
-                engine,
-                services,
-                this,
-                state ?? (engine.RequiresState ? new MappingState() : null));
+            if (state is null)
+            {
+                return engine.RequiresState
+                    ? new MappingContext(engine, services, this, new MappingState())
+                    : stateless;
+            }
+
+            return new MappingContext(engine, services, this, state);
         }
     }
 }

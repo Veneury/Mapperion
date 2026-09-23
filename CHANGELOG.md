@@ -7,6 +7,19 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ## [Unreleased]
 
+### Changed
+
+- El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array
+  en vez de buscando una clave en un diccionario. El número es un `static readonly` de un tipo
+  genérico, que el JIT pliega a una constante, así que no hay clave que construir ni hash que
+  calcular: 6,1 ns a 3,2 ns. El diccionario sigue siendo el único sitio donde se crea un plan;
+  esto es una caché delante.
+- El contexto de una operación que no necesita estado se construye una vez al crear el mapper, no
+  en cada llamada.
+- Sobre el mapeo a mano: el record por constructor pasa de 5,45x a 3,46x, el destino existente de
+  4,52x a 3,27x, el aplanado de 4,27x a 3,40x y el plano de 3,50x a 3,01x. Las mejoras grandes
+  están donde el coste fijo pesaba más, que son los mapas con pocos miembros.
+
 ### Added
 
 - `IncludeMembers(s => s.Applicant, s => s.Employment)` construye un destino a partir de varios
