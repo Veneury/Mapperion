@@ -5,7 +5,10 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
-## [Unreleased]
+## [0.8.0-preview.1] - 2026-09-23
+
+Primera versión pública. Todo lo de abajo se acumuló antes de publicar nada, así que esta
+entrada es larga por una vez; las siguientes no lo serán.
 
 ### Added
 
@@ -18,22 +21,6 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   empata con Mapster dentro de las barras de error. El ahorro es un coste fijo por llamada, así
   que cuanto más trabajo tenga el mapeo menos pesa. Para un camino realmente caliente el source
   generator sigue siendo mejor respuesta: está en 0,93x.
-
-### Changed
-
-- El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array
-  en vez de buscando una clave en un diccionario. El número es un `static readonly` de un tipo
-  genérico, que el JIT pliega a una constante, así que no hay clave que construir ni hash que
-  calcular: 6,1 ns a 3,2 ns. El diccionario sigue siendo el único sitio donde se crea un plan;
-  esto es una caché delante.
-- El contexto de una operación que no necesita estado se construye una vez al crear el mapper, no
-  en cada llamada.
-- Sobre el mapeo a mano: el record por constructor pasa de 5,45x a 3,46x, el destino existente de
-  4,52x a 3,27x, el aplanado de 4,27x a 3,40x y el plano de 3,50x a 3,01x. Las mejoras grandes
-  están donde el coste fijo pesaba más, que son los mapas con pocos miembros.
-
-### Added
-
 - `IncludeMembers(s => s.Applicant, s => s.Employment)` construye un destino a partir de varios
   objetos anidados del origen. El mapa se mira primero: lo que configura explícitamente y lo que
   resuelven sus propias convenciones gana, y solo lo que queda sin origen se ofrece a los miembros
@@ -265,6 +252,19 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - El `catch` del plan no lleva filtro de excepción: un filtro compila a un bloque IL de filtro y
   `DynamicMethod` los rechaza en .NET Framework. Lo detectaron los tests de compatibilidad, que
   pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.
+
+### Changed
+
+- El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array
+  en vez de buscando una clave en un diccionario. El número es un `static readonly` de un tipo
+  genérico, que el JIT pliega a una constante, así que no hay clave que construir ni hash que
+  calcular: 6,1 ns a 3,2 ns. El diccionario sigue siendo el único sitio donde se crea un plan;
+  esto es una caché delante.
+- El contexto de una operación que no necesita estado se construye una vez al crear el mapper, no
+  en cada llamada.
+- Sobre el mapeo a mano: el record por constructor pasa de 5,45x a 3,46x, el destino existente de
+  4,52x a 3,27x, el aplanado de 4,27x a 3,40x y el plano de 3,50x a 3,01x. Las mejoras grandes
+  están donde el coste fijo pesaba más, que son los mapas con pocos miembros.
 
 ### Fixed
 
