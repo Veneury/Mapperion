@@ -20,7 +20,13 @@ namespace Mapperion.Internal
 
         internal static Expression Inline(LambdaExpression lambda, Expression argument)
         {
-            var replacer = new ParameterReplacer(lambda.Parameters[0], argument);
+            ParameterExpression parameter = lambda.Parameters[0];
+
+            Expression replacement = parameter.Type != argument.Type && parameter.Type.IsAssignableFrom(argument.Type)
+                ? Expression.Convert(argument, parameter.Type)
+                : argument;
+
+            var replacer = new ParameterReplacer(parameter, replacement);
             return replacer.Visit(lambda.Body);
         }
 

@@ -33,6 +33,8 @@ namespace Mapperion.Configuration
         private readonly ITypeMapRegistry registry;
         private MemberListValidation? validation;
         private Type? typeConverterType;
+        private readonly List<TypeMapKey> derivedMaps = new List<TypeMapKey>();
+        private readonly List<TypeMapKey> baseMaps = new List<TypeMapKey>();
         private readonly List<object> beforeMapActions = new List<object>();
         private readonly List<object> afterMapActions = new List<object>();
         private int? maxDepth;
@@ -151,6 +153,20 @@ namespace Mapperion.Configuration
             return this;
         }
 
+        public IMappingExpression<TSource, TDestination> Include<TDerivedSource, TDerivedDestination>()
+            where TDerivedSource : TSource
+            where TDerivedDestination : TDestination
+        {
+            derivedMaps.Add(new TypeMapKey(typeof(TDerivedSource), typeof(TDerivedDestination)));
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> IncludeBase<TBaseSource, TBaseDestination>()
+        {
+            baseMaps.Add(new TypeMapKey(typeof(TBaseSource), typeof(TBaseDestination)));
+            return this;
+        }
+
         public IMappingExpression<TSource, TDestination> ValidateMemberList(MemberListValidation validation)
         {
             this.validation = validation;
@@ -200,6 +216,8 @@ namespace Mapperion.Configuration
                 MemberListValidation = validation ?? options.MemberListValidation,
                 IsReverse = IsReverse,
                 TypeConverterType = typeConverterType,
+                DerivedMaps = derivedMaps.ToArray(),
+                BaseMaps = baseMaps.ToArray(),
                 BeforeMapActions = beforeMapActions.ToArray(),
                 AfterMapActions = afterMapActions.ToArray(),
                 MaxDepth = maxDepth,

@@ -119,6 +119,7 @@ cfg.AddProfiles(typeof(Program).Assembly);
 | `CreateMapper()`, `IMapper.Map<T>(...)` | same |
 | `ForCtorParam(name, o => o.MapFrom(...))` | same |
 | `ReverseMap()` | same, minus unflattening |
+| `Include<,>()`, `IncludeBase<,>()` | same |
 | `ITypeConverter`, `IValueConverter`, `IValueResolver` | same, with `ResolutionContext` |
 | `ConvertUsing<T>()`, `MapFrom<TResolver>()` | same |
 | `BeforeMap(...)`, `AfterMap(...)`, `IMappingAction` | same |
@@ -157,6 +158,8 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   collections: `Batch.Readings[0].Ratio`.
 - Object graphs that loop, through `PreserveReferences` or `MaxDepth`. A cycle with neither is
   reported by `AssertIsValid()` rather than left to exhaust the stack.
+- Inheritance: `Include` dispatches to the derived map so a base reference still produces the right
+  destination, and `IncludeBase` takes the base map's configuration as a starting point.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
@@ -176,9 +179,9 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 
 ## Not yet
 
-Inheritance, open generics, `ResolutionContext.Items`, a static entry point for .NET Framework
-without a container, `string` to `Guid` and the date types, EF6, and the source generator. A
-projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
+Open generics, `ResolutionContext.Items`, a static entry point for .NET Framework without a
+container, `string` to `Guid` and the date types, EF6, and the source generator. A projection
+cannot build a dictionary or dispatch to a derived map: its shape is fixed before any row is read. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

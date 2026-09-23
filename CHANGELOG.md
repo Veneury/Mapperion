@@ -9,6 +9,18 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- Herencia y polimorfismo. `Include<TDerivedSource,TDerivedDestination>()` hace que mapear a través
+  de una referencia base produzca el destino derivado que corresponde; las comprobaciones se emiten
+  de más derivado a menos, así que una jerarquía de varios niveles elige la coincidencia más
+  cercana y no la primera que encaje.
+- `IncludeBase<TBaseSource,TBaseDestination>()` toma la configuración de miembros del mapa base
+  antes de que corran las convenciones. Lo que el mapa derivado configure gana.
+- Una colección del tipo base mapea cada elemento a su propio tipo derivado.
+- La validación reporta un `Include` o un `IncludeBase` hacia un mapa no declarado, y un `Include`
+  cuyo destino derivado no hereda del destino base.
+- Una proyección reporta un mapa polimórfico: la forma de una proyección se fija antes de leer
+  ninguna fila, así que no puede depender del tipo en tiempo de ejecución.
+
 - Documentación de planeación completa (`docs/`), incluidos 4 ADRs.
 - Esqueleto de la solución: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package
   Management, `.editorconfig` con estilo obligatorio y warnings como errores.
@@ -147,6 +159,11 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.
 
 ### Fixed
+
+- `MemberDescriptor` se compara por tipo declarante, clase y nombre, no por el `MemberInfo` en
+  bruto. La reflexión devuelve un `MemberInfo` distinto para la misma propiedad según el tipo por
+  el que se llegue a ella, así que una propiedad heredada aparecía como dos miembros distintos y se
+  mapeaba dos veces. Solo salía a la luz con herencia, pero el fallo estaba desde el principio.
 
 - `MaxDepth` y `PreserveReferences` **funcionan**. Se configuraban, se guardaban en el modelo y el
   compilador las ignoraba por completo: eran no-ops silenciosos desde que existe la API fluida.

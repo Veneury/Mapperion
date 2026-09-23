@@ -89,6 +89,27 @@ namespace Mapperion
         IMappingExpression<TSource, TDestination> AfterMap<TMappingAction>()
             where TMappingAction : IMappingAction<TSource, TDestination>;
 
+        /// <summary>
+        /// Declares that a source of the derived type should be mapped through the derived map
+        /// instead of this one, so mapping through a base reference still produces the right
+        /// destination type.
+        /// </summary>
+        /// <typeparam name="TDerivedSource">A type deriving from <typeparamref name="TSource"/>.</typeparam>
+        /// <typeparam name="TDerivedDestination">A type deriving from <typeparamref name="TDestination"/>.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> Include<TDerivedSource, TDerivedDestination>()
+            where TDerivedSource : TSource
+            where TDerivedDestination : TDestination;
+
+        /// <summary>
+        /// Takes the member configuration of the base map as a starting point. Anything configured
+        /// here wins over what the base said.
+        /// </summary>
+        /// <typeparam name="TBaseSource">The base source type.</typeparam>
+        /// <typeparam name="TBaseDestination">The base destination type.</typeparam>
+        /// <returns>This expression, for chaining.</returns>
+        IMappingExpression<TSource, TDestination> IncludeBase<TBaseSource, TBaseDestination>();
+
         /// <summary>Sets which side must be fully covered for this map to validate.</summary>
         /// <param name="validation">The validation mode.</param>
         /// <returns>This expression, for chaining.</returns>

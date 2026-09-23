@@ -85,6 +85,7 @@ namespace Mapperion.Compilation
                 Expression core = Expression.Block(new[] { result }, body);
                 core = WithPreservedShortCircuit(core, definition, source, context);
                 core = WithDepthLimit(core, definition, context);
+                core = WithDerivedDispatch(core, definition, source, context);
 
                 block = Expression.Block(
                     new[] { step },
@@ -104,6 +105,63 @@ namespace Mapperion.Compilation
             Delegate typed = Expression.Lambda(delegateType, block, source, destination, context).Compile();
 
             return new MapPlan(typed, BuildBoxed(typed, sourceType, destinationType));
+        }
+
+        /// <summary>
+        /// Hands the work to a derived map when the instance turns out to be of a derived type, so
+        /// mapping through a base reference still produces the right destination.
+        /// </summary>
+        /// <remarks>
+        /// The checks run most-derived first, so a hierarchy several levels deep picks the closest
+        /// match rather than the first one that happens to fit.
+        /// </remarks>
+        private static Expression WithDerivedDispatch(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression context)
+        {
+            if (definition.DerivedMaps.Count == 0)
+            {
+                return core;
+            }
+
+            var ordered = new List<TypeMapKey>(definition.DerivedMaps);
+
+            ordered.Sort(static (left, right) =>
+            {
+                if (left.SourceType == right.SourceType)
+                {
+                    return 0;
+                }
+
+                if (left.SourceType.IsAssignableFrom(right.SourceType))
+                {
+                    return 1;
+                }
+
+                return right.SourceType.IsAssignableFrom(left.SourceType) ? -1 : 0;
+            });
+
+            Expression dispatch = core;
+
+            for (int i = ordered.Count - 1; i >= 0; i--)
+            {
+                TypeMapKey derived = ordered[i];
+
+                MethodCallExpression mapped = Expression.Call(
+                    Method(nameof(MappingRuntime.MapValue))
+                        .MakeGenericMethod(derived.SourceType, derived.DestinationType),
+                    Expression.Convert(source, derived.SourceType),
+                    context);
+
+                dispatch = Expression.Condition(
+                    Expression.TypeIs(source, derived.SourceType),
+                    Expression.Convert(mapped, definition.DestinationType),
+                    dispatch);
+            }
+
+            return dispatch;
         }
 
         /// <summary>

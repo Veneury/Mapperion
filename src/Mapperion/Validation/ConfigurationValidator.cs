@@ -37,6 +37,7 @@ namespace Mapperion.Validation
                 }
 
                 ValidateReferences(map, errors);
+                ValidateHierarchy(map, model, errors);
                 ValidateConstructor(map, model, errors);
                 ValidateDestination(map, model, errors);
 
@@ -180,6 +181,38 @@ namespace Mapperion.Validation
             }
 
             return text.ToString();
+        }
+
+        private static void ValidateHierarchy(TypeMapDefinition map, MapperModel model, List<string> errors)
+        {
+            foreach (TypeMapKey derived in map.DerivedMaps)
+            {
+                if (!model.Contains(derived))
+                {
+                    errors.Add(
+                        map.Key + " includes " + derived + ", which is not declared. Add CreateMap<" +
+                        derived.SourceType.Name + ", " + derived.DestinationType.Name + ">().");
+                    continue;
+                }
+
+                if (!map.DestinationType.IsAssignableFrom(derived.DestinationType))
+                {
+                    errors.Add(
+                        map.Key + " includes " + derived + ", but " + derived.DestinationType.Name +
+                        " does not derive from " + map.DestinationType.Name +
+                        ", so it could not be returned in its place.");
+                }
+            }
+
+            foreach (TypeMapKey baseKey in map.BaseMaps)
+            {
+                if (!model.Contains(baseKey))
+                {
+                    errors.Add(
+                        map.Key + " inherits from " + baseKey + ", which is not declared. Add CreateMap<" +
+                        baseKey.SourceType.Name + ", " + baseKey.DestinationType.Name + ">().");
+                }
+            }
         }
 
         private static void ValidateReferences(TypeMapDefinition map, List<string> errors)
