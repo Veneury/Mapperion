@@ -145,3 +145,20 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - El `catch` del plan no lleva filtro de excepción: un filtro compila a un bloque IL de filtro y
   `DynamicMethod` los rechaza en .NET Framework. Lo detectaron los tests de compatibilidad, que
   pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.
+
+### Fixed
+
+- `MaxDepth` y `PreserveReferences` **funcionan**. Se configuraban, se guardaban en el modelo y el
+  compilador las ignoraba por completo: eran no-ops silenciosos desde que existe la API fluida.
+  La consecuencia era peor que una opción muerta, porque un grafo con un ciclo real recurría hasta
+  agotar la pila y tumbaba el proceso con una excepción que ni se puede capturar.
+- `PreserveReferences` registra el destino justo después de crearlo y antes de mapear ningún
+  miembro, que es lo que permite a un ciclo encontrar el camino de vuelta. Una misma instancia de
+  origen produce siempre la misma de destino dentro de una operación.
+- `MaxDepth` corta la recursión de ese par de tipos y deja el valor por defecto. El contador se
+  libera en un `finally`, así que una excepción no lo deja levantado.
+- El estado por operación solo se crea si alguna configuración lo pide, y los diccionarios que
+  lleva dentro se crean al primer uso: un mapa que no usa ninguna de las dos no paga nada.
+- `AssertIsValid()` detecta ahora los ciclos sin protección recorriendo el grafo de mapas, de modo
+  que lo que antes mataba el proceso en producción es un error en arranque.
+- `PreserveReferences` sobre tipos por valor se reporta: no hay identidad que preservar.

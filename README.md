@@ -155,6 +155,8 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
   `MemberListValidation.Source`, source members nobody reads.
 - Failures at run time name the member that caused them, with the path through nested maps and
   collections: `Batch.Readings[0].Ratio`.
+- Object graphs that loop, through `PreserveReferences` or `MaxDepth`. A cycle with neither is
+  reported by `AssertIsValid()` rather than left to exhaust the stack.
 - Mapping: flat and nested POCOs, flattened paths with null guards, nullables, numeric
   conversions, enums by name or value, `ToString`, `IConvertible`, collections into arrays,
   `List<>`, `HashSet<>` and the sequence interfaces, and dictionaries with both keys and values
@@ -174,8 +176,9 @@ Trimming and AOT: the runtime engine resolves members by reflection and is annot
 
 ## Not yet
 
-`MaxDepth` and `PreserveReferences` at run time, inheritance, open generics, EF6, and the source
-generator. A projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
+Inheritance, open generics, `ResolutionContext.Items`, a static entry point for .NET Framework
+without a container, `string` to `Guid` and the date types, EF6, and the source generator. A
+projection cannot build a dictionary: no query provider can materialise one. `ReverseMap` does not unflatten: a member mapped from a nested path is
 resolved by convention on the way back, not written into the nested object.
 
 ## Development

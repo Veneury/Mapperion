@@ -115,7 +115,11 @@ namespace Mapperion.Execution
 
         private MappingContext Context()
         {
-            return new MappingContext(engine, services, this);
+            return new MappingContext(
+                engine,
+                services,
+                this,
+                engine.RequiresState ? new MappingState() : null);
         }
     }
 }

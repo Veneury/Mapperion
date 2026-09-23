@@ -16,6 +16,37 @@ namespace Mapperion.Execution
     [RequiresDynamicCode("Mapping compiles plans at run time.")]
     internal static class MappingRuntime
     {
+        internal static int Enter(TypeMapKey map, MappingContext context)
+        {
+            return State(context).Enter(map);
+        }
+
+        internal static void Exit(TypeMapKey map, MappingContext context)
+        {
+            State(context).Exit(map);
+        }
+
+        internal static object? Preserved(object source, Type destinationType, MappingContext context)
+        {
+            return State(context).Preserved(source, destinationType);
+        }
+
+        internal static void Preserve(
+            object source,
+            Type destinationType,
+            object destination,
+            MappingContext context)
+        {
+            State(context).Preserve(source, destinationType, destination);
+        }
+
+        private static MappingState State(MappingContext context)
+        {
+            return context.State ?? throw new MappingException(
+                "This operation needs per-operation state that was not created. Start the mapping " +
+                "through IMapper rather than invoking a compiled plan directly.");
+        }
+
         internal static TDestination Fail<TDestination>(string member, string map, Exception error)
         {
             if (error is MapperConfigurationException)

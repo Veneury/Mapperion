@@ -44,6 +44,16 @@ namespace Mapperion.Compilation
                     Expression.Assign(result, CreateDestination(definition, destination, source, context, engine)),
                 };
 
+                if (definition.PreserveReferences)
+                {
+                    body.Add(Expression.Call(
+                        Method(nameof(MappingRuntime.Preserve)),
+                        Expression.Convert(source, typeof(object)),
+                        Expression.Constant(destinationType, typeof(Type)),
+                        Expression.Convert(result, typeof(object)),
+                        context));
+                }
+
                 foreach (object action in definition.BeforeMapActions)
                 {
                     body.Add(Expression.Assign(step, Expression.Constant("(before step)")));
@@ -72,13 +82,14 @@ namespace Mapperion.Compilation
 
                 body.Add(result);
 
+                Expression core = Expression.Block(new[] { result }, body);
+                core = WithPreservedShortCircuit(core, definition, source, context);
+                core = WithDepthLimit(core, definition, context);
+
                 block = Expression.Block(
                     new[] { step },
                     Expression.Assign(step, Expression.Constant("(constructing)")),
-                    Reporting(
-                        Expression.Block(new[] { result }, body),
-                        step,
-                        definition));
+                    Reporting(core, step, definition));
             }
 
             if (!sourceType.IsValueType)
@@ -93,6 +104,69 @@ namespace Mapperion.Compilation
             Delegate typed = Expression.Lambda(delegateType, block, source, destination, context).Compile();
 
             return new MapPlan(typed, BuildBoxed(typed, sourceType, destinationType));
+        }
+
+        /// <summary>
+        /// Returns the destination already built for this source instance, when the map asks for
+        /// references to be preserved. Registering happens right after the destination is created
+        /// and before any member is mapped, which is what lets a cycle find its way back.
+        /// </summary>
+        private static Expression WithPreservedShortCircuit(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression source,
+            ParameterExpression context)
+        {
+            if (!definition.PreserveReferences)
+            {
+                return core;
+            }
+
+            ParameterExpression existing = Expression.Variable(typeof(object), "preserved");
+
+            return Expression.Block(
+                new[] { existing },
+                Expression.Assign(
+                    existing,
+                    Expression.Call(
+                        Method(nameof(MappingRuntime.Preserved)),
+                        Expression.Convert(source, typeof(object)),
+                        Expression.Constant(definition.DestinationType, typeof(Type)),
+                        context)),
+                Expression.Condition(
+                    Expression.Equal(existing, Expression.Constant(null, typeof(object))),
+                    core,
+                    Expression.Convert(existing, definition.DestinationType)));
+        }
+
+        /// <summary>
+        /// Stops recursing once this map is nested deeper than it allows, yielding the default
+        /// instead. The counter is released in a finally so an exception does not leave it raised.
+        /// </summary>
+        private static Expression WithDepthLimit(
+            Expression core,
+            TypeMapDefinition definition,
+            ParameterExpression context)
+        {
+            if (definition.MaxDepth is not int maximum)
+            {
+                return core;
+            }
+
+            ParameterExpression depth = Expression.Variable(typeof(int), "depth");
+            ConstantExpression key = Expression.Constant(definition.Key, typeof(TypeMapKey));
+
+            return Expression.Block(
+                new[] { depth },
+                Expression.Assign(
+                    depth,
+                    Expression.Call(Method(nameof(MappingRuntime.Enter)), key, context)),
+                Expression.TryFinally(
+                    Expression.Condition(
+                        Expression.GreaterThan(depth, Expression.Constant(maximum)),
+                        Expression.Default(definition.DestinationType),
+                        core),
+                    Expression.Call(Method(nameof(MappingRuntime.Exit)), key, context)));
         }
 
         /// <remarks>

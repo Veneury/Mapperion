@@ -28,11 +28,27 @@ namespace Mapperion.Compilation
         internal MapperEngine(MapperModel model)
         {
             Model = model;
+            RequiresState = NeedsState(model);
             compile = CompilePlan;
             project = CompileProjection;
         }
 
         internal MapperModel Model { get; }
+
+        internal bool RequiresState { get; }
+
+        private static bool NeedsState(MapperModel model)
+        {
+            foreach (TypeMapDefinition definition in model.TypeMaps)
+            {
+                if (definition.MaxDepth is not null || definition.PreserveReferences)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         internal LambdaExpression GetProjection(TypeMapKey key)
         {
