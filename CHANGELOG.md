@@ -5,6 +5,17 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
+## [Unreleased]
+
+### Added
+
+- Las tres cajas llevan icono, así que NuGet deja de mostrar el marcador genérico.
+- La superficie pública está escrita en `PublicAPI.Shipped.txt` junto a cada proyecto que se
+  publica, y el build compara las dos cosas: añadir, quitar o cambiar algo público rompe la
+  compilación hasta que el fichero se actualiza, con lo cual aparece en el diff. Un solo fichero
+  cubre los seis TFMs, porque la superficie es idéntica en todos.
+- `CONTRIBUTING.md`, con qué hacer cuando el build falla por eso y las reglas de la casa.
+
 ## [0.8.0-preview.3] - 2026-09-23
 
 Primera versión pública. Todo lo de abajo se acumuló antes de publicar nada, así que esta
