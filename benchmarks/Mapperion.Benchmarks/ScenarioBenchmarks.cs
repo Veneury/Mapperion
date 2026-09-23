@@ -1,18 +1,33 @@
 using System.Collections.Generic;
+using AgileObjects.AgileMapper;
 using BenchmarkDotNet.Attributes;
+using Mapster;
 
 namespace Mapperion.Benchmarks
 {
     /// <summary>
-    /// Everything the scenarios share: a Mapperion mapper and an AutoMapper one configured the
-    /// same way, so a comparison measures the engines rather than two different configurations.
+    /// Everything the scenarios share. Each mapper is configured the same way, so a comparison
+    /// measures the engines rather than six different configurations.
     /// </summary>
+    /// <remarks>
+    /// Six entrants of three kinds. Mapperion and Mapperly appear twice each, once for the run-time
+    /// engine and once for the generated code, because they are genuinely different machinery and
+    /// comparing a generator against a run-time engine without saying so would be misleading.
+    /// </remarks>
     [MemoryDiagnoser]
     public abstract class ScenarioBase
     {
         protected IMapper Mapperion { get; private set; } = null!;
 
+        protected MapperionGenerated MapperionSourceGen { get; } = new MapperionGenerated();
+
+        protected MapperlyGenerated Mapperly { get; } = new MapperlyGenerated();
+
         protected AutoMapper.IMapper AutoMapped { get; private set; } = null!;
+
+        protected TypeAdapterConfig MapsterConfig { get; private set; } = null!;
+
+        protected IMapper AgileHolder => Mapperion;
 
         [GlobalSetup]
         public void Setup()
@@ -43,10 +58,22 @@ namespace Mapperion.Benchmarks
 
             AutoMapped = automapper.CreateMapper();
 
+            MapsterConfig = new TypeAdapterConfig();
+            MapsterConfig.Compile();
+
             Prepare();
+            Warm();
         }
 
         protected virtual void Prepare()
+        {
+        }
+
+        /// <summary>
+        /// Every entrant maps once before measuring. Mapster and AgileMapper build their plans on
+        /// first use, so without this the first iteration would time the plan rather than the map.
+        /// </summary>
+        protected virtual void Warm()
         {
         }
     }
@@ -58,14 +85,32 @@ namespace Mapperion.Benchmarks
 
         protected override void Prepare() => source = Samples.Flat();
 
+        protected override void Warm()
+        {
+            source.Adapt<FlatDto>(MapsterConfig);
+            Mapper.Map(source).ToANew<FlatDto>();
+        }
+
         [Benchmark(Baseline = true)]
         public FlatDto Manual() => ByHand.Map(source);
 
         [Benchmark]
-        public FlatDto Mapperion_() => Mapperion.Map<Flat, FlatDto>(source);
+        public FlatDto Mapperion_Runtime() => Mapperion.Map<Flat, FlatDto>(source);
+
+        [Benchmark]
+        public FlatDto Mapperion_SourceGen() => MapperionSourceGen.ToDto(source);
+
+        [Benchmark]
+        public FlatDto Mapperly_SourceGen() => Mapperly.ToDto(source);
 
         [Benchmark]
         public FlatDto AutoMapper_() => AutoMapped.Map<Flat, FlatDto>(source);
+
+        [Benchmark]
+        public FlatDto Mapster_() => source.Adapt<FlatDto>(MapsterConfig);
+
+        [Benchmark]
+        public FlatDto AgileMapper_() => Mapper.Map(source).ToANew<FlatDto>();
     }
 
     /// <summary>B02: three levels with a collection at the bottom.</summary>
@@ -75,14 +120,26 @@ namespace Mapperion.Benchmarks
 
         protected override void Prepare() => source = Samples.Order(5);
 
+        protected override void Warm()
+        {
+            source.Adapt<OrderDto>(MapsterConfig);
+            Mapper.Map(source).ToANew<OrderDto>();
+        }
+
         [Benchmark(Baseline = true)]
         public OrderDto Manual() => ByHand.Map(source);
 
         [Benchmark]
-        public OrderDto Mapperion_() => Mapperion.Map<Order, OrderDto>(source);
+        public OrderDto Mapperion_Runtime() => Mapperion.Map<Order, OrderDto>(source);
 
         [Benchmark]
         public OrderDto AutoMapper_() => AutoMapped.Map<Order, OrderDto>(source);
+
+        [Benchmark]
+        public OrderDto Mapster_() => source.Adapt<OrderDto>(MapsterConfig);
+
+        [Benchmark]
+        public OrderDto AgileMapper_() => Mapper.Map(source).ToANew<OrderDto>();
     }
 
     /// <summary>B03: a thousand elements.</summary>
@@ -91,6 +148,12 @@ namespace Mapperion.Benchmarks
         private List<Line> source = null!;
 
         protected override void Prepare() => source = Samples.Order(1000).Lines;
+
+        protected override void Warm()
+        {
+            source.Adapt<List<LineDto>>(MapsterConfig);
+            Mapper.Map(source).ToANew<List<LineDto>>();
+        }
 
         [Benchmark(Baseline = true)]
         public List<LineDto> Manual()
@@ -106,10 +169,22 @@ namespace Mapperion.Benchmarks
         }
 
         [Benchmark]
-        public List<LineDto> Mapperion_() => Mapperion.Map<List<Line>, List<LineDto>>(source);
+        public List<LineDto> Mapperion_Runtime() => Mapperion.Map<List<Line>, List<LineDto>>(source);
+
+        [Benchmark]
+        public List<LineDto> Mapperion_SourceGen() => MapperionSourceGen.ToDtos(source);
+
+        [Benchmark]
+        public List<LineDto> Mapperly_SourceGen() => Mapperly.ToDtos(source);
 
         [Benchmark]
         public List<LineDto> AutoMapper_() => AutoMapped.Map<List<Line>, List<LineDto>>(source);
+
+        [Benchmark]
+        public List<LineDto> Mapster_() => source.Adapt<List<LineDto>>(MapsterConfig);
+
+        [Benchmark]
+        public List<LineDto> AgileMapper_() => Mapper.Map(source).ToANew<List<LineDto>>();
     }
 
     /// <summary>B04: four hops of flattening.</summary>
@@ -119,14 +194,26 @@ namespace Mapperion.Benchmarks
 
         protected override void Prepare() => source = Samples.Order(0);
 
+        protected override void Warm()
+        {
+            source.Adapt<FlattenedDto>(MapsterConfig);
+            Mapper.Map(source).ToANew<FlattenedDto>();
+        }
+
         [Benchmark(Baseline = true)]
         public FlattenedDto Manual() => ByHand.MapFlattened(source);
 
         [Benchmark]
-        public FlattenedDto Mapperion_() => Mapperion.Map<Order, FlattenedDto>(source);
+        public FlattenedDto Mapperion_Runtime() => Mapperion.Map<Order, FlattenedDto>(source);
 
         [Benchmark]
         public FlattenedDto AutoMapper_() => AutoMapped.Map<Order, FlattenedDto>(source);
+
+        [Benchmark]
+        public FlattenedDto Mapster_() => source.Adapt<FlattenedDto>(MapsterConfig);
+
+        [Benchmark]
+        public FlattenedDto AgileMapper_() => Mapper.Map(source).ToANew<FlattenedDto>();
     }
 
     /// <summary>B05: a record built through its constructor.</summary>
@@ -136,14 +223,32 @@ namespace Mapperion.Benchmarks
 
         protected override void Prepare() => source = new Line { Code = "L", Price = 3m };
 
+        protected override void Warm()
+        {
+            source.Adapt<LineRecordDto>(MapsterConfig);
+            Mapper.Map(source).ToANew<LineRecordDto>();
+        }
+
         [Benchmark(Baseline = true)]
         public LineRecordDto Manual() => ByHand.MapToRecord(source);
 
         [Benchmark]
-        public LineRecordDto Mapperion_() => Mapperion.Map<Line, LineRecordDto>(source);
+        public LineRecordDto Mapperion_Runtime() => Mapperion.Map<Line, LineRecordDto>(source);
+
+        [Benchmark]
+        public LineRecordDto Mapperion_SourceGen() => MapperionSourceGen.ToRecord(source);
+
+        [Benchmark]
+        public LineRecordDto Mapperly_SourceGen() => Mapperly.ToRecord(source);
 
         [Benchmark]
         public LineRecordDto AutoMapper_() => AutoMapped.Map<Line, LineRecordDto>(source);
+
+        [Benchmark]
+        public LineRecordDto Mapster_() => source.Adapt<LineRecordDto>(MapsterConfig);
+
+        [Benchmark]
+        public LineRecordDto AgileMapper_() => Mapper.Map(source).ToANew<LineRecordDto>();
     }
 
     /// <summary>B07: mapping onto an instance the caller already has.</summary>
@@ -158,6 +263,12 @@ namespace Mapperion.Benchmarks
             destination = new FlatDto();
         }
 
+        protected override void Warm()
+        {
+            source.Adapt(destination, MapsterConfig);
+            Mapper.Map(source).Over(destination);
+        }
+
         [Benchmark(Baseline = true)]
         public FlatDto Manual()
         {
@@ -166,9 +277,15 @@ namespace Mapperion.Benchmarks
         }
 
         [Benchmark]
-        public FlatDto Mapperion_() => Mapperion.Map(source, destination);
+        public FlatDto Mapperion_Runtime() => Mapperion.Map(source, destination);
 
         [Benchmark]
         public FlatDto AutoMapper_() => AutoMapped.Map(source, destination);
+
+        [Benchmark]
+        public FlatDto Mapster_() => source.Adapt(destination, MapsterConfig);
+
+        [Benchmark]
+        public FlatDto AgileMapper_() => Mapper.Map(source).Over(destination);
     }
 }

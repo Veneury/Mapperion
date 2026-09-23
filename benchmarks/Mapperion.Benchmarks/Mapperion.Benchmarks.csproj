@@ -19,10 +19,16 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" />
     <PackageReference Include="AutoMapper" />
+    <PackageReference Include="Mapster" />
+    <PackageReference Include="AgileObjects.AgileMapper" />
+    <PackageReference Include="Riok.Mapperly" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
+    <ProjectReference Include="../../src/Mapperion.SourceGenerator/Mapperion.SourceGenerator.csproj"
+                     OutputItemType="Analyzer"
+                     ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
