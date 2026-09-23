@@ -33,10 +33,10 @@ jobs:
 
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v6
         with:
           global-json-file: global.json
 
@@ -75,7 +75,7 @@ jobs:
           dotnet pack src/Mapperion.SourceGenerator/Mapperion.SourceGenerator.csproj --no-build --configuration Release --output artifacts -p:Version=${{ steps.version.outputs.value }}
 
       - name: Keep the packages with the run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: packages-${{ steps.version.outputs.value }}
           path: artifacts/*
