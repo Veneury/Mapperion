@@ -31,7 +31,13 @@
     <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
-  <Target Name="PackAnalyzerAssembly" BeforeTargets="_GetPackageFiles" DependsOnTargets="Build">
+  <!--
+    IncludeBuildOutput is off, because an analyzer does not belong in lib/, so the assembly has to
+    be placed by hand. GetTargetPath rather than Build: all this needs is where the assembly will
+    be, and depending on Build makes packing fail outright when the build is skipped, which is how
+    a release packs.
+  -->
+  <Target Name="PackAnalyzerAssembly" BeforeTargets="_GetPackageFiles" DependsOnTargets="GetTargetPath">
     <ItemGroup>
       <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
     </ItemGroup>

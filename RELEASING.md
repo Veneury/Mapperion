@@ -58,6 +58,9 @@ The version comes from the tag, so nothing needs editing to release. `VersionPre
 
 ## If it goes wrong
 
+- **A release failed before pushing anything.** Nothing went to NuGet, so nothing is stuck. Fix the
+  cause, delete the tag that failed, and release the next version number rather than moving the tag
+  onto the fix: a tag that has already been fetched somewhere should not change what it points at.
 - **A package failed to push and others went up.** Re-run the job. The push uses
   `--skip-duplicate`, so what is already on NuGet is left alone. The key is asked for again on the
   re-run, since each one lasts only an hour.
