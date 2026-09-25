@@ -2,6 +2,8 @@
   href: getting-started.md
 - name: Migrating from AutoMapper
   href: migrating-from-automapper.md
+- name: The configuration analyzer
+  href: analyzer.md
 - name: Ahead-of-time and trimming
   href: aot.md
 - name: Performance

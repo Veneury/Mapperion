@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>Mapperion.Analysis</RootNamespace>
+    <AssemblyName>Mapperion.Analyzers</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <IncludeSymbols>false</IncludeSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageId>Mapperion.Analyzers</PackageId>
+    <Description>Compile-time checks for Mapperion configuration: duplicate maps, members configured twice, and settings that contradict each other.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="PolySharp" PrivateAssets="all" IncludeAssets="runtime;build;native;contentfiles;analyzers;buildtransitive" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../../README.md" Pack="true" PackagePath="\" />
+    <None Include="$(MSBuildThisFileDirectory)../../icon.png" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+
+  <!--
+    Same arrangement as the generator: an analyzer does not belong in lib/, so the assembly is
+    placed by hand. GetTargetPath rather than Build, because depending on Build makes packing fail
+    when the build is skipped, which is how a release packs.
+  -->
+  <Target Name="PackAnalyzerAssembly" BeforeTargets="_GetPackageFiles" DependsOnTargets="GetTargetPath">
+    <ItemGroup>
+      <None Include="$(TargetPath)" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+    </ItemGroup>
+  </Target>
+
+</Project>

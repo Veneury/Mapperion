@@ -26,11 +26,14 @@ namespace Mapperion.Tests.Configuration
         [Fact]
         public void Declaring_the_same_pair_twice_is_rejected()
         {
+            // The analyser says the same thing at compile time, which is the point of both.
+#pragma warning disable MPR1001
             Should.Throw<MapperConfigurationException>(() => new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<Order, OrderDto>();
                 cfg.CreateMap<Order, OrderDto>();
             }));
+#pragma warning restore MPR1001
         }
 
         [Fact]
@@ -89,6 +92,7 @@ namespace Mapperion.Tests.Configuration
         [Fact]
         public void Ignore_marks_the_member_and_drops_any_source()
         {
+#pragma warning disable MPR1003
             TypeMapDefinition map = SingleMap(cfg => cfg
                 .CreateMap<Order, OrderDto>()
                 .ForMember(d => d.CustomerName, o =>
@@ -96,6 +100,7 @@ namespace Mapperion.Tests.Configuration
                     o.MapFrom(s => s.Customer.Name);
                     o.Ignore();
                 }));
+#pragma warning restore MPR1003
 
             MemberDefinition member = map.FindMember(nameof(OrderDto.CustomerName))!;
             member.IsIgnored.ShouldBeTrue();

@@ -110,6 +110,7 @@ namespace Mapperion.Tests.Execution
         [Fact]
         public void A_factory_and_a_configured_constructor_parameter_cannot_both_stand()
         {
+#pragma warning disable MPR1004
             MapperConfigurationException error = Should.Throw<MapperConfigurationException>(
                 () => new MapperConfiguration(cfg =>
                 {
@@ -118,6 +119,7 @@ namespace Mapperion.Tests.Execution
                        .ConstructUsing(source => new PassDto("fixed"))
                        .ForCtorParam("label", o => o.MapFrom(s => s.Label));
                 }));
+#pragma warning restore MPR1004
 
             error.Message.ShouldContain("ForCtorParam");
         }
