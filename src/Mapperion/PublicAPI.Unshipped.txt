@@ -1,4 +1,26 @@
 #nullable enable
+Mapperion.ExactMatchNamingConvention
+Mapperion.ExactMatchNamingConvention.ExactMatchNamingConvention() -> void
+Mapperion.ExactMatchNamingConvention.SeparatorCharacter.get -> string?
+Mapperion.IMapperConfigurationExpression.DestinationMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.IMapperConfigurationExpression.DestinationMemberNamingConvention.set -> void
+Mapperion.IMapperConfigurationExpression.SourceMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.IMapperConfigurationExpression.SourceMemberNamingConvention.set -> void
+Mapperion.INamingConvention
+Mapperion.INamingConvention.SeparatorCharacter.get -> string?
+Mapperion.LowerUnderscoreNamingConvention
+Mapperion.LowerUnderscoreNamingConvention.LowerUnderscoreNamingConvention() -> void
+Mapperion.LowerUnderscoreNamingConvention.SeparatorCharacter.get -> string?
 Mapperion.MapperConfiguration.Explain() -> string!
 Mapperion.MapperConfiguration.Explain(System.Type! sourceType, System.Type! destinationType) -> string!
 Mapperion.MapperConfiguration.Explain<TSource, TDestination>() -> string!
+Mapperion.Model.MapperOptions.DestinationMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.Model.MapperOptions.DestinationMemberNamingConvention.init -> void
+Mapperion.Model.MapperOptions.SourceMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.Model.MapperOptions.SourceMemberNamingConvention.init -> void
+Mapperion.PascalCaseNamingConvention
+Mapperion.PascalCaseNamingConvention.PascalCaseNamingConvention() -> void
+Mapperion.PascalCaseNamingConvention.SeparatorCharacter.get -> string?
+static Mapperion.ExactMatchNamingConvention.Instance.get -> Mapperion.ExactMatchNamingConvention!
+static Mapperion.LowerUnderscoreNamingConvention.Instance.get -> Mapperion.LowerUnderscoreNamingConvention!
+static Mapperion.PascalCaseNamingConvention.Instance.get -> Mapperion.PascalCaseNamingConvention!

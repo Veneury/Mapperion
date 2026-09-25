@@ -83,6 +83,18 @@ namespace Mapperion
         /// <summary>Gets or sets a value indicating whether the configuration is validated when built.</summary>
         bool ValidateOnBuild { get; set; }
 
+        /// <summary>
+        /// Gets or sets how the source spells its member names, so that a source written
+        /// <c>first_name</c> matches a destination written <c>FirstName</c>.
+        /// </summary>
+        /// <remarks>
+        /// <see cref="ExactMatchNamingConvention"/> here also turns flattening off.
+        /// </remarks>
+        INamingConvention SourceMemberNamingConvention { get; set; }
+
+        /// <summary>Gets or sets how the destination spells its member names.</summary>
+        INamingConvention DestinationMemberNamingConvention { get; set; }
+
         /// <summary>Strips these prefixes from source member names before matching.</summary>
         /// <param name="prefixes">The prefixes, such as <c>Get</c>.</param>
         void RecognizeSourcePrefixes(params string[] prefixes);

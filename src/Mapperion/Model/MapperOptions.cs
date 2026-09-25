@@ -76,6 +76,17 @@ namespace Mapperion.Model
         /// </summary>
         public bool ValidateOnBuild { get; init; }
 
+        /// <summary>Gets how the source spells its member names.</summary>
+        /// <remarks>
+        /// <see cref="ExactMatchNamingConvention"/> here also turns flattening off, since
+        /// flattening reads a destination name as a series of words and walks one source member
+        /// per word.
+        /// </remarks>
+        public INamingConvention SourceMemberNamingConvention { get; init; } = PascalCaseNamingConvention.Instance;
+
+        /// <summary>Gets how the destination spells its member names.</summary>
+        public INamingConvention DestinationMemberNamingConvention { get; init; } = PascalCaseNamingConvention.Instance;
+
         /// <summary>Gets the source member name prefixes stripped before matching, such as <c>Get</c>.</summary>
         public IReadOnlyList<string> SourcePrefixes { get; init; } = NoAffixes;
 
