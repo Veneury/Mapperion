@@ -64,6 +64,40 @@ namespace Mapperion.Tests.Execution
     }
 #pragma warning restore CA1069
 
+    public enum Wide : ulong
+    {
+        Huge = 18000000000000000000UL,
+    }
+
+    public enum WideDto : ulong
+    {
+        Huge = 18000000000000000000UL,
+    }
+
+    public enum Narrow
+    {
+        Over = 300,
+    }
+
+    public enum NarrowDto : byte
+    {
+        Under = 44,
+    }
+
+    public sealed class Extremes
+    {
+        public Wide Wide { get; set; }
+
+        public Narrow Narrow { get; set; }
+    }
+
+    public sealed class ExtremesDto
+    {
+        public WideDto Wide { get; set; }
+
+        public NarrowDto Narrow { get; set; }
+    }
+
     public sealed class TwinHolder
     {
         public Twin Twin { get; set; }
@@ -230,6 +264,46 @@ namespace Mapperion.Tests.Execution
                 .Map<TwinHolder, TwinHolderDto>(new TwinHolder { Twin = Twin.Segundo });
 
             ((int)dto.Twin).ShouldBe(9);
+        }
+
+        /// <remarks>
+        /// A number too big for the destination is truncated rather than refused, which is what a
+        /// cast between the two enums would do and what the by-value policy is asking for.
+        /// </remarks>
+        [Fact]
+        public void A_number_wider_than_the_destination_is_carried_across_as_a_cast_would()
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.EnumMapping = EnumMappingPolicy.ByValue;
+                cfg.CreateMap<Extremes, ExtremesDto>();
+            });
+
+            ExtremesDto dto = configuration.CreateMapper()
+                .Map<Extremes, ExtremesDto>(new Extremes { Narrow = Narrow.Over });
+
+            dto.Narrow.ShouldBe(NarrowDto.Under);
+        }
+
+        /// <remarks>
+        /// This one used to throw. The number was carried through an <c>Int64</c> on its way over,
+        /// so anything a <c>ulong</c> can hold and an <c>Int64</c> cannot raised
+        /// <c>OverflowException</c> — including, as here, carrying it into an enum of exactly the
+        /// same shape, where nothing is being narrowed at all.
+        /// </remarks>
+        [Fact]
+        public void A_ulong_above_what_an_Int64_holds_still_crosses()
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.EnumMapping = EnumMappingPolicy.ByValue;
+                cfg.CreateMap<Extremes, ExtremesDto>();
+            });
+
+            ExtremesDto dto = configuration.CreateMapper()
+                .Map<Extremes, ExtremesDto>(new Extremes { Wide = Wide.Huge });
+
+            dto.Wide.ShouldBe(WideDto.Huge);
         }
 
         [Fact]
