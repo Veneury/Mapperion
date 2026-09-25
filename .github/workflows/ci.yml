@@ -88,9 +88,14 @@ jobs:
           global-json-file: global.json
 
       # A short job over the scenarios where a regression would actually show: the two that the
-      # inlining serves, and the two where the fixed cost per call dominates. Only the hand-written
-      # baseline and Mapperion run; measuring the other libraries here would treble the time and
-      # tell us nothing about our own changes.
+      # inlining serves, the two where the fixed cost per call dominates, the polymorphic dispatch
+      # and the enum conversion. Only the hand-written baseline and Mapperion run; measuring the
+      # other libraries here would treble the time and tell us nothing about our own changes.
+      #
+      # Three scenarios are deliberately not here. B06 by name is a known cost rather than a floor
+      # worth holding. B09 needs a database and its ratio belongs mostly to Entity Framework. B11
+      # measures contention, and how much of that appears depends on how many cores the runner has,
+      # so a ratio from one machine says little about another.
       - name: Measure
         run: >
           dotnet run --project benchmarks/Mapperion.Benchmarks/Mapperion.Benchmarks.csproj
@@ -103,6 +108,9 @@ jobs:
           "*CollectionBenchmarks.Mapperion_SourceGen"
           "*ConstructorBenchmarks.Manual" "*ConstructorBenchmarks.Mapperion_Runtime"
           "*ConstructorBenchmarks.Mapperion_SourceGen"
+          "*PolymorphicBenchmarks.Manual" "*PolymorphicBenchmarks.Mapperion_Runtime"
+          "*PolymorphicBenchmarks.Mapperion_RuntimeFast"
+          "*EnumByValueBenchmarks.Manual" "*EnumByValueBenchmarks.Mapperion_Runtime"
           --job short --exporters json
 
       - name: Compare against the budget
