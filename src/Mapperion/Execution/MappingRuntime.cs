@@ -335,7 +335,10 @@ namespace Mapperion.Execution
                 }
             }
 
-            return (TDestination)Enum.ToObject(typeof(TDestination), Convert.ToInt64(value, CultureInfo.InvariantCulture));
+            // The number itself, whatever its width, rather than the number as an Int64. Going
+            // through Int64 threw on a ulong enum above long.MaxValue, which included carrying one
+            // such value into an enum of exactly the same shape.
+            return (TDestination)Enum.ToObject(typeof(TDestination), (object)value);
         }
 
         internal static TDestination ParseEnum<TDestination>(string? value, EnumMappingPolicy policy)

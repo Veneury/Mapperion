@@ -13,10 +13,8 @@
     "A scenario may set its own tolerance, for when one of them turns out to be steadier or",
     "noisier than the rest. Nested has one: at 25 per cent a run with the inlining switched off",
     "measured 2.80x and passed, which is not much of a guard, so it is held tighter. Enums by",
-    "value has one the other way: three runs on the same machine gave 4.52x, 4.37x and 5.62x,",
-    "because its hand-written baseline is under five nanoseconds and the ratio wobbles with it.",
-    "At 25 per cent that last run would have failed for no reason, and a check that cries wolf",
-    "gets ignored.",
+    "value has one the other way: five casts written by hand take four nanoseconds, and a ratio",
+    "over a floor that small moves about ten per cent between runs on this machine.",
     "",
     "Raising a number here is how a change that is meant to cost something gets agreed. Do it in",
     "the same pull request, never afterwards.",
@@ -25,9 +23,10 @@
     "Entity Framework's. The concurrent one measures contention, and how much shows up depends on",
     "the core count of whatever runner picked up the job.",
     "",
-    "Mapping enums by name joined this list the moment it was worth holding. It used to cost 25x",
-    "and pinning that would have protected nothing; now it is 4.23x and a regression would mean",
-    "the name correspondence went back to being worked out per call."
+    "Both halves of the enum scenario are held. Neither was worth holding before: by name cost",
+    "25x and by value 15x, and pinning those would have protected nothing. What a regression in",
+    "either would mean now is that the work went back to being done per call instead of once,",
+    "while the plan was compiled."
   ],
   "tolerance": 0.25,
   "scenarios": [
@@ -41,7 +40,7 @@
     { "type": "ConstructorBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.01 },
     { "type": "PolymorphicBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.69 },
     { "type": "PolymorphicBenchmarks", "method": "Mapperion_RuntimeFast", "ratio": 2.81 },
-    { "type": "EnumByValueBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.52, "tolerance": 0.40 },
-    { "type": "EnumByNameBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.23 }
+    { "type": "EnumByValueBenchmarks", "method": "Mapperion_Runtime", "ratio": 5.21, "tolerance": 0.30 },
+    { "type": "EnumByNameBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.56 }
   ]
 }
