@@ -17,6 +17,22 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Suite propia en `tests/Mapperion.EntityFramework6.Tests`, sobre net472 y sin base de datos: EF6
   genera el SQL desde su modelo y `ToString()` sobre la consulta lo devuelve, así que el SQL es la
   aserción y no hace falta un servidor en el build.
+- Los cuatro benchmarks que faltaban: B06 enums, B08 polimorfismo, B09 `ProjectTo` sobre EF Core y
+  SQLite, y B11 dieciséis hilos a la vez. Con eso la tabla del doc 07 está completa.
+- B08 y B11 salieron bien: el polimorfismo va a 4,69x del manual (2,81x con `MapFast`) contra 8,75x
+  de AutoMapper, y con dieciséis trabajadores el múltiplo *mejora* a 1,73x, o sea que no hay
+  cerrojo ni estado por instancia que haga cola. B09 empata con todos porque el tiempo es de EF y
+  de SQLite; lo que detecta es la proyección que se cae al cliente, que no sería un empate.
+- B06 encontró algo: los enums **por nombre** cuestan 25x el manual y asignan 280 B donde el manual
+  asigna 40, porque el nombre se resuelve en cada llamada con dos `ToString()` y un `Enum.TryParse`
+  por miembro. Los dos tipos se conocen al compilar el plan, así que esto se puede resolver una vez
+  y emitir como un `switch`. Medido y anotado, todavía no arreglado.
+- B08 encontró otra: un mapa polimórfico cuyo destino base es **abstracto** no llega a compilar,
+  porque el plan exige poder construir el destino aunque todos los caminos declarados despachen a
+  un mapa derivado. AutoMapper acepta esa misma configuración, así que es un bloqueo de migración.
+- Polimorfismo y enums por valor entran en el presupuesto de CI. Los otros tres no, y por motivos:
+  el de nombre es un coste conocido y no un suelo que defender, el de proyección necesita base de
+  datos, y el de concurrencia depende de cuántos núcleos tenga el runner.
 - Convenciones de nombres configurables, con la forma de AutoMapper: `SourceMemberNamingConvention`
   y `DestinationMemberNamingConvention`, más `PascalCaseNamingConvention`,
   `LowerUnderscoreNamingConvention` y `ExactMatchNamingConvention`. Un origen que escribe

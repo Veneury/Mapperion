@@ -22,6 +22,7 @@
     <PackageReference Include="Mapster" />
     <PackageReference Include="AgileObjects.AgileMapper" />
     <PackageReference Include="Riok.Mapperly" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
   </ItemGroup>
 
   <ItemGroup>

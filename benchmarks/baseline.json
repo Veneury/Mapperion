@@ -15,7 +15,12 @@
     "measured 2.80x and passed, which is not much of a guard, so it is held tighter.",
     "",
     "Raising a number here is how a change that is meant to cost something gets agreed. Do it in",
-    "the same pull request, never afterwards."
+    "the same pull request, never afterwards.",
+    "",
+    "Not every scenario belongs here. Mapping enums by name is a known cost being carried, not a",
+    "floor worth holding. The projection needs a database and its ratio is mostly Entity",
+    "Framework's. The concurrent one measures contention, and how much shows up depends on the",
+    "core count of whatever runner picked up the job."
   ],
   "tolerance": 0.25,
   "scenarios": [
@@ -26,6 +31,9 @@
     { "type": "CollectionBenchmarks", "method": "Mapperion_Runtime", "ratio": 1.79 },
     { "type": "CollectionBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.26 },
     { "type": "ConstructorBenchmarks", "method": "Mapperion_Runtime", "ratio": 3.67 },
-    { "type": "ConstructorBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.01 }
+    { "type": "ConstructorBenchmarks", "method": "Mapperion_SourceGen", "ratio": 1.01 },
+    { "type": "PolymorphicBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.69 },
+    { "type": "PolymorphicBenchmarks", "method": "Mapperion_RuntimeFast", "ratio": 2.81 },
+    { "type": "EnumByValueBenchmarks", "method": "Mapperion_Runtime", "ratio": 4.52 }
   ]
 }
