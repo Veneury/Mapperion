@@ -40,6 +40,12 @@ namespace Mapperion.Configuration
 
         public bool ValidateOnBuild { get; set; } = MapperOptions.Defaults.ValidateOnBuild;
 
+        public INamingConvention SourceMemberNamingConvention { get; set; } =
+            MapperOptions.Defaults.SourceMemberNamingConvention;
+
+        public INamingConvention DestinationMemberNamingConvention { get; set; } =
+            MapperOptions.Defaults.DestinationMemberNamingConvention;
+
         public IMappingExpression<TSource, TDestination> CreateMap<TSource, TDestination>()
         {
             var key = new TypeMapKey(typeof(TSource), typeof(TDestination));
@@ -182,6 +188,8 @@ namespace Mapperion.Configuration
                 EnumMapping = EnumMapping,
                 MemberListValidation = MemberListValidation,
                 ValidateOnBuild = ValidateOnBuild,
+                SourceMemberNamingConvention = SourceMemberNamingConvention,
+                DestinationMemberNamingConvention = DestinationMemberNamingConvention,
                 SourcePrefixes = sourcePrefixes.ToArray(),
                 SourcePostfixes = sourcePostfixes.ToArray(),
                 DestinationPrefixes = destinationPrefixes.ToArray(),

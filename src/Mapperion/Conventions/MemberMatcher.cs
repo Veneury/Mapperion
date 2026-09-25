@@ -10,28 +10,47 @@ namespace Mapperion.Conventions
     /// uses so that migrated configurations resolve to the same members: exact name, name ignoring
     /// case, name with the configured affixes stripped, then flattening.
     /// </summary>
+    /// <remarks>
+    /// Each side is read through its naming convention before anything is compared, which is what
+    /// lets a source written <c>first_name</c> meet a destination written <c>FirstName</c>. The
+    /// convention contributes one thing: the separator between words, which is taken out of the
+    /// name. A spelling with no separator leaves the name as it stands, so the default costs
+    /// nothing and matches exactly what it matched before conventions were configurable.
+    /// </remarks>
     [RequiresUnreferencedCode("Convention matching inspects types by reflection.")]
     internal sealed class MemberMatcher
     {
         private readonly MapperOptions options;
         private readonly TypeMembers members;
+        private readonly string? sourceSeparator;
+        private readonly string? destinationSeparator;
+        private readonly bool flattens;
 
         internal MemberMatcher(MapperOptions options, TypeMembers members)
         {
             this.options = options;
             this.members = members;
+
+            sourceSeparator = (options.SourceMemberNamingConvention ?? PascalCaseNamingConvention.Instance)
+                .SeparatorCharacter;
+            destinationSeparator = (options.DestinationMemberNamingConvention ?? PascalCaseNamingConvention.Instance)
+                .SeparatorCharacter;
+
+            flattens = sourceSeparator is not null;
         }
 
         internal MemberPath? Match(Type sourceType, string destinationMemberName)
         {
-            MemberPath? direct = Match(sourceType, destinationMemberName, 1);
+            string target = Canonical(destinationMemberName, destinationSeparator);
+
+            MemberPath? direct = Match(sourceType, target, 1);
             if (direct is not null)
             {
                 return direct;
             }
 
-            string stripped = Strip(destinationMemberName, options.DestinationPrefixes, options.DestinationPostfixes);
-            return string.Equals(stripped, destinationMemberName, StringComparison.Ordinal)
+            string stripped = Strip(target, options.DestinationPrefixes, options.DestinationPostfixes);
+            return string.Equals(stripped, target, StringComparison.Ordinal)
                 ? null
                 : Match(sourceType, stripped, 1);
         }
@@ -48,7 +67,7 @@ namespace Mapperion.Conventions
                 }
             }
 
-            if (depth >= options.MaxFlatteningDepth)
+            if (!flattens || depth >= options.MaxFlatteningDepth)
             {
                 return null;
             }
@@ -72,25 +91,29 @@ namespace Mapperion.Conventions
 
         private bool NameMatches(MemberDescriptor candidate, string target)
         {
-            if (string.Equals(candidate.Name, target, options.NameStringComparison))
+            string name = Canonical(candidate.Name, sourceSeparator);
+
+            if (string.Equals(name, target, options.NameStringComparison))
             {
                 return true;
             }
 
-            string stripped = Strip(candidate.Name, options.SourcePrefixes, options.SourcePostfixes);
-            return !string.Equals(stripped, candidate.Name, StringComparison.Ordinal)
+            string stripped = Strip(name, options.SourcePrefixes, options.SourcePostfixes);
+            return !string.Equals(stripped, name, StringComparison.Ordinal)
                 && string.Equals(stripped, target, options.NameStringComparison);
         }
 
         private bool TryConsume(MemberDescriptor candidate, string remaining, out string rest)
         {
-            if (TryConsume(candidate.Name, remaining, out rest))
+            string name = Canonical(candidate.Name, sourceSeparator);
+
+            if (TryConsume(name, remaining, out rest))
             {
                 return true;
             }
 
-            string stripped = Strip(candidate.Name, options.SourcePrefixes, options.SourcePostfixes);
-            return !string.Equals(stripped, candidate.Name, StringComparison.Ordinal)
+            string stripped = Strip(name, options.SourcePrefixes, options.SourcePostfixes);
+            return !string.Equals(stripped, name, StringComparison.Ordinal)
                 && TryConsume(stripped, remaining, out rest);
         }
 
@@ -133,6 +156,16 @@ namespace Mapperion.Conventions
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Takes the word separator out of a name, so both sides can be compared as one word.
+        /// </summary>
+        private static string Canonical(string name, string? separator)
+        {
+            return string.IsNullOrEmpty(separator) || name.IndexOf(separator!, StringComparison.Ordinal) < 0
+                ? name
+                : name.Replace(separator, string.Empty);
         }
 
         private static MemberPath Prepend(MemberDescriptor head, MemberPath tail)

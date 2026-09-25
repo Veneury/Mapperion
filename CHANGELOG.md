@@ -17,6 +17,16 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Suite propia en `tests/Mapperion.EntityFramework6.Tests`, sobre net472 y sin base de datos: EF6
   genera el SQL desde su modelo y `ToString()` sobre la consulta lo devuelve, así que el SQL es la
   aserción y no hace falta un servidor en el build.
+- Convenciones de nombres configurables, con la forma de AutoMapper: `SourceMemberNamingConvention`
+  y `DestinationMemberNamingConvention`, más `PascalCaseNamingConvention`,
+  `LowerUnderscoreNamingConvention` y `ExactMatchNamingConvention`. Un origen que escribe
+  `first_name` y un destino que escribe `FirstName` ya se encuentran sin un `ForMember` por
+  propiedad. Ignorar mayúsculas no bastaba: se diferencian en un carácter, no en la caja.
+- El aplanado cruza las dos grafas, así que `ShipToCityName` llega a `ship_to.city_name`. Y
+  `ExactMatchNamingConvention` como convención de origen apaga el aplanado, igual que en
+  AutoMapper.
+- Los valores por defecto dejan el nombre tal cual, así que ninguna configuración existente
+  cambia de comportamiento ni paga nada por esto.
 - `Explain()` describe, miembro a miembro, en qué quedó un mapa y de dónde sale cada valor. Separa
   lo configurado a mano de lo que decidió una convención, que es de donde viene casi toda la
   confusión cuando un miembro trae algo inesperado, y deja bien visible el que se quedó sin origen,

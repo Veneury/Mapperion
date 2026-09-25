@@ -21,7 +21,8 @@ what is left is a short list you can work through in an afternoon.
 `Ignore`, `Condition`, `PreCondition`, `NullSubstitute`, `ConvertUsing`, `ConstructUsing`,
 `ReverseMap`, `Include`, `IncludeBase`, `IncludeMembers`, `BeforeMap`, `AfterMap`, `MaxDepth`,
 `PreserveReferences`, `AllowNullCollections`, `ProjectTo`, `ITypeConverter`, `IValueConverter`,
-`IValueResolver`, `IMappingAction`, `ResolutionContext.Items`.
+`IValueResolver`, `IMappingAction`, `ResolutionContext.Items`, `SourceMemberNamingConvention`,
+`DestinationMemberNamingConvention`.
 
 ## What is renamed
 
