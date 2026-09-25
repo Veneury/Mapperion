@@ -1,1 +1,4 @@
 #nullable enable
+Mapperion.MapperConfiguration.Explain() -> string!
+Mapperion.MapperConfiguration.Explain(System.Type! sourceType, System.Type! destinationType) -> string!
+Mapperion.MapperConfiguration.Explain<TSource, TDestination>() -> string!

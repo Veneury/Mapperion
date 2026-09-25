@@ -6,6 +6,7 @@ using Mapperion.Execution;
 using System.Collections.Generic;
 using System.Threading;
 using Mapperion.Internal;
+using Mapperion.Diagnostics;
 using Mapperion.Model;
 using Mapperion.Validation;
 
@@ -101,6 +102,51 @@ namespace Mapperion
             {
                 throw new MapperConfigurationException(ConfigurationValidator.BuildMessage(errors), errors);
             }
+        }
+
+        /// <summary>
+        /// Describes, member by member, what a map resolved to and where each value comes from.
+        /// </summary>
+        /// <remarks>
+        /// For reading, not for parsing: the wording is meant to answer "why did this member get
+        /// that" and will change whenever a clearer wording turns up. It separates what was
+        /// configured by hand from what a convention decided, which is most of what makes a
+        /// surprising result surprising. Nothing here runs a mapping; it reads the built model.
+        /// </remarks>
+        /// <typeparam name="TSource">The source type.</typeparam>
+        /// <typeparam name="TDestination">The destination type.</typeparam>
+        /// <returns>The description, including the case where no map is declared for the pair.</returns>
+        [RequiresUnreferencedCode("Explaining a map inspects types by reflection.")]
+        public string Explain<TSource, TDestination>() =>
+            Explain(typeof(TSource), typeof(TDestination));
+
+        /// <summary>Describes a map without generics.</summary>
+        /// <param name="sourceType">The source type.</param>
+        /// <param name="destinationType">The destination type.</param>
+        /// <returns>The description, including the case where no map is declared for the pair.</returns>
+        /// <exception cref="ArgumentNullException">Either type is <see langword="null"/>.</exception>
+        [RequiresUnreferencedCode("Explaining a map inspects types by reflection.")]
+        public string Explain(Type sourceType, Type destinationType) =>
+            Explanation.Write(Model, new TypeMapKey(sourceType, destinationType));
+
+        /// <summary>Describes every declared map, in the order they were declared.</summary>
+        /// <returns>The descriptions, separated by a blank line.</returns>
+        [RequiresUnreferencedCode("Explaining a map inspects types by reflection.")]
+        public string Explain()
+        {
+            var text = new System.Text.StringBuilder();
+
+            foreach (TypeMapDefinition definition in Model.TypeMaps)
+            {
+                if (text.Length != 0)
+                {
+                    text.Append(Environment.NewLine);
+                }
+
+                text.Append(Explanation.Write(Model, definition.Key));
+            }
+
+            return text.ToString();
         }
 
         /// <summary>
