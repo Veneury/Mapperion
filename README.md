@@ -246,6 +246,17 @@ than asserted.
 - `ProjectTo`, which rewrites a query so the database returns only the columns the destination
   needs. Verified against EF Core with SQLite, not just built.
 - A frozen configuration model exposed through `MapperConfiguration.Model`.
+- `Explain()`, which writes out what a map resolved to, member by member, and says which of those
+  you configured and which a convention decided.
+- An optional analyser package, `Mapperion.Analyzers`, that reads your configuration at compile
+  time and reports the mistakes it can see there: a pair declared twice, a member given two
+  sources, a member both ignored and sourced, and `ConstructUsing` sitting next to `ForCtorParam`.
+  It is a separate package on purpose, so the mapper itself keeps its one selling point of having
+  no dependencies at all:
+
+  ```bash
+  dotnet add package Mapperion.Analyzers
+  ```
 
 ## Not yet
 

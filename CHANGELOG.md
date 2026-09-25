@@ -9,6 +9,28 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- `Mapperion.Analyzers`, un paquete aparte y opcional que lee la configuración en tiempo de
+  compilación. Cuatro reglas: **MPR1001** el mismo par declarado dos veces, **MPR1002** un miembro
+  con dos orígenes, **MPR1003** un miembro ignorado y con origen a la vez, **MPR1004**
+  `ConstructUsing` junto a `ForCtorParam`.
+- Va en su propio paquete para que `Mapperion` siga sin ninguna dependencia, que es de lo poco que
+  puede decir que casi nadie más dice. No lleva código de runtime y nada suyo llega a tu salida.
+- Todo son avisos, ninguno error. Dos de los cuatro describen algo que revienta al construir la
+  configuración, pero esos mismos dos se pueden escribir en ramas distintas de un `if` donde solo
+  corre uno. Quien quiera que paren el build ya convierte los avisos en errores.
+- Lo que **no** hace: decirte si un miembro del destino va a encontrar origen. Para eso está
+  `AssertIsValid()`. Contestarlo aquí sería una segunda copia del motor de convenciones al lado de
+  la primera, separándose de ella con el tiempo, y una respuesta equivocada de un analizador es
+  peor que ninguna.
+- Todo se reconoce por símbolo y no por nombre: un `ForMember` del builder fluido de otra librería
+  se queda en paz. Hay una prueba que dice exactamente eso.
+- Corrido sobre la propia suite de la librería: 320 pruebas y tres avisos, los tres en pruebas
+  escritas a propósito para comprobar ese fallo. Quedan silenciados en esos tres sitios con un
+  `#pragma` que dice por qué, y el analizador sigue mirando todo lo demás.
+- La primera versión de MPR1002 decía que configurar un miembro dos veces dejaba solo el último con
+  efecto. Es falso: las opciones se acumulan, y una prueba de la librería ya lo decía. La regla
+  ahora habla solo del origen, que es lo único que de verdad se reemplaza.
+
 - `ProjectTo` sobre Entity Framework 6. Resultó que ya funcionaba casi entero —es el mismo método
   del core, que no depende de ningún ORM—, salvo por un detalle: la proyección emitía nodos
   `Expression.Default` para el valor de un miembro que no se puede leer, y el traductor de EF6 se
