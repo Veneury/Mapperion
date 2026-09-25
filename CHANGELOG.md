@@ -44,6 +44,14 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 - Comprobado en los dos sentidos: con el árbol limpio pasa, y desactivando el inlining a propósito
   falla en la colección y en el anidado diciendo cuál y cuánto.
 
+### Fixed
+
+- La restauración de la solución fallaba en Linux desde que entraron los tests de EF6. El proyecto
+  se dejaba sin ningún target framework fuera de Windows, y NuGet no restaura un proyecto así: el
+  build se caía con un `MSB4181` que no nombra ni el proyecto ni el motivo. Fuera de Windows ahora
+  es un ensamblado vacío que restaura, no compila nada y no es proyecto de tests, así que `dotnet
+  test` no lo mira. En Windows sigue siendo net472 con sus cinco pruebas.
+
 ## [0.9.0-preview.1] - 2026-09-23
 
 Una minor y no un parche porque el nombre seguro cambia la identidad de los ensamblados, que es
