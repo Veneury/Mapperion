@@ -16,6 +16,21 @@ namespace Mapperion.EntityFrameworkCore.Tests
         public List<Book> Books { get; set; } = new List<Book>();
     }
 
+    public enum Binding
+    {
+        Paperback = 0,
+        Hardback = 1,
+        Digital = 2,
+    }
+
+    /// <summary>The same three names with the numbers turned round.</summary>
+    public enum BindingDto
+    {
+        Digital = 0,
+        Hardback = 1,
+        Paperback = 2,
+    }
+
     public sealed class Book
     {
         public int Id { get; set; }
@@ -23,6 +38,8 @@ namespace Mapperion.EntityFrameworkCore.Tests
         public string Title { get; set; } = string.Empty;
 
         public int Pages { get; set; }
+
+        public Binding Binding { get; set; }
 
         public int AuthorId { get; set; }
 
@@ -36,6 +53,13 @@ namespace Mapperion.EntityFrameworkCore.Tests
         public string AuthorName { get; set; } = string.Empty;
 
         public string AuthorCountry { get; set; } = string.Empty;
+    }
+
+    public sealed class BookBindingDto
+    {
+        public string Title { get; set; } = string.Empty;
+
+        public BindingDto Binding { get; set; }
     }
 
     public sealed class BookSummaryDto
@@ -83,11 +107,11 @@ namespace Mapperion.EntityFrameworkCore.Tests
             context.Database.EnsureCreated();
 
             var ada = new Author { Name = "Ada", Country = "UK" };
-            ada.Books.Add(new Book { Title = "Notes", Pages = 120 });
-            ada.Books.Add(new Book { Title = "Engines", Pages = 340 });
+            ada.Books.Add(new Book { Title = "Notes", Pages = 120, Binding = Binding.Hardback });
+            ada.Books.Add(new Book { Title = "Engines", Pages = 340, Binding = Binding.Digital });
 
             var grace = new Author { Name = "Grace", Country = "US" };
-            grace.Books.Add(new Book { Title = "Compilers", Pages = 500 });
+            grace.Books.Add(new Book { Title = "Compilers", Pages = 500, Binding = Binding.Paperback });
 
             context.Authors.AddRange(ada, grace);
             context.SaveChanges();

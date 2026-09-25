@@ -9,6 +9,14 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Added
 
+- Un proyecto piloto, `samples/Mapperion.Bookshop`: una aplicación pequeña que usa la librería como
+  la usa una aplicación, no como la usa un test. Contenedor, dos perfiles, EF Core sobre SQLite,
+  `AssertIsValid()` al arrancar, una vista de lista por `ProjectTo` y una de detalle mapeada en
+  memoria. Comprueba su propia salida y sale con código distinto de cero si algo no cuadra, así que
+  la CI lo corre como una prueba más.
+- Lo que cubre no es ninguna cosa rara por separado: es todo a la vez sobre una sola
+  configuración, que es justo donde una suite de tests unitarios menos mira.
+
 - `Mapperion.Analyzers`, un paquete aparte y opcional que lee la configuración en tiempo de
   compilación. Cuatro reglas: **MPR1001** el mismo par declarado dos veces, **MPR1002** un miembro
   con dos orígenes, **MPR1003** un miembro ignorado y con origen a la vez, **MPR1004**
@@ -79,6 +87,17 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
 ### Fixed
 
+- **Una proyección cruzaba los enums por número mientras el motor los cruzaba por nombre.** El
+  mismo pedido salía `Shipped` en la vista de detalle y `Placed` en la de lista, con un solo
+  `CreateMap` y una sola política detrás. Lo encontró el piloto a los diez minutos de existir.
+- La proyección emite ahora la correspondencia como una cadena de condiciones que el proveedor
+  convierte en un `CASE`, sacada de la misma tabla que usa el motor de mapeo —ahora en
+  `EnumCorrespondence`, compartida por los dos— para que no puedan volver a discrepar. EF Core y
+  EF6 la traducen las dos, y hay pruebas en ambas suites que lo dicen, incluida una que comprueba
+  que el `CASE` lo hace la base de datos y no el cliente.
+- Lo único que una proyección no puede hacer es lanzar el error que `ByName` lanza en memoria para
+  un valor sin contrapartida: nada nuestro corre por fila, el SQL tiene brazo para un valor o no lo
+  tiene. Un valor fuera de los declarados cae a su número, que es lo que hacía antes.
 - Mapear enums **por nombre** costaba 25x el mapeo a mano y asignaba 280 B donde el manual asigna
   40. El nombre se resolvía en cada llamada: un `ToString()` para sacarlo del origen, un
   `Enum.TryParse` contra el destino y otro `ToString()` para confirmar que el nombre volvía igual

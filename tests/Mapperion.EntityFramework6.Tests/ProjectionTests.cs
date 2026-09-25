@@ -18,11 +18,28 @@ namespace Mapperion.EntityFramework6.Tests
         public virtual ICollection<Book> Books { get; set; } = new List<Book>();
     }
 
+    public enum Binding
+    {
+        Paperback = 0,
+        Hardback = 1,
+        Digital = 2,
+    }
+
+    /// <summary>The same three names with the numbers turned round.</summary>
+    public enum BindingDto
+    {
+        Digital = 0,
+        Hardback = 1,
+        Paperback = 2,
+    }
+
     public class Book
     {
         public int Id { get; set; }
 
         public string Title { get; set; } = string.Empty;
+
+        public Binding Binding { get; set; }
 
         public int Year { get; set; }
 
@@ -46,6 +63,13 @@ namespace Mapperion.EntityFramework6.Tests
         public string AuthorName { get; set; } = string.Empty;
 
         public string AuthorCountry { get; set; } = string.Empty;
+    }
+
+    public sealed class BookBindingDto
+    {
+        public string Title { get; set; } = string.Empty;
+
+        public BindingDto Binding { get; set; }
     }
 
     public sealed class AuthorDto
@@ -157,6 +181,22 @@ namespace Mapperion.EntityFramework6.Tests
                    .ForMember(d => d.AuthorCountry, o => o.Ignore()));
 
             Sql<BookDto>(c => c.Books, configuration).ShouldContain("Price");
+        }
+
+        /// <remarks>
+        /// Crossing an enum by name is emitted as a chain of conditions, and EF6 is the translator
+        /// most likely to refuse one. It does not: this is a CASE like any other.
+        /// </remarks>
+        [Fact]
+        public void An_enum_crossing_by_name_becomes_a_case()
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Book, BookBindingDto>());
+
+            string sql = Sql<BookBindingDto>(c => c.Books, configuration);
+
+            sql.ShouldContain("CASE");
+            sql.ShouldContain("WHEN");
+            sql.ShouldNotContain("Year");
         }
 
         [Fact]
