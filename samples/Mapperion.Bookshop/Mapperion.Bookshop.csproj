@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Mapperion.Bookshop</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      The version is overridden here and nowhere else. This repository pins the container at 8.0.1
+      because that is the floor Mapperion.Extensions.DependencyInjection supports, and Entity
+      Framework 9 brings 9.0.20 along with it. A consumer has no such pin and would never see this;
+      it is an artefact of building inside the repository, not something the library asks of anyone.
+    -->
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" VersionOverride="9.0.20" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
+    <ProjectReference Include="../../src/Mapperion.Extensions.DependencyInjection/Mapperion.Extensions.DependencyInjection.csproj" />
+    <!--
+      The analyser is referenced for the same reason a real project would reference it: to find out
+      whether it says anything about a configuration nobody wrote to please it.
+    -->
+    <ProjectReference Include="../../src/Mapperion.Analyzers/Mapperion.Analyzers.csproj"
+                     OutputItemType="Analyzer"
+                     ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
