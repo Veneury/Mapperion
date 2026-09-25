@@ -286,6 +286,32 @@ namespace Mapperion.Execution
             return result;
         }
 
+        /// <summary>
+        /// The exception raised when a map whose destination cannot be created on its own is
+        /// reached by a source that none of its derived maps cover.
+        /// </summary>
+        /// <remarks>
+        /// A base destination that is abstract is perfectly fine as long as every source that
+        /// arrives is covered by a derived map, which is the usual shape of a polymorphic map and
+        /// what AutoMapper accepts. Refusing it when the configuration is built would rule out that
+        /// shape entirely, so the complaint waits until an instance actually turns up that nothing
+        /// can be built for, and then names it.
+        /// </remarks>
+        internal static MappingException CannotCreateBase(Type destinationType, Type sourceType, object? source)
+        {
+            Type actual = source?.GetType() ?? sourceType;
+
+            string opening = "No derived map matched " + actual.Name + ", and " + destinationType.Name +
+                " cannot be created on its own: it has no parameterless constructor. ";
+
+            return new MappingException(actual == sourceType
+                ? opening + "This is " + sourceType.Name + " itself rather than one of the derived " +
+                  "types the map includes, so no Include can cover it."
+                : opening + "Declare the pair with CreateMap<" + actual.Name +
+                  ", ...>() and add Include<" + actual.Name + ", ...>() to the map from " +
+                  sourceType.Name + ".");
+        }
+
         internal static TDestination ToEnum<TSource, TDestination>(TSource value, EnumMappingPolicy policy)
             where TSource : struct, Enum
             where TDestination : struct, Enum
