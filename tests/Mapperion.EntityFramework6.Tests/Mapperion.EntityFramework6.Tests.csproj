@@ -5,24 +5,37 @@
     provider is where anyone still using it actually runs. Building this on Linux would prove
     nothing about the thing being tested.
   -->
-  <PropertyGroup>
-    <TargetFrameworks Condition="'$(OS)' == 'Windows_NT'">net472</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' != 'Windows_NT'"></TargetFrameworks>
-    <IsPackable>false</IsPackable>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <TargetFramework>net472</TargetFramework>
     <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <!--
+    Elsewhere the project still has to restore, because the solution is restored as a whole and a
+    project with no target framework at all fails that outright, with an MSBuild error that names
+    neither the project nor the reason. So off Windows it becomes an empty assembly: nothing
+    compiled, nothing referenced, and not a test project, which is what keeps `dotnet test` from
+    looking for tests that cannot run there.
+  -->
+  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IsTestProject>false</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CS2008</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
     <RootNamespace>Mapperion.EntityFramework6.Tests</RootNamespace>
   </PropertyGroup>
 
-  <ItemGroup>
+  <ItemGroup Condition="'$(OS)' == 'Windows_NT'">
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="EntityFramework" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="PolySharp" PrivateAssets="all" IncludeAssets="runtime;build;native;contentfiles;analyzers;buildtransitive" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
   </ItemGroup>
 
