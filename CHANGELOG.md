@@ -27,9 +27,7 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   asigna 40, porque el nombre se resuelve en cada llamada con dos `ToString()` y un `Enum.TryParse`
   por miembro. Los dos tipos se conocen al compilar el plan, así que esto se puede resolver una vez
   y emitir como un `switch`. Medido y anotado, todavía no arreglado.
-- B08 encontró otra: un mapa polimórfico cuyo destino base es **abstracto** no llega a compilar,
-  porque el plan exige poder construir el destino aunque todos los caminos declarados despachen a
-  un mapa derivado. AutoMapper acepta esa misma configuración, así que es un bloqueo de migración.
+- B08 encontró otra, la del destino base abstracto, y esa ya está arreglada más abajo.
 - Polimorfismo y enums por valor entran en el presupuesto de CI. Los otros tres no, y por motivos:
   el de nombre es un coste conocido y no un suelo que defender, el de proyección necesita base de
   datos, y el de concurrencia depende de cuántos núcleos tenga el runner.
@@ -61,6 +59,20 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   falla en la colección y en el anidado diciendo cuál y cuánto.
 
 ### Fixed
+
+- Un mapa polimórfico cuyo destino base es **abstracto** no llegaba a compilar. El plan exigía poder
+  construir el destino aunque el mapa tuviera `Include` para todos los tipos concretos, y una clase
+  abstracta no tiene constructor público sin parámetros, así que saltaba
+  `MapperConfigurationException` al primer mapeo. AutoMapper acepta esa misma configuración, con lo
+  que era un bloqueo de migración directo: quien tenga una jerarquía de DTOs con base abstracta
+  —que es la forma normal de tenerla— no podía pasarse.
+- Ahora, cuando el mapa tiene derivados, esa construcción se emite como una excepción de tiempo de
+  mapeo en vez de rechazarse al compilar. Solo se llega a ella si ningún derivado coincidió, y
+  entonces dice qué tipo llegó y qué hay que declarar. Sin derivados, un destino que no se puede
+  construir sigue siendo un error de configuración, que es lo que es. Y si quien llama trae su
+  propia instancia de destino, se escribe en ella como siempre: no hay nada que construir.
+- El benchmark B08 volvió a la base abstracta, que es la forma real, y mide lo mismo que con la
+  base concreta.
 
 - La restauración de la solución fallaba en Linux desde que entraron los tests de EF6. El proyecto
   se dejaba sin ningún target framework fuera de Windows, y NuGet no restaura un proyecto así: el

@@ -21,12 +21,10 @@ namespace Mapperion.Benchmarks
     }
 
     /// <remarks>
-    /// Concrete on purpose, though nothing here ever builds one. Mapperion refuses a map whose
-    /// destination it cannot construct, even when every declared path dispatches to a derived map,
-    /// so an abstract base would not get as far as being measured. That is worth fixing and is
-    /// written down as such; it is not what this benchmark is for.
+    /// Abstract, like the source. Nothing here ever builds one, and the shape a polymorphic map
+    /// actually has in an application is the shape worth timing.
     /// </remarks>
-    public class VehicleDto
+    public abstract class VehicleDto
     {
         public int Id { get; set; }
 

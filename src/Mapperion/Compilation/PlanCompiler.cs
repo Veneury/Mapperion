@@ -474,7 +474,12 @@ namespace Mapperion.Compilation
 
             ConstructorInfo? parameterless = destinationType.GetConstructor(Type.EmptyTypes);
 
-            if (parameterless is null)
+            if (parameterless is not null)
+            {
+                return Expression.Coalesce(destination, Expression.New(parameterless));
+            }
+
+            if (definition.DerivedMaps.Count == 0)
             {
                 throw new MapperConfigurationException(
                     destinationType.Name + " cannot be created: it has no parameterless constructor " +
@@ -482,7 +487,28 @@ namespace Mapperion.Compilation
                     definition.SourceType.Name + ".");
             }
 
-            return Expression.Coalesce(destination, Expression.New(parameterless));
+            return Expression.Coalesce(destination, Unbuildable(definition, source));
+        }
+
+        /// <summary>
+        /// Stands in for the construction of a destination that has derived maps and cannot be
+        /// built on its own, such as an abstract base.
+        /// </summary>
+        /// <remarks>
+        /// Reached only when none of the derived maps matched, because the dispatch that chooses
+        /// between them is wrapped around this. So a polymorphic map with an abstract base
+        /// destination compiles and works, and the one arrangement that has no answer — an instance
+        /// no derived map covers — says so when it turns up, naming the type that turned up.
+        /// </remarks>
+        private static UnaryExpression Unbuildable(TypeMapDefinition definition, ParameterExpression source)
+        {
+            return Expression.Throw(
+                Expression.Call(
+                    Method(nameof(MappingRuntime.CannotCreateBase)),
+                    Expression.Constant(definition.DestinationType, typeof(Type)),
+                    Expression.Constant(definition.SourceType, typeof(Type)),
+                    Expression.Convert(source, typeof(object))),
+                definition.DestinationType);
         }
 
         /// <summary>
