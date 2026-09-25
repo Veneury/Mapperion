@@ -94,22 +94,16 @@ namespace Mapperion.Benchmarks
         public Tier Tier { get; set; }
     }
 
-    /// <summary>The destination when the numbers line up: every member is a cast.</summary>
-    public sealed class TicketByValueDto
-    {
-        public Priority Priority { get; set; }
-
-        public Channel Channel { get; set; }
-
-        public Currency Currency { get; set; }
-
-        public Region Region { get; set; }
-
-        public Tier Tier { get; set; }
-    }
-
-    /// <summary>The destination when only the names line up.</summary>
-    public sealed class TicketByNameDto
+    /// <summary>
+    /// One destination for both halves of B06, so the only difference between them is the policy.
+    /// </summary>
+    /// <remarks>
+    /// It has to be a different set of types from the source. An earlier version of this file gave
+    /// the by-value destination the source's own enum types, which the conversion never even looks
+    /// at — identical types are assigned straight across — so that half was timing five plain
+    /// assignments and calling them enum conversions.
+    /// </remarks>
+    public sealed class TicketDto
     {
         public PriorityDto Priority { get; set; }
 
@@ -122,7 +116,7 @@ namespace Mapperion.Benchmarks
         public TierDto Tier { get; set; }
     }
 
-    /// <summary>B06, half of it: five enums whose numbers match, so every entrant casts.</summary>
+    /// <summary>B06, half of it: five enums carried across by their numbers, which is a cast.</summary>
     [MemoryDiagnoser]
     public class EnumByValueBenchmarks
     {
@@ -146,43 +140,43 @@ namespace Mapperion.Benchmarks
             mapperion = new MapperConfiguration(cfg =>
             {
                 cfg.EnumMapping = EnumMappingPolicy.ByValue;
-                cfg.CreateMap<Ticket, TicketByValueDto>();
+                cfg.CreateMap<Ticket, TicketDto>();
             }).CreateMapper();
 
             automapper = new AutoMapper.MapperConfiguration(cfg =>
-                cfg.CreateMap<Ticket, TicketByValueDto>()).CreateMapper();
+                cfg.CreateMap<Ticket, TicketDto>()).CreateMapper();
 
             mapster = new TypeAdapterConfig();
             mapster.Compile();
 
-            source.Adapt<TicketByValueDto>(mapster);
-            Mapper.Map(source).ToANew<TicketByValueDto>();
+            source.Adapt<TicketDto>(mapster);
+            Mapper.Map(source).ToANew<TicketDto>();
         }
 
         [Benchmark(Baseline = true)]
-        public TicketByValueDto Manual() => new TicketByValueDto
+        public TicketDto Manual() => new TicketDto
         {
-            Priority = source.Priority,
-            Channel = source.Channel,
-            Currency = source.Currency,
-            Region = source.Region,
-            Tier = source.Tier,
+            Priority = (PriorityDto)source.Priority,
+            Channel = (ChannelDto)source.Channel,
+            Currency = (CurrencyDto)source.Currency,
+            Region = (RegionDto)source.Region,
+            Tier = (TierDto)source.Tier,
         };
 
         [Benchmark]
-        public TicketByValueDto Mapperion_Runtime() => mapperion.Map<Ticket, TicketByValueDto>(source);
+        public TicketDto Mapperion_Runtime() => mapperion.Map<Ticket, TicketDto>(source);
 
         [Benchmark]
-        public TicketByValueDto Mapperion_RuntimeFast() => mapperion.MapFast<Ticket, TicketByValueDto>(source);
+        public TicketDto Mapperion_RuntimeFast() => mapperion.MapFast<Ticket, TicketDto>(source);
 
         [Benchmark]
-        public TicketByValueDto AutoMapper_() => automapper.Map<Ticket, TicketByValueDto>(source);
+        public TicketDto AutoMapper_() => automapper.Map<Ticket, TicketDto>(source);
 
         [Benchmark]
-        public TicketByValueDto Mapster_() => source.Adapt<TicketByValueDto>(mapster);
+        public TicketDto Mapster_() => source.Adapt<TicketDto>(mapster);
 
         [Benchmark]
-        public TicketByValueDto AgileMapper_() => Mapper.Map(source).ToANew<TicketByValueDto>();
+        public TicketDto AgileMapper_() => Mapper.Map(source).ToANew<TicketDto>();
     }
 
     /// <summary>B06, the other half: five enums that only agree on their names.</summary>
@@ -214,12 +208,12 @@ namespace Mapperion.Benchmarks
             mapperion = new MapperConfiguration(cfg =>
             {
                 cfg.EnumMapping = EnumMappingPolicy.ByName;
-                cfg.CreateMap<Ticket, TicketByNameDto>();
+                cfg.CreateMap<Ticket, TicketDto>();
             }).CreateMapper();
         }
 
         [Benchmark(Baseline = true)]
-        public TicketByNameDto Manual() => new TicketByNameDto
+        public TicketDto Manual() => new TicketDto
         {
             Priority = source.Priority switch
             {
@@ -254,9 +248,9 @@ namespace Mapperion.Benchmarks
         };
 
         [Benchmark]
-        public TicketByNameDto Mapperion_Runtime() => mapperion.Map<Ticket, TicketByNameDto>(source);
+        public TicketDto Mapperion_Runtime() => mapperion.Map<Ticket, TicketDto>(source);
 
         [Benchmark]
-        public TicketByNameDto Mapperion_RuntimeFast() => mapperion.MapFast<Ticket, TicketByNameDto>(source);
+        public TicketDto Mapperion_RuntimeFast() => mapperion.MapFast<Ticket, TicketDto>(source);
     }
 }

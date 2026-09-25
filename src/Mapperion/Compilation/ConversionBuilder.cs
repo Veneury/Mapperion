@@ -138,14 +138,22 @@ namespace Mapperion.Compilation
 
             if (sourceType.IsEnum && destinationType.IsEnum)
             {
-                MethodCallExpression atRunTime = Expression.Call(
-                    Method(nameof(MappingRuntime.ToEnum)).MakeGenericMethod(sourceType, destinationType),
-                    value,
-                    Expression.Constant(policy));
+                // Carrying the number across is the conversion itself, and both types are known
+                // here, so there is nothing left for a run-time call to work out.
+                if (policy == EnumMappingPolicy.ByValue)
+                {
+                    return Expression.Convert(value, destinationType);
+                }
 
-                return policy == EnumMappingPolicy.ByValue
-                    ? atRunTime
-                    : ByName(value, sourceType, destinationType, policy, atRunTime);
+                return ByName(
+                    value,
+                    sourceType,
+                    destinationType,
+                    policy,
+                    Expression.Call(
+                        Method(nameof(MappingRuntime.ToEnum)).MakeGenericMethod(sourceType, destinationType),
+                        value,
+                        Expression.Constant(policy)));
             }
 
             if (sourceType == typeof(string) && destinationType.IsEnum)
