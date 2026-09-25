@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using Mapperion.Execution;
@@ -137,10 +138,14 @@ namespace Mapperion.Compilation
 
             if (sourceType.IsEnum && destinationType.IsEnum)
             {
-                return Expression.Call(
+                MethodCallExpression atRunTime = Expression.Call(
                     Method(nameof(MappingRuntime.ToEnum)).MakeGenericMethod(sourceType, destinationType),
                     value,
                     Expression.Constant(policy));
+
+                return policy == EnumMappingPolicy.ByValue
+                    ? atRunTime
+                    : ByName(value, sourceType, destinationType, policy, atRunTime);
             }
 
             if (sourceType == typeof(string) && destinationType.IsEnum)
@@ -162,6 +167,93 @@ namespace Mapperion.Compilation
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Settles which destination member each source member becomes while the plan is compiled,
+        /// and emits the answer as a switch.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Both types are known here, so the correspondence between their names is knowable here
+        /// too. Working it out per call instead cost a <c>ToString</c> for the source name, an
+        /// <c>Enum.TryParse</c> against the destination, and a second <c>ToString</c> to confirm the
+        /// name really came back — per member, per map. On five enums that was twenty-five times a
+        /// hand-written switch and seven times its allocations, which is what B06 was written to
+        /// find out.
+        /// </para>
+        /// <para>
+        /// Only the members that can be settled here become cases. Anything else — a value outside
+        /// the ones declared, a combination of flags, a name the destination does not have under
+        /// <see cref="EnumMappingPolicy.ByName"/> — falls to the default, which is the same
+        /// run-time call as before. So the answers do not change, including the exception that
+        /// names the value that had nowhere to go.
+        /// </para>
+        /// </remarks>
+        private static Expression ByName(
+            Expression value,
+            Type sourceType,
+            Type destinationType,
+            EnumMappingPolicy policy,
+            Expression atRunTime)
+        {
+            Type underlyingType = Enum.GetUnderlyingType(sourceType);
+            var cases = new List<SwitchCase>();
+            var seen = new HashSet<object>();
+
+            foreach (object member in Enum.GetValues(sourceType))
+            {
+                object underlying = Convert.ChangeType(member, underlyingType, CultureInfo.InvariantCulture);
+
+                if (!seen.Add(underlying))
+                {
+                    continue;
+                }
+
+                object? resolved = Counterpart(member, sourceType, destinationType, policy, underlying);
+
+                if (resolved is not null)
+                {
+                    cases.Add(Expression.SwitchCase(
+                        Expression.Constant(resolved, destinationType),
+                        Expression.Constant(member, sourceType)));
+                }
+            }
+
+            return cases.Count == 0
+                ? atRunTime
+                : Expression.Switch(destinationType, value, atRunTime, null, cases);
+        }
+
+        /// <summary>
+        /// The destination member one source member becomes, or <see langword="null"/> when that
+        /// cannot be decided now and the run-time call has to answer it.
+        /// </summary>
+        private static object? Counterpart(
+            object member,
+            Type sourceType,
+            Type destinationType,
+            EnumMappingPolicy policy,
+            object underlying)
+        {
+            string? name = Enum.GetName(sourceType, member);
+
+            if (name is not null && Enum.IsDefined(destinationType, name))
+            {
+                object parsed = Enum.Parse(destinationType, name);
+
+                // The name has to come back out as it went in. Where two destination members share
+                // a value, only one of them is what that value prints as, and the run-time path
+                // rejects the other for the same reason.
+                if (string.Equals(Enum.GetName(destinationType, parsed), name, StringComparison.Ordinal))
+                {
+                    return parsed;
+                }
+            }
+
+            return policy == EnumMappingPolicy.ByNameThenValue
+                ? Enum.ToObject(destinationType, underlying)
+                : null;
         }
 
         private static UnaryExpression? TryNumeric(Expression value, Type sourceType, Type destinationType)

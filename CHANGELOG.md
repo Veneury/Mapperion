@@ -23,10 +23,7 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   de AutoMapper, y con dieciséis trabajadores el múltiplo *mejora* a 1,73x, o sea que no hay
   cerrojo ni estado por instancia que haga cola. B09 empata con todos porque el tiempo es de EF y
   de SQLite; lo que detecta es la proyección que se cae al cliente, que no sería un empate.
-- B06 encontró algo: los enums **por nombre** cuestan 25x el manual y asignan 280 B donde el manual
-  asigna 40, porque el nombre se resuelve en cada llamada con dos `ToString()` y un `Enum.TryParse`
-  por miembro. Los dos tipos se conocen al compilar el plan, así que esto se puede resolver una vez
-  y emitir como un `switch`. Medido y anotado, todavía no arreglado.
+- B06 encontró algo, lo de los enums por nombre, y también está arreglado más abajo.
 - B08 encontró otra, la del destino base abstracto, y esa ya está arreglada más abajo.
 - Polimorfismo y enums por valor entran en el presupuesto de CI. Los otros tres no, y por motivos:
   el de nombre es un coste conocido y no un suelo que defender, el de proyección necesita base de
@@ -59,6 +56,25 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   falla en la colección y en el anidado diciendo cuál y cuánto.
 
 ### Fixed
+
+- Mapear enums **por nombre** costaba 25x el mapeo a mano y asignaba 280 B donde el manual asigna
+  40. El nombre se resolvía en cada llamada: un `ToString()` para sacarlo del origen, un
+  `Enum.TryParse` contra el destino y otro `ToString()` para confirmar que el nombre volvía igual
+  — por miembro y por mapeo.
+- Los dos tipos se conocen al compilar el plan, así que la correspondencia se resuelve ahí una sola
+  vez y se emite como un `switch`. **4,23x y 40 B**, las mismas asignaciones que el manual.
+- Las respuestas no cambian, ninguna. Solo entran como caso los miembros que se pueden resolver en
+  compilación; lo demás —un valor fuera de los declarados, una combinación de flags, un nombre que
+  el destino no tiene bajo `ByName`— cae al `default`, que es la misma llamada de runtime de antes,
+  con la misma excepción y el mismo mensaje. Las once pruebas nuevas se escribieron contra la
+  implementación nueva y se pasaron también contra la vieja, que es lo que demuestra que solo
+  cambió la velocidad.
+- Ahora por nombre va más rápido que por valor, que sigue pasando por la llamada de runtime. Es
+  una rareza conocida y anotada en el doc 07.
+- Por nombre entra en el presupuesto de CI, que es lo que antes no tenía sentido: fijar 25x no
+  habría protegido nada. Por valor entra con tolerancia propia del 40 %, porque su línea base a
+  mano está por debajo de cinco nanosegundos y el múltiplo se mueve con ella: tres corridas en la
+  misma máquina dieron 4,52x, 4,37x y 5,62x.
 
 - Un mapa polimórfico cuyo destino base es **abstracto** no llegaba a compilar. El plan exigía poder
   construir el destino aunque el mapa tuviera `Include` para todos los tipos concretos, y una clase
