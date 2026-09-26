@@ -5,7 +5,17 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
-## [Unreleased]
+## [0.11.0] - 2026-09-26
+
+Minor y no parche: las conversiones de texto son capacidad nueva —un mapeo que antes lanzaba ahora
+funciona— y eso es una minor aunque no toque la API pública, que no la toca:
+`PublicAPI.Unshipped.txt` sale de esta versión vacío.
+
+Y no es la 1.0, aunque por código lo parezca. La 1.0 es una promesa —la API está cerrada, romperla
+cuesta una 2.0— y el proyecto todavía no está en posición de hacerla: la primera aplicación que
+usó la librería de verdad encontró un fallo semántico a los diez minutos, y nadie de fuera de este
+repositorio la ha usado aún. El README dice desde esta versión qué falta exactamente, para que la
+espera tenga un final que cualquiera pueda comprobar en vez de una fecha.
 
 ### Added
 

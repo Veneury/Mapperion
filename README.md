@@ -22,8 +22,31 @@ dotnet add package Mapperion
 > layer on AutoMapper and on Mapperion and fails if they disagree. There is nothing left that
 > AutoMapper does and Mapperion does not.
 >
-> What is still missing is the thing no amount of code supplies: nobody outside this repository has
-> migrated a production project onto it. Before 1.0 the API may still move.
+> Before 1.0 the API may still move. What it is waiting for is written down below, so the wait has
+> an end you can check rather than a date somebody keeps moving.
+
+## What 1.0 is waiting for
+
+1.0 is a promise, not a grade. It says the public API is settled, and that breaking it costs a 2.0.
+The code is ready for the grade; the project is not yet in a position to make the promise, for two
+reasons.
+
+**Somebody outside this repository has to have used it for something real.** The first application
+to use the library in earnest — the pilot in [`samples/`](samples/Mapperion.Bookshop) — found a
+semantic bug within minutes of printing anything: `ProjectTo` was carrying enums across by number
+while the mapping engine carried them across by name, so one configuration gave two different
+answers for the same record, with green tests on both sides. A test suite does not find that; use
+does. Freezing the API before a second application has had a go is a bet that there is no third
+thing of that kind.
+
+**The public API has to stop moving on its own.** The measure is `PublicAPI.Unshipped.txt` sitting
+empty across a couple of releases because nothing needed adding, rather than because nobody got
+round to it. Six public types arrived with the naming conventions in 0.10.0, days after this file
+last said there was nothing left to add.
+
+Neither of those is a date, and the first does not depend on writing more code. If you put this
+into something and it goes badly, [say so](https://github.com/Veneury/Mapperion/issues) — that is
+the thing 1.0 is short of, and a bad report is worth more than a good one.
 
 ## The short version of the licence
 
