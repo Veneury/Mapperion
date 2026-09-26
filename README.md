@@ -3,9 +3,10 @@
 Object-to-object mapper for .NET, **MIT licensed**, built as a drop-in alternative to AutoMapper
 for commercial projects.
 
-[![Mapperion](https://img.shields.io/nuget/vpre/Mapperion?label=Mapperion)](https://www.nuget.org/packages/Mapperion)
-[![Mapperion.Extensions.DependencyInjection](https://img.shields.io/nuget/vpre/Mapperion.Extensions.DependencyInjection?label=DependencyInjection)](https://www.nuget.org/packages/Mapperion.Extensions.DependencyInjection)
-[![Mapperion.SourceGenerator](https://img.shields.io/nuget/vpre/Mapperion.SourceGenerator?label=SourceGenerator)](https://www.nuget.org/packages/Mapperion.SourceGenerator)
+[![Mapperion](https://img.shields.io/nuget/v/Mapperion?label=Mapperion)](https://www.nuget.org/packages/Mapperion)
+[![Mapperion.Extensions.DependencyInjection](https://img.shields.io/nuget/v/Mapperion.Extensions.DependencyInjection?label=DependencyInjection)](https://www.nuget.org/packages/Mapperion.Extensions.DependencyInjection)
+[![Mapperion.SourceGenerator](https://img.shields.io/nuget/v/Mapperion.SourceGenerator?label=SourceGenerator)](https://www.nuget.org/packages/Mapperion.SourceGenerator)
+[![Mapperion.Analyzers](https://img.shields.io/nuget/v/Mapperion.Analyzers?label=Analyzers)](https://www.nuget.org/packages/Mapperion.Analyzers)
 [![CI](https://github.com/Veneury/Mapperion/actions/workflows/ci.yml/badge.svg)](https://github.com/Veneury/Mapperion/actions/workflows/ci.yml)
 
 **[Documentation](https://veneury.github.io/Mapperion/)** — getting started, migrating from
@@ -15,10 +16,14 @@ AutoMapper, ahead-of-time, performance, and the full API reference.
 dotnet add package Mapperion
 ```
 
-> **Status: pre-release.** Everything listed below works and is covered by the test suite, which
-> runs on .NET Framework 4.7.2 and 4.8 as well as .NET 8, 9 and 10. There is nothing left that
-> AutoMapper does and Mapperion does not. What is still missing is the thing no amount of code
-> supplies: nobody has yet migrated a real project onto it, so the API may still move before 1.0.
+> **Status: 0.x, and used by nobody yet.** Everything listed below works and is covered by a suite
+> that runs on .NET Framework 4.7.2 and 4.8 as well as .NET 8, 9 and 10, plus two applications that
+> run on every build: one that uses the whole library, and one that configures the same invoicing
+> layer on AutoMapper and on Mapperion and fails if they disagree. There is nothing left that
+> AutoMapper does and Mapperion does not.
+>
+> What is still missing is the thing no amount of code supplies: nobody outside this repository has
+> migrated a production project onto it. Before 1.0 the API may still move.
 
 ## The short version of the licence
 
@@ -30,15 +35,26 @@ still thin.
 
 ## Why
 
-AutoMapper moved to a paid commercial license at v15. Earlier versions stay MIT but are frozen:
-no new features, no support for new target frameworks, and a limited security horizon.
+AutoMapper moved to a paid commercial licence at v15. Version 14 and earlier stay MIT — an MIT
+grant cannot be withdrawn from something already released — but that line is frozen: no new
+features, no new target frameworks, and no security fixes.
+
+That last one is not hypothetical. AutoMapper 14 carries
+[CVE-2026-32933](https://github.com/advisories/GHSA-rvv3-g6hj-g44x): an object graph that loops
+recurses until the stack is gone, and it will not be patched on the MIT line. Mapperion bounds
+recursion by default, so the same graph raises a `RecursionLimitException` you can catch instead of
+a `StackOverflowException` you cannot. Staying on 14 means carrying that; moving to 15 means paying
+for it.
 
 Mapperion exists to fill that gap with three commitments:
 
 1. **MIT forever** — free commercial use, no per-seat or per-company licensing.
-2. **Broad reach** — .NET Framework 4.6.2+, .NET Standard 2.0/2.1, .NET 8/9/10.
-3. **Cheap migration** — the API is deliberately shaped like AutoMapper's, so moving an existing
-   codebase is mostly a namespace change.
+2. **Broad reach** — .NET Framework 4.7.2 and 4.8 with a native target, .NET Standard 2.0/2.1,
+   .NET 8/9/10. No dependencies on any of them.
+3. **Cheap migration** — and checked rather than promised.
+   [`samples/Mapperion.Migration`](samples/Mapperion.Migration) configures one invoicing layer
+   twice, on AutoMapper 14 and on Mapperion, and fails the build if the two disagree on any field.
+   The whole diff between them is one `using` per file and one `!`.
 
 ## Example
 
@@ -260,9 +276,7 @@ than asserted.
 
 ## Not yet
 
-`string` to `Guid`, `DateOnly` or `TimeOnly`. Those three are not `IConvertible`, so there is no
-conversion at all and the configuration says so rather than failing later; `string` to `DateTime`
-does work. A projection cannot build a dictionary or dispatch to a derived map: its shape is fixed
+A projection cannot build a dictionary or dispatch to a derived map: its shape is fixed
 before any row is read. The source generator covers the common shapes but not yet dictionaries,
 value resolvers or inheritance. `ReverseMap` does not unflatten: a member mapped from a nested path
 is resolved by convention on the way back, not written into the nested object.
