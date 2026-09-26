@@ -20,6 +20,22 @@ Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
   la máquina sería peor problema que el que resuelve.
 - Se mira **después** de un mapa declarado, así que `CreateMap<string, Guid>()` sigue ganando si
   alguien quiere su propia lectura.
+- `samples/Mapperion.Migration`: una capa de facturación configurada dos veces sobre el mismo
+  dominio, una en AutoMapper 14 y otra en Mapperion, con las dos mapeando las mismas facturas y
+  comparadas campo a campo. Sale con código distinto de cero si difieren, y la CI lo corre. La
+  frase del README sobre que migrar es casi cambiar de namespace pasa a ser algo que una máquina
+  puede tumbar.
+- La configuración migrada usa perfiles, `IValueResolver`, `ITypeConverter`, `ForCtorParam` sobre
+  un record posicional, `NullSubstitute`, `Condition`, `Ignore`, `AfterMap`,
+  `ResolutionContext.Items` por llamada, aplanado de tres saltos y un enum que solo cruza por
+  nombre. El diff entero entre las dos versiones es **un `using` por archivo y un `!`**.
+- Ese `!` es la única diferencia real: Mapperion tipa la bolsa como
+  `IDictionary<string, object?>` y AutoMapper como `IDictionary<string, object>`. La nuestra es la
+  más sincera —nada impide meter un nulo ahí— y por eso un cast necesita el operador que antes no
+  necesitaba.
+- Lo que **no** prueba, dicho en el propio sample: que las formas coincidan es menos que «tu
+  migración va a ser fácil». No dice nada del build de nadie, ni de su contenedor, ni de treinta
+  perfiles escritos por quien no conoce las dos librerías.
 
 ## [0.10.0] - 2026-09-26
 

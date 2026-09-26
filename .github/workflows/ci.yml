@@ -50,6 +50,12 @@ jobs:
       - name: Run the pilot application
         run: dotnet run --project samples/Mapperion.Bookshop/Mapperion.Bookshop.csproj --no-build --configuration Release
 
+      # The migration sample configures one invoicing layer twice, on AutoMapper and on Mapperion,
+      # and fails when the two stop agreeing field for field. The readme's claim that a migration
+      # is mostly a change of namespace is only worth making while this passes.
+      - name: Run the migration sample
+        run: dotnet run --project samples/Mapperion.Migration/Mapperion.Migration.csproj --no-build --configuration Release
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7
