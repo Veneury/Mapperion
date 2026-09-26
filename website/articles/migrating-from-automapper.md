@@ -3,6 +3,26 @@
 The goal is that changing `using AutoMapper;` to `using Mapperion;` resolves most files, and that
 what is left is a short list you can work through in an afternoon.
 
+## What that is worth so far
+
+There is a sample in the repository that configures one invoicing layer twice — once on
+AutoMapper 14, once on Mapperion — over a shared domain, maps the same invoices through both, and
+fails when the two disagree on any field. CI runs it.
+
+The configuration it migrates uses profiles, value resolvers, a type converter, `ForCtorParam`
+onto a positional record, `NullSubstitute`, `Condition`, `Ignore`, `AfterMap`,
+`ResolutionContext.Items` filled per call, flattening three hops in, and an enum that only
+crosses by name.
+
+The entire diff between the two versions is **one `using` per file and one `!`**: Mapperion types
+the items bag as `IDictionary<string, object?>` rather than `IDictionary<string, object>`, so a
+cast out of it needs a null-forgiving operator under a nullable context.
+
+Worth being straight about what that is not. It says the API takes the same calls and gives the
+same answers. It does not say anything about your build, your container wiring or your thirty
+profiles, and it was written by somebody who already knew both libraries. The shapes match; that
+is a smaller claim than "your migration will be easy".
+
 ## The procedure
 
 1. Make sure your tests pass on AutoMapper first. You want a known-good starting point.

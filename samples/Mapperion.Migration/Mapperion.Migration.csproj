@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>Invoicing</RootNamespace>
+    <!--
+      AutoMapper 14.0.0 is the last MIT release and carries CVE-2026-32933, uncontrolled recursion
+      that will never be patched on 14.x. It is here to be migrated away from, in a project that
+      is never shipped and never runs in production, so the advisory is acknowledged rather than
+      acted on. Migrating away from it is the point.
+    -->
+    <NoWarn>$(NoWarn);NU1903</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Mapperion/Mapperion.csproj" />
+    <ProjectReference Include="../../src/Mapperion.Analyzers/Mapperion.Analyzers.csproj"
+                     OutputItemType="Analyzer"
+                     ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+</Project>
