@@ -5,7 +5,15 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
-## [Unreleased]
+## [0.10.0] - 2026-09-26
+
+La primera sin sufijo `-preview`. No porque la API haya dejado de moverse —antes de la 1.0 una
+minor puede seguir rompiendo, y lo dice la línea de arriba— sino porque NuGet no enseña las
+pre-release en las búsquedas ni las instala sin pedirlas por número, y una librería que nadie
+encuentra no recibe la única cosa que le falta, que es gente usándola.
+
+Una minor y no un parche: `ProjectTo` cambia lo que devuelve para los enums que no cruzan por
+número. Es un arreglo, pero cambia una respuesta.
 
 ### Added
 

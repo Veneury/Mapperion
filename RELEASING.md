@@ -50,7 +50,8 @@ worth knowing if the repository is ever made private.
    ```
 
 3. The `Release` workflow builds, runs the whole suite on the tagged commit, publishes the
-   ahead-of-time sample natively and runs it, packs the three packages and waits for approval.
+   ahead-of-time sample natively and runs it, runs the pilot application, packs the four
+   packages and waits for approval.
 4. Approve it. The packages go to NuGet and a GitHub release is created with them attached.
 
 The version comes from the tag, so nothing needs editing to release. `VersionPrefix` in

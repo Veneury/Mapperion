@@ -1,4 +1,7 @@
 #nullable enable
+Mapperion.ExactMatchNamingConvention
+Mapperion.ExactMatchNamingConvention.ExactMatchNamingConvention() -> void
+Mapperion.ExactMatchNamingConvention.SeparatorCharacter.get -> string?
 Mapperion.ICtorParamConfigurationExpression<TSource>
 Mapperion.ICtorParamConfigurationExpression<TSource>.MapFrom<TMember>(System.Linq.Expressions.Expression<System.Func<TSource, TMember>!>! sourceMember) -> void
 Mapperion.ICtorParamConfigurationExpression<TSource>.UseValue(object! value) -> void
@@ -22,6 +25,8 @@ Mapperion.IMapperConfigurationExpression.AllowNullDestinationValues.get -> bool
 Mapperion.IMapperConfigurationExpression.AllowNullDestinationValues.set -> void
 Mapperion.IMapperConfigurationExpression.CreateMap(System.Type! sourceType, System.Type! destinationType) -> Mapperion.IOpenMappingExpression!
 Mapperion.IMapperConfigurationExpression.CreateMap<TSource, TDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMapperConfigurationExpression.DestinationMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.IMapperConfigurationExpression.DestinationMemberNamingConvention.set -> void
 Mapperion.IMapperConfigurationExpression.EnumMapping.get -> Mapperion.Model.EnumMappingPolicy
 Mapperion.IMapperConfigurationExpression.EnumMapping.set -> void
 Mapperion.IMapperConfigurationExpression.IncludeFields.get -> bool
@@ -40,6 +45,8 @@ Mapperion.IMapperConfigurationExpression.RecognizeSourcePostfixes(params string!
 Mapperion.IMapperConfigurationExpression.RecognizeSourcePrefixes(params string![]! prefixes) -> void
 Mapperion.IMapperConfigurationExpression.RecursionLimit.get -> int
 Mapperion.IMapperConfigurationExpression.RecursionLimit.set -> void
+Mapperion.IMapperConfigurationExpression.SourceMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.IMapperConfigurationExpression.SourceMemberNamingConvention.set -> void
 Mapperion.IMapperConfigurationExpression.ValidateOnBuild.get -> bool
 Mapperion.IMapperConfigurationExpression.ValidateOnBuild.set -> void
 Mapperion.IMappingAction<TSource, TDestination>
@@ -76,6 +83,8 @@ Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.NullSub
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.PreCondition(System.Linq.Expressions.Expression<System.Func<TSource, bool>!>! condition) -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.SetMappingOrder(int order) -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.UseDestinationValue() -> void
+Mapperion.INamingConvention
+Mapperion.INamingConvention.SeparatorCharacter.get -> string?
 Mapperion.IOpenMappingExpression
 Mapperion.IOpenMappingExpression.IgnoreMember(string! destinationMemberName) -> Mapperion.IOpenMappingExpression!
 Mapperion.IOpenMappingExpression.MaxDepth(int depth) -> Mapperion.IOpenMappingExpression!
@@ -87,11 +96,17 @@ Mapperion.IValueConverter<TSourceMember, TDestinationMember>
 Mapperion.IValueConverter<TSourceMember, TDestinationMember>.Convert(TSourceMember sourceMember, Mapperion.ResolutionContext context) -> TDestinationMember
 Mapperion.IValueResolver<TSource, TDestination, TDestinationMember>
 Mapperion.IValueResolver<TSource, TDestination, TDestinationMember>.Resolve(TSource source, TDestination destination, TDestinationMember destinationMember, Mapperion.ResolutionContext context) -> TDestinationMember
+Mapperion.LowerUnderscoreNamingConvention
+Mapperion.LowerUnderscoreNamingConvention.LowerUnderscoreNamingConvention() -> void
+Mapperion.LowerUnderscoreNamingConvention.SeparatorCharacter.get -> string?
 Mapperion.MapperConfiguration
 Mapperion.MapperConfiguration.AssertConfigurationIsValid() -> void
 Mapperion.MapperConfiguration.AssertIsValid() -> void
 Mapperion.MapperConfiguration.CreateMapper() -> Mapperion.IMapper!
 Mapperion.MapperConfiguration.CreateMapper(System.IServiceProvider! services) -> Mapperion.IMapper!
+Mapperion.MapperConfiguration.Explain() -> string!
+Mapperion.MapperConfiguration.Explain(System.Type! sourceType, System.Type! destinationType) -> string!
+Mapperion.MapperConfiguration.Explain<TSource, TDestination>() -> string!
 Mapperion.MapperConfiguration.MapperConfiguration(System.Action<Mapperion.IMapperConfigurationExpression!>! configure) -> void
 Mapperion.MapperConfiguration.Model.get -> Mapperion.Model.MapperModel!
 Mapperion.MapperConfiguration.Options.get -> Mapperion.Model.MapperOptions!
@@ -154,6 +169,8 @@ Mapperion.Model.MapperOptions.AllowNullCollections.get -> bool
 Mapperion.Model.MapperOptions.AllowNullCollections.init -> void
 Mapperion.Model.MapperOptions.AllowNullDestinationValues.get -> bool
 Mapperion.Model.MapperOptions.AllowNullDestinationValues.init -> void
+Mapperion.Model.MapperOptions.DestinationMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.Model.MapperOptions.DestinationMemberNamingConvention.init -> void
 Mapperion.Model.MapperOptions.DestinationPostfixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Mapperion.Model.MapperOptions.DestinationPostfixes.init -> void
 Mapperion.Model.MapperOptions.DestinationPrefixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -174,6 +191,8 @@ Mapperion.Model.MapperOptions.NameComparison.init -> void
 Mapperion.Model.MapperOptions.NameStringComparison.get -> System.StringComparison
 Mapperion.Model.MapperOptions.RecursionLimit.get -> int
 Mapperion.Model.MapperOptions.RecursionLimit.init -> void
+Mapperion.Model.MapperOptions.SourceMemberNamingConvention.get -> Mapperion.INamingConvention!
+Mapperion.Model.MapperOptions.SourceMemberNamingConvention.init -> void
 Mapperion.Model.MapperOptions.SourcePostfixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
 Mapperion.Model.MapperOptions.SourcePostfixes.init -> void
 Mapperion.Model.MapperOptions.SourcePrefixes.get -> System.Collections.Generic.IReadOnlyList<string!>!
@@ -290,6 +309,9 @@ Mapperion.Model.TypeMapKey.TypeMapKey(System.Type! sourceType, System.Type! dest
 Mapperion.Model.ValueResolverSource
 Mapperion.Model.ValueResolverSource.ResolverType.get -> System.Type!
 Mapperion.Model.ValueResolverSource.ValueResolverSource(System.Type! resolverType, System.Type! valueType) -> void
+Mapperion.PascalCaseNamingConvention
+Mapperion.PascalCaseNamingConvention.PascalCaseNamingConvention() -> void
+Mapperion.PascalCaseNamingConvention.SeparatorCharacter.get -> string?
 Mapperion.Profile
 Mapperion.Profile.CreateMap(System.Type! sourceType, System.Type! destinationType) -> Mapperion.IOpenMappingExpression!
 Mapperion.Profile.CreateMap<TSource, TDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
@@ -328,6 +350,8 @@ override Mapperion.Model.TypeMapKey.GetHashCode() -> int
 override Mapperion.Model.TypeMapKey.ToString() -> string!
 override Mapperion.Model.ValueResolverSource.Kind.get -> Mapperion.Model.MemberSourceKind
 override Mapperion.Model.ValueResolverSource.ToString() -> string!
+static Mapperion.ExactMatchNamingConvention.Instance.get -> Mapperion.ExactMatchNamingConvention!
+static Mapperion.LowerUnderscoreNamingConvention.Instance.get -> Mapperion.LowerUnderscoreNamingConvention!
 static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source) -> TDestination
 static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source, TDestination destination) -> TDestination
 static Mapperion.MapperHost.Initialize(Mapperion.IMapper! mapper) -> void
@@ -341,4 +365,5 @@ static Mapperion.Model.MemberDescriptor.ForProperty(System.Reflection.PropertyIn
 static Mapperion.Model.MemberPath.Of(Mapperion.Model.MemberDescriptor! member) -> Mapperion.Model.MemberPath!
 static Mapperion.Model.TypeMapKey.operator !=(Mapperion.Model.TypeMapKey left, Mapperion.Model.TypeMapKey right) -> bool
 static Mapperion.Model.TypeMapKey.operator ==(Mapperion.Model.TypeMapKey left, Mapperion.Model.TypeMapKey right) -> bool
+static Mapperion.PascalCaseNamingConvention.Instance.get -> Mapperion.PascalCaseNamingConvention!
 static Mapperion.QueryableExtensions.ProjectTo<TDestination>(this System.Linq.IQueryable! source, Mapperion.MapperConfiguration! configuration) -> System.Linq.IQueryable<TDestination>!
