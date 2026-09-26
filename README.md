@@ -12,7 +12,7 @@ for commercial projects.
 AutoMapper, ahead-of-time, performance, and the full API reference.
 
 ```
-dotnet add package Mapperion --prerelease
+dotnet add package Mapperion
 ```
 
 > **Status: pre-release.** Everything listed below works and is covered by the test suite, which

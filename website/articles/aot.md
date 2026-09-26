@@ -10,7 +10,7 @@ you find out at run time.
 The source generator is the answer. It writes the same mapping as ordinary C# at compile time.
 
 ```
-dotnet add package Mapperion.SourceGenerator --prerelease
+dotnet add package Mapperion.SourceGenerator
 ```
 
 ```csharp
