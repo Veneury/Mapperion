@@ -1,527 +1,542 @@
 # Changelog
 
-Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
-Versionado según [SemVer 2.0](https://semver.org/lang/es/).
+Format based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Versioned according to [SemVer 2.0](https://semver.org/).
 
-Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
+Before v1.0, a minor version may introduce breaking changes.
 
-## [Unreleased]
+## [0.11.0] - 2026-09-26
+
+A minor rather than a patch: reading values out of text is new capability — a mapping that used to
+throw now works — and that is a minor even though it adds no public API, which it does not.
+`PublicAPI.Unshipped.txt` leaves this version empty.
+
+And it is not 1.0, however much the code looks like it. 1.0 is a promise — the public API is
+settled, and breaking it costs a 2.0 — and the project is not yet in a position to make it: the
+first application to use the library in earnest found a semantic bug within minutes, and nobody
+outside this repository has used it at all. From this version the readme says exactly what is
+missing, so the wait has an end anybody can check rather than a date.
 
 ### Added
 
-- `string` a `Guid`, `DateOnly` y `TimeOnly`. Un identificador o una fecha que llegan como texto
-  —de un JSON, o de una columna que alguien escribió como `varchar`— es lo primero que se encuentra
-  cualquiera. `string` a `DateTime` ya funcionaba porque `DateTime` es `IConvertible` y estos tres
-  no lo son, una distinción que no le dice nada a quien escribe el mapa.
-- El texto vacío da el valor por defecto, igual que ya hacía con los enums: ausente no es lo mismo
-  que mal escrito. El texto que sí pretende ser un valor y no lo es lanza una excepción que lo
-  nombra, porque lo útil es saber qué fila traía la basura.
-- Se lee con la cultura invariante. Un mapeo que entendiera la misma fecha de forma distinta según
-  la máquina sería peor problema que el que resuelve.
-- Se mira **después** de un mapa declarado, así que `CreateMap<string, Guid>()` sigue ganando si
-  alguien quiere su propia lectura.
-- `samples/Mapperion.Migration`: una capa de facturación configurada dos veces sobre el mismo
-  dominio, una en AutoMapper 14 y otra en Mapperion, con las dos mapeando las mismas facturas y
-  comparadas campo a campo. Sale con código distinto de cero si difieren, y la CI lo corre. La
-  frase del README sobre que migrar es casi cambiar de namespace pasa a ser algo que una máquina
-  puede tumbar.
-- La configuración migrada usa perfiles, `IValueResolver`, `ITypeConverter`, `ForCtorParam` sobre
-  un record posicional, `NullSubstitute`, `Condition`, `Ignore`, `AfterMap`,
-  `ResolutionContext.Items` por llamada, aplanado de tres saltos y un enum que solo cruza por
-  nombre. El diff entero entre las dos versiones es **un `using` por archivo y un `!`**.
-- Ese `!` es la única diferencia real: Mapperion tipa la bolsa como
-  `IDictionary<string, object?>` y AutoMapper como `IDictionary<string, object>`. La nuestra es la
-  más sincera —nada impide meter un nulo ahí— y por eso un cast necesita el operador que antes no
-  necesitaba.
-- Lo que **no** prueba, dicho en el propio sample: que las formas coincidan es menos que «tu
-  migración va a ser fácil». No dice nada del build de nadie, ni de su contenedor, ni de treinta
-  perfiles escritos por quien no conoce las dos librerías.
+- `string` to `Guid`, `DateOnly` and `TimeOnly`. An identifier or a date arriving as text — out of
+  JSON, or out of a column somebody typed as `varchar` — is the first thing anyone meets. `string`
+  to `DateTime` already worked because `DateTime` is `IConvertible` and these three are not, a
+  distinction that means nothing to whoever is writing the map.
+- Empty text gives the default, as it already did for enums: absent is not the same as wrong. Text
+  that is meant to be a value and is not raises an exception naming it, because the useful thing to
+  know is which row had the rubbish in it.
+- It is read with the invariant culture. A mapping that understood the same date differently
+  depending on the machine would be a worse problem than the one it solves.
+- It is looked at **after** a declared map, so `CreateMap<string, Guid>()` still wins for anyone
+  who wants their own reading.
+- `samples/Mapperion.Migration`: one invoicing layer configured twice over the same domain, once on
+  AutoMapper 14 and once on Mapperion, with both mapping the same invoices and compared field by
+  field. It exits non-zero if they differ, and CI runs it. The readme's line about migrating being
+  mostly a change of namespace becomes something a machine can fail.
+- The migrated configuration uses profiles, `IValueResolver`, `ITypeConverter`, `ForCtorParam` onto
+  a positional record, `NullSubstitute`, `Condition`, `Ignore`, `AfterMap`,
+  `ResolutionContext.Items` filled per call, flattening three hops in, and an enum that only
+  crosses by name. The entire diff between the two versions is **one `using` per file and one `!`**.
+- That `!` is the only real difference: Mapperion types the items bag as
+  `IDictionary<string, object?>` where AutoMapper types it as `IDictionary<string, object>`. Ours
+  is the more truthful of the two — nothing stops a caller putting a null in it — which is why a
+  cast out of it needs an operator it did not need before.
+- What it does **not** prove, said in the sample itself: matching shapes is a smaller claim than
+  "your migration will be easy". It says nothing about anyone's build, their container, or thirty
+  profiles written by somebody who does not know both libraries.
 
 ## [0.10.0] - 2026-09-26
 
-La primera sin sufijo `-preview`. No porque la API haya dejado de moverse —antes de la 1.0 una
-minor puede seguir rompiendo, y lo dice la línea de arriba— sino porque NuGet no enseña las
-pre-release en las búsquedas ni las instala sin pedirlas por número, y una librería que nadie
-encuentra no recibe la única cosa que le falta, que es gente usándola.
+The first one without a `-preview` suffix. Not because the API has stopped moving — before 1.0 a
+minor may still break things, as the line at the top says — but because NuGet does not show
+pre-release versions in search and does not install one unless it is asked for by number, and a
+library nobody can find does not get the one thing it is short of, which is people using it.
 
-Una minor y no un parche: `ProjectTo` cambia lo que devuelve para los enums que no cruzan por
-número. Es un arreglo, pero cambia una respuesta.
+A minor rather than a patch: `ProjectTo` changes what it returns for enums that do not line up by
+number. It is a fix, but it changes an answer.
 
 ### Added
 
-- Un proyecto piloto, `samples/Mapperion.Bookshop`: una aplicación pequeña que usa la librería como
-  la usa una aplicación, no como la usa un test. Contenedor, dos perfiles, EF Core sobre SQLite,
-  `AssertIsValid()` al arrancar, una vista de lista por `ProjectTo` y una de detalle mapeada en
-  memoria. Comprueba su propia salida y sale con código distinto de cero si algo no cuadra, así que
-  la CI lo corre como una prueba más.
-- Lo que cubre no es ninguna cosa rara por separado: es todo a la vez sobre una sola
-  configuración, que es justo donde una suite de tests unitarios menos mira.
+- A pilot project, `samples/Mapperion.Bookshop`: a small application that uses the library the way
+  an application does, not the way a test does. A container, two profiles, EF Core over SQLite,
+  `AssertIsValid()` at startup, a list view through `ProjectTo` and a detail view mapped in memory.
+  It checks its own output and exits non-zero when something is wrong, so CI runs it as one more
+  test.
+- What it covers is nothing unusual on its own: it is all of it at once over a single
+  configuration, which is exactly where a suite of unit tests is least likely to look.
 
-- `Mapperion.Analyzers`, un paquete aparte y opcional que lee la configuración en tiempo de
-  compilación. Cuatro reglas: **MPR1001** el mismo par declarado dos veces, **MPR1002** un miembro
-  con dos orígenes, **MPR1003** un miembro ignorado y con origen a la vez, **MPR1004**
-  `ConstructUsing` junto a `ForCtorParam`.
-- Va en su propio paquete para que `Mapperion` siga sin ninguna dependencia, que es de lo poco que
-  puede decir que casi nadie más dice. No lleva código de runtime y nada suyo llega a tu salida.
-- Todo son avisos, ninguno error. Dos de los cuatro describen algo que revienta al construir la
-  configuración, pero esos mismos dos se pueden escribir en ramas distintas de un `if` donde solo
-  corre uno. Quien quiera que paren el build ya convierte los avisos en errores.
-- Lo que **no** hace: decirte si un miembro del destino va a encontrar origen. Para eso está
-  `AssertIsValid()`. Contestarlo aquí sería una segunda copia del motor de convenciones al lado de
-  la primera, separándose de ella con el tiempo, y una respuesta equivocada de un analizador es
-  peor que ninguna.
-- Todo se reconoce por símbolo y no por nombre: un `ForMember` del builder fluido de otra librería
-  se queda en paz. Hay una prueba que dice exactamente eso.
-- Corrido sobre la propia suite de la librería: 320 pruebas y tres avisos, los tres en pruebas
-  escritas a propósito para comprobar ese fallo. Quedan silenciados en esos tres sitios con un
-  `#pragma` que dice por qué, y el analizador sigue mirando todo lo demás.
-- La primera versión de MPR1002 decía que configurar un miembro dos veces dejaba solo el último con
-  efecto. Es falso: las opciones se acumulan, y una prueba de la librería ya lo decía. La regla
-  ahora habla solo del origen, que es lo único que de verdad se reemplaza.
+- `Mapperion.Analyzers`, a separate and optional package that reads the configuration at compile
+  time. Four rules: **MPR1001** the same pair declared twice, **MPR1002** a member given two
+  sources, **MPR1003** a member both ignored and sourced, **MPR1004** `ConstructUsing` next to
+  `ForCtorParam`.
+- It is its own package so that `Mapperion` keeps having no dependencies at all, which is one of
+  the few things it can say that most others cannot. It ships no runtime code and nothing of it
+  reaches your output.
+- All warnings, no errors. Two of the four describe something that throws when the configuration is
+  built, but those same two can be written across branches of an `if` where only one of them runs.
+  Anyone who wants them to stop the build already turns warnings into errors.
+- What it does **not** do: tell you whether a destination member will find a source. That is what
+  `AssertIsValid()` is for. Answering it here would mean a second copy of the convention engine
+  beside the first one, drifting from it over time, and a wrong answer from an analyzer is worse
+  than no answer.
+- Everything is matched by symbol rather than by name: a `ForMember` on somebody else's fluent
+  builder is left alone. There is a test that says exactly that.
+- Run over the library's own suite: 320 tests and three warnings, all three in tests written on
+  purpose to check that mistake. They are silenced at those three sites with a `#pragma` that says
+  why, and the analyzer goes on watching everything else.
+- The first version of MPR1002 said that configuring a member twice left only the last one
+  standing. That is false: settings accumulate, and a test in the library already said so. The rule
+  now speaks only about the source, which is the one thing that really is replaced.
 
-- `ProjectTo` sobre Entity Framework 6. Resultó que ya funcionaba casi entero —es el mismo método
-  del core, que no depende de ningún ORM—, salvo por un detalle: la proyección emitía nodos
-  `Expression.Default` para el valor de un miembro que no se puede leer, y el traductor de EF6 se
-  planta con «Unknown LINQ expression of type 'Default'». EF Core sí los acepta, así que nunca
-  había salido. Ahora emite una constante, que entienden los dos y cualquier otro proveedor.
-- Suite propia en `tests/Mapperion.EntityFramework6.Tests`, sobre net472 y sin base de datos: EF6
-  genera el SQL desde su modelo y `ToString()` sobre la consulta lo devuelve, así que el SQL es la
-  aserción y no hace falta un servidor en el build.
-- Los cuatro benchmarks que faltaban: B06 enums, B08 polimorfismo, B09 `ProjectTo` sobre EF Core y
-  SQLite, y B11 dieciséis hilos a la vez. Con eso la tabla del doc 07 está completa.
-- B08 y B11 salieron bien: el polimorfismo va a 4,69x del manual (2,81x con `MapFast`) contra 8,75x
-  de AutoMapper, y con dieciséis trabajadores el múltiplo *mejora* a 1,73x, o sea que no hay
-  cerrojo ni estado por instancia que haga cola. B09 empata con todos porque el tiempo es de EF y
-  de SQLite; lo que detecta es la proyección que se cae al cliente, que no sería un empate.
-- B06 encontró algo, lo de los enums por nombre, y también está arreglado más abajo.
-- B08 encontró otra, la del destino base abstracto, y esa ya está arreglada más abajo.
-- Polimorfismo y enums por valor entran en el presupuesto de CI. Los otros tres no, y por motivos:
-  el de nombre es un coste conocido y no un suelo que defender, el de proyección necesita base de
-  datos, y el de concurrencia depende de cuántos núcleos tenga el runner.
-- Convenciones de nombres configurables, con la forma de AutoMapper: `SourceMemberNamingConvention`
-  y `DestinationMemberNamingConvention`, más `PascalCaseNamingConvention`,
-  `LowerUnderscoreNamingConvention` y `ExactMatchNamingConvention`. Un origen que escribe
-  `first_name` y un destino que escribe `FirstName` ya se encuentran sin un `ForMember` por
-  propiedad. Ignorar mayúsculas no bastaba: se diferencian en un carácter, no en la caja.
-- El aplanado cruza las dos grafas, así que `ShipToCityName` llega a `ship_to.city_name`. Y
-  `ExactMatchNamingConvention` como convención de origen apaga el aplanado, igual que en
+- `ProjectTo` over Entity Framework 6. It turned out to work almost entirely already — it is the
+  same method from the core, which depends on no ORM — except for one detail: the projection was
+  emitting `Expression.Default` nodes for the value of a member that cannot be read, and the EF6
+  translator refuses with "Unknown LINQ expression of type 'Default'". EF Core accepts them, so it
+  had never come up. It now emits a constant, which both understand, and so does any other
+  provider.
+- Its own suite in `tests/Mapperion.EntityFramework6.Tests`, on net472 and with no database: EF6
+  builds the SQL from its model and `ToString()` on the query returns it, so the SQL is the
+  assertion and no server is needed in the build.
+- The four benchmarks that were missing: B06 enums, B08 polymorphism, B09 `ProjectTo` over EF Core
+  and SQLite, and B11 sixteen threads at once. With those the table in doc 07 is complete.
+- B08 and B11 came out well: polymorphism runs at 4.69x of the hand-written version (2.81x with
+  `MapFast`) against 8.75x for AutoMapper, and with sixteen workers the multiple *improves* to
+  1.73x, which means there is no lock and no per-instance state to queue behind. B09 ties with
+  everybody because the time belongs to EF and to SQLite; what it catches is a projection that
+  falls back to the client, which would not be a tie.
+- B06 found something, the enums by name, and that is fixed below too.
+- B08 found another, the abstract base destination, and that one is fixed below.
+- Polymorphism and enums by value join the CI budget. The other three do not, and for reasons: by
+  name is a known cost rather than a floor to hold, the projection needs a database, and the
+  concurrent one depends on how many cores the runner has.
+- Configurable naming conventions, with AutoMapper's shape: `SourceMemberNamingConvention` and
+  `DestinationMemberNamingConvention`, plus `PascalCaseNamingConvention`,
+  `LowerUnderscoreNamingConvention` and `ExactMatchNamingConvention`. A source that writes
+  `first_name` and a destination that writes `FirstName` now meet without a `ForMember` per
+  property. Ignoring case was not enough: they differ by a character, not by capitalisation.
+- Flattening crosses the two spellings, so `ShipToCityName` reaches `ship_to.city_name`. And
+  `ExactMatchNamingConvention` as the source convention turns flattening off, as it does in
   AutoMapper.
-- Los valores por defecto dejan el nombre tal cual, así que ninguna configuración existente
-  cambia de comportamiento ni paga nada por esto.
-- `Explain()` describe, miembro a miembro, en qué quedó un mapa y de dónde sale cada valor. Separa
-  lo configurado a mano de lo que decidió una convención, que es de donde viene casi toda la
-  confusión cuando un miembro trae algo inesperado, y deja bien visible el que se quedó sin origen,
-  que es por lo que uno mira esto en primer lugar. Hay tres formas: por tipos genéricos, por
-  `Type`, y sin argumentos para todos los mapas declarados.
-- Es texto para leer, no para parsear: la redacción cambiará cuando aparezca una mejor. No ejecuta
-  ningún mapeo, solo lee el modelo ya construido.
-- Presupuesto de regresión de rendimiento en la CI. Los tests dicen qué devuelve un mapeo; nada
-  decía cuánto tarda, y las dos cosas se separan con facilidad: un cambio puede dejar todos los
-  resultados idénticos y duplicar el tiempo con la suite entera en verde. Estuvo a punto de pasar
-  al escribir la opción de la ruta de error, y solo lo evitó releer el código.
-- Se compara el múltiplo sobre el mapeo a mano medido en la misma corrida, nunca el tiempo: un
-  runner compartido mueve las dos cifras a la vez, así que la proporción aguanta lo que los
-  nanosegundos no. La línea base está en `benchmarks/baseline.json` y se sube a mano.
-- Comprobado en los dos sentidos: con el árbol limpio pasa, y desactivando el inlining a propósito
-  falla en la colección y en el anidado diciendo cuál y cuánto.
+- The defaults leave a name exactly as it stands, so no existing configuration changes behaviour or
+  pays anything for this.
+- `Explain()` writes out, member by member, what a map resolved to and where each value comes from.
+  It separates what was configured by hand from what a convention decided, which is where almost
+  all the confusion comes from when a member brings something unexpected, and it makes the one left
+  without a source plainly visible, which is why someone opens this in the first place. Three
+  forms: by type arguments, by `Type`, and with no arguments for every declared map.
+- It is text to read, not to parse: the wording will change when a better one turns up. It runs no
+  mapping, it only reads the model that is already built.
+- A performance regression budget in CI. The tests say what a mapping returns; nothing said how
+  long it takes, and the two come apart easily: a change can leave every result identical and
+  double the time with the whole suite green. It nearly happened while the error-path option was
+  being written, and only a second read of the code avoided it.
+- What is compared is the multiple over the hand-written mapping measured in the same run, never
+  the time: a shared runner moves both figures together, so the ratio survives what the nanoseconds
+  do not. The baseline lives in `benchmarks/baseline.json` and is raised by hand.
+- Checked in both directions: it passes on a clean tree, and with the inlining switched off on
+  purpose it fails on the collection and on the nested one, saying which and by how much.
 
 ### Fixed
 
-- **Una proyección cruzaba los enums por número mientras el motor los cruzaba por nombre.** El
-  mismo pedido salía `Shipped` en la vista de detalle y `Placed` en la de lista, con un solo
-  `CreateMap` y una sola política detrás. Lo encontró el piloto a los diez minutos de existir.
-- La proyección emite ahora la correspondencia como una cadena de condiciones que el proveedor
-  convierte en un `CASE`, sacada de la misma tabla que usa el motor de mapeo —ahora en
-  `EnumCorrespondence`, compartida por los dos— para que no puedan volver a discrepar. EF Core y
-  EF6 la traducen las dos, y hay pruebas en ambas suites que lo dicen, incluida una que comprueba
-  que el `CASE` lo hace la base de datos y no el cliente.
-- Lo único que una proyección no puede hacer es lanzar el error que `ByName` lanza en memoria para
-  un valor sin contrapartida: nada nuestro corre por fila, el SQL tiene brazo para un valor o no lo
-  tiene. Un valor fuera de los declarados cae a su número, que es lo que hacía antes.
-- Mapear enums **por nombre** costaba 25x el mapeo a mano y asignaba 280 B donde el manual asigna
-  40. El nombre se resolvía en cada llamada: un `ToString()` para sacarlo del origen, un
-  `Enum.TryParse` contra el destino y otro `ToString()` para confirmar que el nombre volvía igual
-  — por miembro y por mapeo.
-- Los dos tipos se conocen al compilar el plan, así que la correspondencia se resuelve ahí una sola
-  vez y se emite como un `switch`. **4,56x y 40 B**, las mismas asignaciones que el manual.
-- Las respuestas no cambian, ninguna. Solo entran como caso los miembros que se pueden resolver en
-  compilación; lo demás —un valor fuera de los declarados, una combinación de flags, un nombre que
-  el destino no tiene bajo `ByName`— cae al `default`, que es la misma llamada de runtime de antes,
-  con la misma excepción y el mismo mensaje. Las once pruebas nuevas se escribieron contra la
-  implementación nueva y se pasaron también contra la vieja, que es lo que demuestra que solo
-  cambió la velocidad.
-- Mapear enums **por valor** costaba 15x el mapeo a mano y asignaba 400 B, diez veces lo que asigna
-  el manual: era la peor de las dos rutas, no la buena. El número se llevaba al otro lado con un
-  `Convert.ToInt64` y un `Enum.ToObject`, que boxean dos veces por miembro, cuando llevarlo es
-  exactamente lo que hace una conversión. Ahora se emite como tal: **de 82,7 ns a 20,6 ns y de
-  400 B a 40 B**, las mismas asignaciones que el manual.
-- De paso desaparece un fallo que nadie había visto: pasar el valor por un `Int64` hacía que un enum
-  `ulong` con un valor por encima de `long.MaxValue` lanzara `OverflowException`, incluso llevándolo
-  a un enum de exactamente la misma forma, donde no se estaba estrechando nada. Comprobado sobre las
-  64 combinaciones de tipos subyacentes: 56 idénticas, y las 8 que cambian son todas ese caso.
-- Las dos mitades de B06 entran en el presupuesto de CI. Ninguna lo merecía antes: a 25x y 15x,
-  fijarlas no habría protegido nada.
+- **A projection was crossing enums by number while the engine crossed them by name.** The same
+  order came out `Shipped` in the detail view and `Placed` in the list, with a single `CreateMap`
+  and a single policy behind both. The pilot found it within ten minutes of existing.
+- The projection now emits the correspondence as a chain of conditions that the provider turns into
+  a `CASE`, taken from the same table the mapping engine uses — now in `EnumCorrespondence`, shared
+  by both — so they cannot disagree again. EF Core and EF6 both translate it, and there are tests
+  in both suites saying so, including one that checks the `CASE` is done by the database and not by
+  the client.
+- The one thing a projection cannot do is raise the error `ByName` raises in memory for a value
+  with no counterpart: nothing of ours runs per row, and the SQL either has an arm for a value or
+  it does not. A value outside the declared ones falls through to its number, which is what it did
+  before.
+- Mapping enums **by name** cost 25x the hand-written mapping and allocated 280 B where the
+  hand-written one allocates 40. The name was resolved on every call: a `ToString()` to get it out
+  of the source, an `Enum.TryParse` against the destination and another `ToString()` to confirm the
+  name came back unchanged — per member, per map.
+- Both types are known when the plan is compiled, so the correspondence is settled there once and
+  emitted as a `switch`. **4.56x and 40 B**, the same allocations as the hand-written version.
+- No answer changes, none. Only the members that can be settled at compile time become cases;
+  everything else — a value outside the declared ones, a combination of flags, a name the
+  destination lacks under `ByName` — falls to the `default`, which is the same run-time call as
+  before, with the same exception and the same message. The eleven new tests were written against
+  the new implementation and were also run against the old one, which is what shows that only the
+  speed moved.
+- Mapping enums **by value** cost 15x the hand-written mapping and allocated 400 B, ten times what
+  the hand-written one allocates: it was the worse of the two routes, not the good one. The number
+  was carried across with a `Convert.ToInt64` and an `Enum.ToObject`, which box twice per member,
+  when carrying it is exactly what a conversion does. It is now emitted as one: **from 82.7 ns to
+  20.6 ns and from 400 B to 40 B**, the same allocations as the hand-written version.
+- A defect nobody had seen goes with it: passing the value through an `Int64` made a `ulong` enum
+  holding more than `long.MaxValue` raise `OverflowException`, even on its way into an enum of
+  exactly the same shape, where nothing was being narrowed. Checked across all 64 combinations of
+  underlying types: 56 identical, and the 8 that change are all that one case.
+- Both halves of B06 join the CI budget. Neither deserved it before: at 25x and 15x, pinning them
+  would have protected nothing.
 
-- Un mapa polimórfico cuyo destino base es **abstracto** no llegaba a compilar. El plan exigía poder
-  construir el destino aunque el mapa tuviera `Include` para todos los tipos concretos, y una clase
-  abstracta no tiene constructor público sin parámetros, así que saltaba
-  `MapperConfigurationException` al primer mapeo. AutoMapper acepta esa misma configuración, con lo
-  que era un bloqueo de migración directo: quien tenga una jerarquía de DTOs con base abstracta
-  —que es la forma normal de tenerla— no podía pasarse.
-- Ahora, cuando el mapa tiene derivados, esa construcción se emite como una excepción de tiempo de
-  mapeo en vez de rechazarse al compilar. Solo se llega a ella si ningún derivado coincidió, y
-  entonces dice qué tipo llegó y qué hay que declarar. Sin derivados, un destino que no se puede
-  construir sigue siendo un error de configuración, que es lo que es. Y si quien llama trae su
-  propia instancia de destino, se escribe en ella como siempre: no hay nada que construir.
-- El benchmark B08 volvió a la base abstracta, que es la forma real, y mide lo mismo que con la
-  base concreta.
+- A polymorphic map whose base destination is **abstract** did not compile at all. The plan insisted
+  on being able to construct the destination even when the map carried an `Include` for every
+  concrete type, and an abstract class has no public parameterless constructor, so the first map
+  raised `MapperConfigurationException`. AutoMapper accepts the same configuration, which made this
+  a direct migration blocker: anyone with a hierarchy of DTOs on an abstract base — which is the
+  normal way to have one — could not move across.
+- Now, when the map has derived maps, that construction is emitted as a map-time exception rather
+  than refused at compile time. It is reached only when no derived map matched, and it then says
+  which type turned up and what to declare. Without derived maps, a destination that cannot be
+  constructed is still a configuration error, which is what it is. And if the caller brings their
+  own destination instance, it is written into as always: there is nothing to construct.
+- The B08 benchmark went back to the abstract base, which is the real shape, and measures the same
+  as it did with the concrete one.
 
-- La restauración de la solución fallaba en Linux desde que entraron los tests de EF6. El proyecto
-  se dejaba sin ningún target framework fuera de Windows, y NuGet no restaura un proyecto así: el
-  build se caía con un `MSB4181` que no nombra ni el proyecto ni el motivo. Fuera de Windows ahora
-  es un ensamblado vacío que restaura, no compila nada y no es proyecto de tests, así que `dotnet
-  test` no lo mira. En Windows sigue siendo net472 con sus cinco pruebas.
+- Restoring the solution failed on Linux from the moment the EF6 tests arrived. The project was
+  left with no target framework at all off Windows, and NuGet does not restore a project like that:
+  the build died with an `MSB4181` that names neither the project nor the reason. Off Windows it is
+  now an empty assembly that restores, compiles nothing and is not a test project, so `dotnet test`
+  does not look at it. On Windows it is still net472 with its five tests.
 
 ### Changed
 
-- **El benchmark B06 por valor estaba mal y sus números publicados también.** Le había dado al
-  destino los mismos tipos de enum que al origen, y la conversión ni siquiera los mira —tipos
-  idénticos se asignan directamente—, así que cronometraba cinco asignaciones. Se ve en la columna
-  de AutoMapper, que pasa de 10,06x a 39,95x sin haber cambiado: antes no estaba convirtiendo nada.
-  Las dos mitades usan ahora el mismo destino con tipos distintos y solo las separa la política.
-- También estaba mal lo que dije la versión pasada sobre que por nombre fuera más rápido que por
-  valor. Comparé dos múltiplos con suelos distintos: cinco casts a mano cuestan 4,0 ns y cinco
-  `switch` a mano 5,7 ns, así que el múltiplo mayor de por valor (5,21x contra 4,56x) convive con
-  ser más rápido en absoluto (20,6 ns contra 25,7 ns).
+- **The B06 by-value benchmark was wrong, and so were the numbers published from it.** I had given
+  the destination the source's own enum types, and the conversion never even looks at those —
+  identical types are assigned straight across — so it was timing five assignments. It shows in
+  AutoMapper's column, which goes from 10.06x to 39.95x without having changed: it was not
+  converting anything before either. Both halves now use the same destination with different types
+  and only the policy separates them.
+- What I said in the previous version about by name being faster than by value was also wrong. I
+  compared two multiples over different floors: five hand-written casts take 4.0 ns and five
+  hand-written `switch`es take 5.7 ns, so by value carries the larger multiple (5.21x against
+  4.56x) while being the faster of the two in absolute terms (20.6 ns against 25.7 ns).
 
 ## [0.9.0-preview.1] - 2026-09-23
 
-Una minor y no un parche porque el nombre seguro cambia la identidad de los ensamblados, que es
-una ruptura. Antes de la 1.0 está permitido, y es cuando sale más barato.
+A minor rather than a patch because the strong name changes the identity of the assemblies, and
+that is a break. Before 1.0 it is allowed, and it is when it costs least.
 
 ### Added
 
-- Las tres cajas llevan icono, así que NuGet deja de mostrar el marcador genérico.
-- La superficie pública está escrita en `PublicAPI.Shipped.txt` junto a cada proyecto que se
-  publica, y el build compara las dos cosas: añadir, quitar o cambiar algo público rompe la
-  compilación hasta que el fichero se actualiza, con lo cual aparece en el diff. Un solo fichero
-  cubre los seis TFMs, porque la superficie es idéntica en todos.
-- `CONTRIBUTING.md`, con qué hacer cuando el build falla por eso y las reglas de la casa.
-- Sitio de documentación en `website/`, generado con DocFX y publicado en GitHub Pages desde
-  `main`. La referencia de API sale de la documentación XML que el build ya exige en cada miembro
-  público, así que no puede desviarse del código. Cuatro artículos escritos a mano: primeros pasos,
-  migración desde AutoMapper, AOT y rendimiento. El fuente vive en `website/` y no en `docs/`,
-  que está fuera del repositorio.
-- `GOVERNANCE.md`, `SECURITY.md` y `CODE_OF_CONDUCT.md`. El de gobernanza explica por qué el
-  compromiso de licencia vale algo: no hay CLA ni cesión de copyright, así que relicenciar
-  versiones futuras haría falta el acuerdo de todo el que haya contribuido, y las ya publicadas
-  quedan MIT para siempre pase lo que pase. También dice dónde esa protección todavía es floja,
-  que es hoy, con un solo contribuidor.
-- Todos los ensamblados llevan nombre seguro, con la clave `mapperion.snk`, que está en el
-  repositorio. Sin esto una base de código firmada en .NET Framework no puede referenciar
-  Mapperion en absoluto, y .NET Framework es un objetivo que esta librería se toma en serio. La
-  clave va versionada a propósito: un nombre seguro es identidad, no seguridad, y cualquiera puede
-  quitarlo y volver a firmar con la suya.
+- All three boxes carry an icon, so NuGet stops showing the generic placeholder.
+- The public surface is written down in `PublicAPI.Shipped.txt` next to each project that is
+  published, and the build compares the two: adding, removing or changing anything public breaks
+  the compilation until the file is updated, which puts it in the diff. A single file covers all
+  six TFMs, because the surface is identical on all of them.
+- `CONTRIBUTING.md`, with what to do when the build fails over that, and the house rules.
+- A documentation site in `website/`, generated with DocFX and published to GitHub Pages from
+  `main`. The API reference comes from the XML documentation the build already requires on every
+  public member, so it cannot drift from the code. Four hand-written articles: getting started,
+  migrating from AutoMapper, AOT and performance. The source lives in `website/` and not in
+  `docs/`, which is outside the repository.
+- `GOVERNANCE.md`, `SECURITY.md` and `CODE_OF_CONDUCT.md`. The governance one explains why the
+  licence commitment is worth anything: there is no CLA and no copyright assignment, so relicensing
+  future versions would need the agreement of everyone who has contributed, and the ones already
+  published stay MIT forever whatever happens. It also says where that protection is still thin,
+  which is today, with a single contributor.
+- Every assembly carries a strong name, with the key `mapperion.snk`, which is in the repository.
+  Without it a signed codebase on .NET Framework cannot reference Mapperion at all, and .NET
+  Framework is a target this library takes seriously. The key is committed on purpose: a strong
+  name is identity, not security, and anyone can strip one and re-sign with their own.
 
 ### Changed
 
-- **Cambia la identidad de los ensamblados**, que ahora llevan el token `03d4952d6f16ebf2`. Quien
-  referenciara la 0.8.0-preview.3 verá un ensamblado distinto al actualizar. Se hace ahora, días
-  después de publicar por primera vez y antes de la 1.0, porque más adelante saldría mucho más
-  caro.
-- La firma de autor de los paquetes sigue sin hacerse, y no es cuestión de trabajo: nuget.org exige
-  un certificado de firma de código que encadene a una raíz de confianza y rechaza los autoemitidos.
-  Lo que sí hay, sin coste, es que nuget.org firma como repositorio todo lo que acepta.
+- **The identity of the assemblies changes**, and they now carry the token `03d4952d6f16ebf2`.
+  Anyone referencing 0.8.0-preview.3 will see a different assembly when they update. It is done
+  now, days after publishing for the first time and before 1.0, because later it would cost far
+  more.
+- Author signing of the packages is still not done, and it is not a matter of work: nuget.org
+  requires a code signing certificate that chains to a trusted root and rejects self-issued ones.
+  What there is, at no cost, is that nuget.org repository-signs everything it accepts.
 
 ## [0.8.0-preview.3] - 2026-09-23
 
-Primera versión pública. Todo lo de abajo se acumuló antes de publicar nada, así que esta
-entrada es larga por una vez; las siguientes no lo serán.
+The first public version. Everything below piled up before anything was published, so this entry is
+long for once; the ones after it will not be.
 
 ### Added
 
-- `MapFast`, un método de extensión sobre `IMapper` que hace el mismo mapeo evitando el coste de
-  llamar a un método genérico a través de una interfaz. Reconoce el mapper que construye la
-  librería y lo llama directamente; con cualquier otra implementación, como un decorador, cae de
-  vuelta a la interfaz y sigue funcionando. No cambia nada de `IMapper`, así que el `Map` de
-  siempre queda igual.
-- En el escenario plano baja de 28,1 ns a 18,7 ns, de 2,75x a 1,83x sobre el mapeo a mano, que
-  empata con Mapster dentro de las barras de error. El ahorro es un coste fijo por llamada, así
-  que cuanto más trabajo tenga el mapeo menos pesa. Para un camino realmente caliente el source
-  generator sigue siendo mejor respuesta: está en 0,93x.
-- `IncludeMembers(s => s.Applicant, s => s.Employment)` construye un destino a partir de varios
-  objetos anidados del origen. El mapa se mira primero: lo que configura explícitamente y lo que
-  resuelven sus propias convenciones gana, y solo lo que queda sin origen se ofrece a los miembros
-  incluidos, en el orden dado. El primero que tenga algo que decir lo aporta, y un miembro que el
-  mapa incluido ignora cuenta como no tener nada que decir.
-- Si hay un mapa declarado para el tipo incluido se usa, así que sus renombrados y sus
-  `IValueConverter` viajan con él; si no lo hay, el miembro se empareja contra el tipo incluido por
-  las mismas convenciones de siempre, sin obligar a declarar un mapa que nadie necesitaría.
-- Un `IValueResolver` del mapa incluido recibe la instancia incluida, no el origen de fuera. Una
-  condición sí se reporta en vez de descartarse: está escrita contra el tipo incluido y no hay
-  forma de trasladarla al de fuera.
-- Un miembro incluido a nulo deja a cero lo que habría rellenado, igual que ya hace una ruta
-  aplanada con un nulo por el camino.
-- `ProjectTo` atraviesa los miembros incluidos cuando lo que aportan es una ruta o una expresión.
+- `MapFast`, an extension method on `IMapper` that does the same mapping while avoiding the cost of
+  calling a generic method through an interface. It recognises the mapper the library builds and
+  calls it directly; with any other implementation, such as a decorator, it falls back to the
+  interface and goes on working. It changes nothing about `IMapper`, so the usual `Map` is
+  untouched.
+- On the flat scenario it goes from 28.1 ns to 18.7 ns, from 2.75x to 1.83x over the hand-written
+  mapping, which ties with Mapster inside the error bars. The saving is a fixed cost per call, so
+  the more work the mapping has, the less it weighs. For a genuinely hot path the source generator
+  is still the better answer: it is at 0.93x.
+- `IncludeMembers(s => s.Applicant, s => s.Employment)` builds one destination out of several
+  nested source objects. The map is consulted first: what it configures explicitly and what its own
+  conventions resolve wins, and only what is left without a source is offered to the included
+  members, in the order given. The first one with something to say provides it, and a member the
+  included map ignores counts as having nothing to say.
+- If there is a declared map for the included type it is used, so its renames and its
+  `IValueConverter`s travel with it; if there is not, the member is matched against the included
+  type by the same conventions as always, without forcing a map nobody would need.
+- An `IValueResolver` from the included map receives the included instance, not the outer source. A
+  condition is reported rather than dropped: it is written against the included type and there is
+  no way to carry it over to the outer one.
+- An included member that is null leaves what it would have filled at zero, the same as a flattened
+  path with a null along the way already does.
+- `ProjectTo` goes through included members when what they provide is a path or an expression.
 
-- `samples/Mapperion.Aot`, una aplicación publicada con `PublishAot=true` que mapea con el código
-  generado y comprueba su propio resultado, saliendo con código distinto de cero si algo no cuadra.
-  Lleva los analizadores de trimming y AOT activados, así que un build corriente ya falla ante
-  cualquier cosa que el trimmer no pueda seguir, y la CI la publica en nativo y la ejecuta. Hasta
-  ahora el soporte AOT era una afirmación sin nada que la respaldara; ahora se mide en cada build.
+- `samples/Mapperion.Aot`, an application published with `PublishAot=true` that maps with the
+  generated code and checks its own result, exiting non-zero when something is wrong. It has the
+  trimming and AOT analysers turned on, so an ordinary build already fails on anything the trimmer
+  cannot follow, and CI publishes it natively and runs it. Until now AOT support was a claim with
+  nothing behind it; now it is measured on every build.
 
-- `ForPath(d => d.Address.Street, ...)` escribe un miembro que está dentro del destino en vez de
-  sobre él. Los objetos del camino se crean si faltan; uno que no se pueda escribir y esté a nulo
-  tiene que venir puesto, y el mapa dice cuál era. Las rutas se asignan después de todos los
-  miembros directos, así que configurar el objeto entero y algo de dentro deja la última palabra a
-  la ruta en vez de depender del orden de declaración. Una ruta de un solo paso es un miembro
-  normal. Una proyección la reporta en vez de ignorarla.
-- `ConstructUsing`, con las dos sobrecargas de AutoMapper: la que recibe solo el origen y la que
-  además recibe el `ResolutionContext`. La fábrica solo corre cuando hay que crear el destino, así
-  que mapear sobre una instancia que trae el llamante la sigue usando a ella. Declararla junto a
-  `ForCtorParam` se rechaza al construir la configuración, porque la fábrica ganaría y los
-  parámetros no harían nada.
-- `ResolutionContext.Items`, con sobrecargas de `Map` que toman un
-  `Action<IMappingOperationOptions>` para llenarlos. Sirven para pasar contexto que no está en el
-  objeto de origen, como el usuario o el tenant actual. El diccionario es de una operación y no se
-  comparte con otra. Solo se reserva estado cuando la configuración tiene algo que pueda leerlo:
-  un converter, un resolver o un paso que reciba el contexto.
-- `MapperHost`, un hueco para un `IMapper` accesible estáticamente, pensado para .NET Framework sin
-  contenedor y documentado como último recurso. Instalar uno segundo sin llamar antes a `Reset` se
-  rechaza, porque cambiaría a media ejecución lo que resuelven las llamadas ya escritas.
+- `ForPath(d => d.Address.Street, ...)` writes a member that sits inside the destination rather
+  than on it. The objects along the way are created if missing; one that cannot be written and is
+  null has to arrive in place, and the map says which. Paths are assigned after every direct
+  member, so configuring both the whole object and something inside it leaves the path with the
+  last word rather than depending on declaration order. A single-step path is an ordinary member. A
+  projection reports one rather than ignoring it.
+- `ConstructUsing`, with AutoMapper's two overloads: the one that takes only the source and the one
+  that also takes the `ResolutionContext`. The factory runs only when the destination has to be
+  created, so mapping onto an instance the caller brings still uses that one. Declaring it next to
+  `ForCtorParam` is refused when the configuration is built, because the factory would win and the
+  parameters would do nothing.
+- `ResolutionContext.Items`, with `Map` overloads taking an `Action<IMappingOperationOptions>` to
+  fill them. They are for passing context that is not in the source object, such as the current
+  user or tenant. The dictionary belongs to one operation and is not shared with another. State is
+  only allocated when the configuration has something that could read it: a converter, a resolver
+  or a step that takes the context.
+- `MapperHost`, a slot for a statically reachable `IMapper`, meant for .NET Framework without a
+  container and documented as a last resort. Installing a second one without calling `Reset` first
+  is refused, because it would change what already-written calls resolve to mid-run.
 
-- Un grafo de objetos que se cierra sobre sí mismo ya no tumba el proceso. El mapa que cierra el
-  bucle cuenta su propia profundidad y lanza `RecursionLimitException` al pasar de
-  `RecursionLimit`, que por defecto son 64 niveles, el mismo valor que usan `System.Text.Json` y
-  Newtonsoft para la misma protección. Antes la recursión terminaba en un `StackOverflowException`,
-  que no se puede capturar y se lleva el proceso por delante: es la forma del CVE-2026-32933 de
-  AutoMapper, que no se va a parchear en su línea MIT.
-- Solo cuentan los mapas que cierran un bucle sin `MaxDepth` ni `PreserveReferences`, así que una
-  configuración cuyos tipos no pueden recurrir no paga nada por esto, y un mapa que ya se protege
-  conserva su propio comportamiento.
-- `RecursionLimit` en la configuración, para subirlo cuando el grafo de verdad es más profundo.
-  Cero o menos quita el techo y devuelve el desbordamiento de pila.
-- `RecursionLimitException` deriva de `MappingException`, así que un `catch` existente la sigue
-  atrapando, y lleva el mapa y el límite que se alcanzó.
+- An object graph that closes on itself no longer takes the process down. The map that closes the
+  loop counts its own depth and raises `RecursionLimitException` past `RecursionLimit`, which
+  defaults to 64 levels, the same value `System.Text.Json` and Newtonsoft use for the same
+  protection. Before, the recursion ended in a `StackOverflowException`, which cannot be caught and
+  takes the process with it: that is the shape of AutoMapper's CVE-2026-32933, which will not be
+  patched on its MIT line.
+- Only the maps that close a loop with no `MaxDepth` and no `PreserveReferences` are counted, so a
+  configuration whose types cannot recurse pays nothing for this, and a map that already protects
+  itself keeps its own behaviour.
+- `RecursionLimit` in the configuration, to raise it when the graph really is deeper. Zero or less
+  removes the ceiling and brings the stack overflow back.
+- `RecursionLimitException` derives from `MappingException`, so an existing `catch` still catches
+  it, and it carries the map and the limit that was reached.
 
-- Herencia y polimorfismo. `Include<TDerivedSource,TDerivedDestination>()` hace que mapear a través
-  de una referencia base produzca el destino derivado que corresponde; las comprobaciones se emiten
-  de más derivado a menos, así que una jerarquía de varios niveles elige la coincidencia más
-  cercana y no la primera que encaje.
-- `IncludeBase<TBaseSource,TBaseDestination>()` toma la configuración de miembros del mapa base
-  antes de que corran las convenciones. Lo que el mapa derivado configure gana.
-- Una colección del tipo base mapea cada elemento a su propio tipo derivado.
-- La validación reporta un `Include` o un `IncludeBase` hacia un mapa no declarado, y un `Include`
-  cuyo destino derivado no hereda del destino base.
-- Una proyección reporta un mapa polimórfico: la forma de una proyección se fija antes de leer
-  ninguna fila, así que no puede depender del tipo en tiempo de ejecución.
-- Genéricos abiertos: `CreateMap(typeof(Page<>), typeof(PageDto<>))` declara una plantilla que el
-  motor cierra la primera vez que llega un par que encaja, y guarda el resultado. Funciona igual
-  dentro de un `Profile` y con varios argumentos de tipo.
-- Un mapa cerrado declarado a mano tiene prioridad sobre la plantilla que también encajaría.
-- `IOpenMappingExpression` expone solo lo que se puede decir sin conocer los tipos:
-  `IgnoreMember(nombre)`, `ValidateMemberList`, `MaxDepth` y `PreserveReferences`. Configurar un
-  miembro con una expresión contra un tipo que aún no tiene argumentos no tendría sentido, así que
-  los miembros quedan en manos de las convenciones al cerrar.
-- Las plantillas quedan fuera de la validación de miembros y de la detección de ciclos, que no
-  significan nada sobre un tipo sin cerrar. Sí se comprueba que las dos partes tengan el mismo
-  número de argumentos de tipo, y que no se mezcle un tipo abierto con uno cerrado.
-- Paquete `Mapperion.SourceGenerator`: un generador incremental de Roslyn que escribe el cuerpo de
-  los métodos `partial` de una clase marcada con `[Mapper]`. La salida es C# corriente, sin
-  reflexión y sin emisión de código en ejecución, que es lo que la hace válida bajo trimming y AOT.
-- Emparejamiento por nombre exacto y luego sin distinguir mayúsculas, igual que el motor de
-  runtime; `[MapProperty("Customer.Address.City", "CustomerCity")]` para rutas explícitas, con
-  guarda de nulos en cada paso; `[MapperIgnore]` para saltarse un miembro.
-- Cubre objetos anidados llamando a otro método del mismo mapeador, colecciones con `Select` y
-  `ToList`/`ToArray`/`ToHashSet`, nullables, enums, conversiones numéricas, `ToString` y
-  construcción por constructor, incluidos los records.
-- Seis diagnósticos, `MPR0001` a `MPR0006`, para lo que no puede escribir: clase no `partial`,
-  miembro sin origen, conversión inexistente, destino que no se puede construir, firma no
-  soportada, y atributo que nombra un miembro inexistente.
-- Los atributos los emite el propio generador en cada compilación, `internal`, así que el paquete
-  no arrastra dependencia en ejecución y dos ensamblados nunca chocan.
-- `BothEnginesAgreeTests` pasa los mismos casos por los dos motores y compara los resultados. Es la
-  garantía que ADR-0005 dejó como condición: los dos no comparten una línea de código, así que lo
-  único que los mantiene honestos es ejecutarlos contra lo mismo.
+- Inheritance and polymorphism. `Include<TDerivedSource,TDerivedDestination>()` makes mapping
+  through a base reference produce the matching derived destination; the checks are emitted
+  most-derived first, so a hierarchy several levels deep picks the closest match rather than the
+  first one that fits.
+- `IncludeBase<TBaseSource,TBaseDestination>()` takes the member configuration from the base map
+  before the conventions run. What the derived map configures wins.
+- A collection of the base type maps each element to its own derived type.
+- Validation reports an `Include` or an `IncludeBase` pointing at a map that was not declared, and
+  an `Include` whose derived destination does not inherit from the base destination.
+- A projection reports a polymorphic map: the shape of a projection is fixed before any row is
+  read, so it cannot depend on the run-time type.
+- Open generics: `CreateMap(typeof(Page<>), typeof(PageDto<>))` declares a template the engine
+  closes the first time a matching pair arrives, and keeps the result. It works the same inside a
+  `Profile` and with several type arguments.
+- A closed map declared by hand takes precedence over the template that would also match.
+- `IOpenMappingExpression` exposes only what can be said without knowing the types:
+  `IgnoreMember(name)`, `ValidateMemberList`, `MaxDepth` and `PreserveReferences`. Configuring a
+  member with an expression against a type that has no arguments yet would make no sense, so the
+  members are left to the conventions when it closes.
+- Templates stay out of member validation and cycle detection, neither of which means anything
+  about an unclosed type. What is checked is that both sides have the same number of type
+  arguments, and that an open type is not mixed with a closed one.
+- The `Mapperion.SourceGenerator` package: an incremental Roslyn generator that writes the bodies
+  of the `partial` methods of a class marked `[Mapper]`. The output is ordinary C#, with no
+  reflection and no code emitted at run time, which is what makes it valid under trimming and AOT.
+- Matching by exact name and then ignoring case, the same as the run-time engine;
+  `[MapProperty("Customer.Address.City", "CustomerCity")]` for explicit paths, with a null guard at
+  every step; `[MapperIgnore]` to skip a member.
+- It covers nested objects by calling another method of the same mapper, collections with `Select`
+  and `ToList`/`ToArray`/`ToHashSet`, nullables, enums, numeric conversions, `ToString` and
+  construction through a constructor, records included.
+- Six diagnostics, `MPR0001` to `MPR0006`, for what it cannot write: a class that is not `partial`,
+  a member with no source, a conversion that does not exist, a destination that cannot be
+  constructed, an unsupported signature, and an attribute naming a member that does not exist.
+- The attributes are emitted by the generator itself on every compilation, `internal`, so the
+  package drags in no run-time dependency and two assemblies never collide.
+- `BothEnginesAgreeTests` puts the same cases through both engines and compares the results. It is
+  the guarantee ADR-0005 left as a condition: the two share not one line of code, so the only thing
+  keeping them honest is running them against the same thing.
 
-- Documentación de planeación completa (`docs/`), incluidos 4 ADRs.
-- Esqueleto de la solución: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package
-  Management, `.editorconfig` con estilo obligatorio y warnings como errores.
-- Contratos base: `IMapper`, jerarquía de excepciones y `TypeMapKey` del modelo de configuración.
-- Nombre definitivo fijado: **Mapperion** (D-01 cerrada tras verificar disponibilidad en NuGet,
-  GitHub y colisiones de producto).
-- Target framework `net10.0` añadido al core y a los tests.
-- Modelo de configuración (capa 2): `MapperModel`, `MapperOptions`, `TypeMapDefinition`,
-  `MemberDefinition`, `ConstructorParameterDefinition`, `MemberSource` y sus cuatro variantes,
-  `MemberPath`, `MemberDescriptor` y las enumeraciones de política.
-- `Internal/Guard` centraliza las comprobaciones de nulos y el `#if` que exige `netstandard2.0`.
-- ADR-0005: acota qué comparten de verdad el motor runtime y el source generator, corrigiendo
-  ADR-0001 y el documento de arquitectura.
-- API fluida (capa 1): `MapperConfiguration`, `IMapperConfigurationExpression`,
-  `IMappingExpression<,>` e `IMemberConfigurationExpression<,,>`, con `CreateMap`, `ForMember`,
+- Complete planning documentation (`docs/`), four ADRs included.
+- The skeleton of the solution: multi-targeting `netstandard2.0;net8.0;net9.0`, Central Package
+  Management, an `.editorconfig` with mandatory style and warnings as errors.
+- Base contracts: `IMapper`, the exception hierarchy and `TypeMapKey` from the configuration model.
+- The final name settled: **Mapperion** (D-01 closed after checking availability on NuGet, GitHub
+  and product collisions).
+- The `net10.0` target framework added to the core and to the tests.
+- The configuration model (layer 2): `MapperModel`, `MapperOptions`, `TypeMapDefinition`,
+  `MemberDefinition`, `ConstructorParameterDefinition`, `MemberSource` and its four variants,
+  `MemberPath`, `MemberDescriptor` and the policy enumerations.
+- `Internal/Guard` centralises the null checks and the `#if` that `netstandard2.0` requires.
+- ADR-0005: pins down what the run-time engine and the source generator really share, correcting
+  ADR-0001 and the architecture document.
+- The fluent API (layer 1): `MapperConfiguration`, `IMapperConfigurationExpression`,
+  `IMappingExpression<,>` and `IMemberConfigurationExpression<,,>`, with `CreateMap`, `ForMember`,
   `MapFrom`, `Ignore`, `Condition`, `NullSubstitute`, `SetMappingOrder`, `UseDestinationValue`,
-  `ValidateMemberList`, `MaxDepth` y `PreserveReferences`.
-- `MemberExpressionParser` traduce las lambdas a elementos del modelo: una cadena de miembros se
-  guarda como `MemberPathSource` y cualquier otra expresión como `CustomSource` opaco.
-- Convenciones (capa 3): coincidencia por nombre exacto, sin distinguir mayúsculas, con prefijos y
-  sufijos configurables, y aplanado hasta `MaxFlatteningDepth`. La configuración explícita siempre
-  gana y un miembro sin origen queda con `Source` nulo para que la validación lo reporte.
-- `Profile`, `AddProfile<T>()`, `AddProfile(instancia)` y `AddProfiles(ensamblados)`, adelantados
-  desde v0.2 por ser el mayor bloqueo de migración desde AutoMapper.
-- Los caminos que usan reflexión están anotados con `[RequiresUnreferencedCode]`, incluido el
-  constructor de `MapperConfiguration`. Se retira `IsAotCompatible` del core: era una afirmación
-  falsa mientras el motor dependa de reflexión y de `Expression.Compile`.
-- `Internal/TrimmingAttributes.cs` aporta el polyfill de `RequiresUnreferencedCodeAttribute` para
-  `netstandard2.0`, que PolySharp no cubre.
-- La carpeta `docs/` queda fuera del repositorio.
-- `AssertIsValid()` y el alias `AssertConfigurationIsValid()`: reportan todos los problemas juntos
-  en `MapperConfigurationException.Errors`, nunca solo el primero. Detectan miembros destino sin
-  origen, mapas anidados que faltan (desenvolviendo nullables y colecciones) y, con
-  `MemberListValidation.Source`, miembros de origen que nadie consume.
-- `Internal/TypeClassifier`: distingue tipos simples, nullables y secuencias.
-- `ValidateOnBuild` pasa a `false` por defecto, como AutoMapper, para no romper en arranque las
-  configuraciones recién migradas.
-- `MemberListValidation` global ahora se aplica de verdad a los mapas que no lo sobrescriben.
-- Compilador de expresiones (capa 4) y motor de ejecución (capa 5): `MapperConfiguration.CreateMapper()`
-  devuelve un `IMapper` con `Map<TDest>(object)`, `Map<TSource,TDest>(source)`,
-  `Map(source, destino)` y la sobrecarga no genérica.
-- Los planes se compilan la primera vez que se usa cada par y se cachean. Los mapas anidados se
-  resuelven en ejecución en vez de insertarse en línea, que es lo que permite que dos mapas se
-  referencien mutuamente sin que el compilador recurse.
-- Conversiones: nullables en ambos sentidos, numéricas, enums según la política configurada,
-  enum con string, `ToString` e `IConvertible` como último recurso.
-- Colecciones: array, `List<>`, `HashSet<>`, `ISet<>` y las interfaces de secuencia, con
-  `AllowNullCollections` respetado.
-- Rutas aplanadas con guardas de nulo que evalúan cada paso una sola vez.
-- `Condition`, `NullSubstitute`, `SetMappingOrder` y `UseDestinationValue` llegan al código generado.
-- Mapeo por constructor: records posicionales, constructores primarios y cualquier destino sin
-  constructor sin parámetros. Se elige la sobrecarga con más argumentos resolubles; los parámetros
-  con valor por defecto cubren lo que el origen no aporta.
-- `ForCtorParam(nombre, o => o.MapFrom(...))` y `UseValue(...)` para configurar un argumento a mano.
-- Los nombres de parámetro se comparan siempre sin distinguir mayúsculas: C# nombra los parámetros
-  en camelCase y las propiedades en PascalCase, así que una comparación exacta nunca emparejaría el
-  constructor primario de un record con las propiedades del origen.
-- Un miembro alimentado por el constructor ya no se asigna otra vez después de construir.
-- La validación reporta los parámetros de constructor sin origen y los mapas que les faltan.
-- `ReverseMap()`: declara el par inverso y lo devuelve para seguir configurándolo. Invierte los
-  miembros renombrados con un `MapFrom` sobre un único miembro escribible; las rutas aplanadas, las
-  expresiones arbitrarias y los miembros ignorados no se invierten y el inverso los resuelve por
-  convención. Funciona igual dentro de un `Profile`.
-- Workflow de CI: build y test en Linux y Windows contra .NET 8, 9 y 10, y `pack` del core.
-- `ITypeConverter<TSource,TDest>`, `IValueConverter<TSourceMember,TDestMember>` e
-  `IValueResolver<TSource,TDest,TMember>`, con `ResolutionContext` como vía de vuelta al mapper
-  para que el código de usuario pueda mapear valores anidados.
-- `ConvertUsing<TTypeConverter>()` sustituye el mapa completo de un par de tipos; en ese caso la
-  configuración de miembros deja de aplicarse y la validación de miembros se omite.
-- `ConvertUsing<TValueConverter, TSourceMember>()` y `MapFrom<TValueResolver>()` por miembro,
-  ambos con restricciones de tipo, así que el compilador de C# rechaza un converter que no encaje.
-- Converters y resolvers se instancian una sola vez y se reutilizan, cacheados por el motor. De
-  momento necesitan un constructor sin parámetros; la resolución por DI llega en v0.4.
-- Un resolver que alimenta un parámetro de constructor recibe el destino por defecto, porque
-  todavía no existe cuando se calculan los argumentos.
-- `BeforeMap` y `AfterMap`, cada uno en tres formas: lambda de dos argumentos, lambda con
-  `ResolutionContext`, y `IMappingAction<TSource,TDestination>` como tipo propio.
-- Los pasos se insertan en el plan compilado en el orden en que se declararon: los de antes justo
-  después de crear el destino, los de después una vez asignados todos los miembros. Los pasos con
-  tipo propio se instancian una sola vez, igual que converters y resolvers.
-- Un mapa con `ConvertUsing` no ejecuta los pasos: el converter reemplaza el mapa entero, igual que
-  reemplaza la configuración de miembros.
-- Paquete `Mapperion.Extensions.DependencyInjection` con `AddMapperion(...)`, en tres formas:
-  callback de configuración, ensamblados a escanear, o tipos marcadores.
-- `MapperConfiguration.CreateMapper(IServiceProvider)`: el mapper pide converters, resolvers y
-  acciones al contenedor y cae en la construcción directa para los que este no conoce, así que un
-  resolver sin dependencias no necesita registrarse.
-- La resolución de instancias sale del motor a `IServiceResolver`. El motor sigue siendo el dueño
-  de los planes compilados y se comparte entre todos los mappers de una configuración, de modo que
-  registrar `IMapper` como scoped no recompila nada.
-- `MappingContext` pasa a llevar también el resolutor y el mapper en curso, para que
-  `ResolutionContext.Mapper` devuelva el del scope y no uno global.
-- `ProjectTo`: `IQueryable.ProjectTo<TDest>(configuracion)` e `IMapper.ProjectTo<TDest>(consulta)`.
-  Un compilador de proyección aparte emite `Expression<Func<TSource,TDest>>` que un proveedor LINQ
-  sabe traducir: inicialización de miembros, acceso a miembros, condicionales y `Select`, sin
-  bloques, sin variables y sin llamadas a esta librería.
-- Vive en el core: solo necesita `IQueryable` y `System.Linq.Expressions`, así que el paquete
-  `Mapperion.EntityFrameworkCore` que estaba planeado no hace falta.
-- Lo que un proveedor no puede ejecutar se reporta en vez de omitirse: type converters, value
-  converters, resolvers y los pasos de `BeforeMap`/`AfterMap`. AutoMapper los omite en silencio; se
-  prefirió el error porque una proyección que difiere del mismo mapa por `Map` es un fallo caro de
-  encontrar.
-- Un mapa que se referencia a sí mismo se reporta también: una proyección se expande por completo
-  de antemano, así que un ciclo no tiene fin.
-- Las proyecciones se cachean por par de tipos, igual que los planes.
-- Tests de integración reales con EF Core y SQLite en memoria: verifican que la consulta se traduce
-  a SQL, que solo se piden las columnas del destino y que el filtrado y la paginación siguen
-  ocurriendo en la base de datos.
-- TFMs `netstandard2.1` y `net472` en los dos paquetes, que pasan a publicar seis: `netstandard2.0`,
-  `netstandard2.1`, `net472`, `net8.0`, `net9.0` y `net10.0`.
-- `Microsoft.NETFramework.ReferenceAssemblies` aporta los ensamblados de referencia de .NET
-  Framework, así que compilar `net472` no exige tener instalado el Developer Pack, ni siquiera en
-  Linux.
-- `Mapperion.Compatibility.Tests`: una porción representativa de la librería ejecutándose sobre
-  .NET Framework real (net472 y net48) además de net8.0 y net10.0. El proyecto reduce sus TFMs
-  fuera de Windows, donde .NET Framework no se puede ejecutar.
-- Diccionarios: `Dictionary<,>`, `IDictionary<,>` e `IReadOnlyDictionary<,>`, convirtiendo tanto las
-  claves como los valores. Se comprueban antes que las colecciones, porque un diccionario también
-  es una secuencia de `KeyValuePair<,>` y se mapearía mal.
-- La validación también los reconoce ahora: antes reportaba un mapa inexistente de
-  `KeyValuePair` a `KeyValuePair` para un diccionario que en realidad se mapeaba bien.
-- Una proyección rechaza los diccionarios con un mensaje claro: un proveedor de consultas no tiene
-  forma de materializar uno.
-- `PreCondition(s => ...)`: descarta el miembro antes incluso de leer su origen.
-- `Condition` pasa a evaluarse **después** de resolver el valor, como en AutoMapper. Antes se
-  comportaba como una precondición, lo que dejaba a las dos indistinguibles; ahora `Condition`
-  paga la lectura y `PreCondition` la evita, que es justo la diferencia entre ambas.
-- Un fallo en tiempo de mapeo dice ahora qué miembro lo causó, con la ruta completa a través de
-  mapas anidados y colecciones: `Batch.Readings[0].Ratio`. La excepción original queda como
+  `ValidateMemberList`, `MaxDepth` and `PreserveReferences`.
+- `MemberExpressionParser` translates the lambdas into elements of the model: a chain of members is
+  kept as a `MemberPathSource` and any other expression as an opaque `CustomSource`.
+- Conventions (layer 3): matching by exact name, ignoring case, with configurable prefixes and
+  suffixes, and flattening up to `MaxFlatteningDepth`. Explicit configuration always wins, and a
+  member with no source is left with a null `Source` so validation reports it.
+- `Profile`, `AddProfile<T>()`, `AddProfile(instance)` and `AddProfiles(assemblies)`, brought
+  forward from v0.2 for being the biggest blocker to migrating from AutoMapper.
+- The paths that use reflection are annotated `[RequiresUnreferencedCode]`, the `MapperConfiguration`
+  constructor included. `IsAotCompatible` is withdrawn from the core: it was a false claim while the
+  engine depends on reflection and on `Expression.Compile`.
+- `Internal/TrimmingAttributes.cs` provides the polyfill for `RequiresUnreferencedCodeAttribute` on
+  `netstandard2.0`, which PolySharp does not cover.
+- The `docs/` folder is left outside the repository.
+- `AssertIsValid()` and the alias `AssertConfigurationIsValid()`: they report every problem together
+  in `MapperConfigurationException.Errors`, never only the first. They catch destination members
+  with no source, missing nested maps (unwrapping nullables and collections) and, with
+  `MemberListValidation.Source`, source members nobody consumes.
+- `Internal/TypeClassifier`: tells simple types, nullables and sequences apart.
+- `ValidateOnBuild` becomes `false` by default, like AutoMapper, so that freshly migrated
+  configurations do not break at startup.
+- The global `MemberListValidation` is now really applied to the maps that do not override it.
+- The expression compiler (layer 4) and the execution engine (layer 5):
+  `MapperConfiguration.CreateMapper()` returns an `IMapper` with `Map<TDest>(object)`,
+  `Map<TSource,TDest>(source)`, `Map(source, destination)` and the non-generic overload.
+- Plans are compiled the first time each pair is used and cached. Nested maps are resolved at run
+  time rather than inlined, which is what lets two maps reference each other without the compiler
+  recursing.
+- Conversions: nullables both ways, numeric ones, enums according to the configured policy, enum
+  with string, `ToString` and `IConvertible` as a last resort.
+- Collections: array, `List<>`, `HashSet<>`, `ISet<>` and the sequence interfaces, with
+  `AllowNullCollections` respected.
+- Flattened paths with null guards that evaluate each step exactly once.
+- `Condition`, `NullSubstitute`, `SetMappingOrder` and `UseDestinationValue` reach the generated
+  code.
+- Constructor mapping: positional records, primary constructors and any destination with no
+  parameterless constructor. The overload with the most resolvable arguments is chosen; parameters
+  with a default value cover what the source does not provide.
+- `ForCtorParam(name, o => o.MapFrom(...))` and `UseValue(...)` to configure an argument by hand.
+- Parameter names are always compared ignoring case: C# names parameters in camelCase and
+  properties in PascalCase, so an exact comparison would never match a record's primary constructor
+  with the source's properties.
+- A member fed by the constructor is no longer assigned again after construction.
+- Validation reports constructor parameters with no source, and the maps they are missing.
+- `ReverseMap()`: declares the reverse pair and returns it so it can be configured further. It
+  inverts members renamed with a `MapFrom` onto a single writable member; flattened paths, arbitrary
+  expressions and ignored members are not inverted, and the reverse resolves those by convention. It
+  works the same inside a `Profile`.
+- A CI workflow: build and test on Linux and Windows against .NET 8, 9 and 10, and `pack` of the
+  core.
+- `ITypeConverter<TSource,TDest>`, `IValueConverter<TSourceMember,TDestMember>` and
+  `IValueResolver<TSource,TDest,TMember>`, with `ResolutionContext` as the way back to the mapper so
+  that user code can map nested values.
+- `ConvertUsing<TTypeConverter>()` replaces the whole map of a type pair; in that case member
+  configuration stops applying and member validation is skipped.
+- `ConvertUsing<TValueConverter, TSourceMember>()` and `MapFrom<TValueResolver>()` per member, both
+  with type constraints, so the C# compiler rejects a converter that does not fit.
+- Converters and resolvers are instantiated once and reused, cached by the engine. For now they need
+  a parameterless constructor; resolution through DI arrives in v0.4.
+- A resolver feeding a constructor parameter receives the default destination, because it does not
+  exist yet when the arguments are worked out.
+- `BeforeMap` and `AfterMap`, each in three forms: a two-argument lambda, a lambda with
+  `ResolutionContext`, and `IMappingAction<TSource,TDestination>` as a type of its own.
+- The steps are placed in the compiled plan in the order they were declared: the before ones right
+  after the destination is created, the after ones once every member is assigned. Steps written as a
+  type are instantiated once, like converters and resolvers.
+- A map with `ConvertUsing` runs no steps: the converter replaces the whole map, just as it replaces
+  the member configuration.
+- The `Mapperion.Extensions.DependencyInjection` package with `AddMapperion(...)`, in three forms: a
+  configuration callback, assemblies to scan, or marker types.
+- `MapperConfiguration.CreateMapper(IServiceProvider)`: the mapper asks the container for
+  converters, resolvers and actions, and falls back to building the ones it does not know about
+  directly, so a resolver with no dependencies does not need registering.
+- Instance resolution moves out of the engine into `IServiceResolver`. The engine still owns the
+  compiled plans and is shared between every mapper of one configuration, so registering `IMapper`
+  as scoped recompiles nothing.
+- `MappingContext` now also carries the resolver and the mapper in play, so that
+  `ResolutionContext.Mapper` returns the one from the scope rather than a global one.
+- `ProjectTo`: `IQueryable.ProjectTo<TDest>(configuration)` and `IMapper.ProjectTo<TDest>(query)`. A
+  separate projection compiler emits an `Expression<Func<TSource,TDest>>` that a LINQ provider knows
+  how to translate: member initialisation, member access, conditionals and `Select`, with no blocks,
+  no variables and no calls into this library.
+- It lives in the core: all it needs is `IQueryable` and `System.Linq.Expressions`, so the
+  `Mapperion.EntityFrameworkCore` package that was planned is not needed.
+- What a provider cannot run is reported rather than dropped: type converters, value converters,
+  resolvers and the `BeforeMap`/`AfterMap` steps. AutoMapper drops them silently; the error was
+  preferred because a projection that differs from the same map through `Map` is an expensive bug to
+  find.
+- A map that references itself is reported too: a projection is expanded completely in advance, so a
+  cycle has no end.
+- Projections are cached per type pair, the same as plans.
+- Real integration tests with EF Core and SQLite in memory: they verify the query is translated to
+  SQL, that only the destination's columns are asked for, and that filtering and paging still happen
+  in the database.
+- The `netstandard2.1` and `net472` TFMs in both packages, which now publish six: `netstandard2.0`,
+  `netstandard2.1`, `net472`, `net8.0`, `net9.0` and `net10.0`.
+- `Microsoft.NETFramework.ReferenceAssemblies` provides the .NET Framework reference assemblies, so
+  compiling `net472` does not require the Developer Pack to be installed, not even on Linux.
+- `Mapperion.Compatibility.Tests`: a representative slice of the library running on real .NET
+  Framework (net472 and net48) as well as net8.0 and net10.0. The project narrows its TFMs off
+  Windows, where .NET Framework cannot run.
+- Dictionaries: `Dictionary<,>`, `IDictionary<,>` and `IReadOnlyDictionary<,>`, converting both keys
+  and values. They are checked before collections, because a dictionary is also a sequence of
+  `KeyValuePair<,>` and would be mapped wrongly.
+- Validation recognises them now too: it used to report a missing map from `KeyValuePair` to
+  `KeyValuePair` for a dictionary that actually mapped fine.
+- A projection refuses dictionaries with a clear message: a query provider has no way to
+  materialise one.
+- `PreCondition(s => ...)`: drops the member before its source is even read.
+- `Condition` is now evaluated **after** the value is resolved, as in AutoMapper. It used to behave
+  as a precondition, which left the two indistinguishable; now `Condition` pays for the read and
+  `PreCondition` avoids it, which is exactly the difference between them.
+- A failure at mapping time now says which member caused it, with the full path through nested maps
+  and collections: `Batch.Readings[0].Ratio`. The original exception is left as the
   `InnerException`.
-- `MappingException.MemberPath` se rellena de verdad; antes existía y nadie la escribía.
-- Un problema de configuración descubierto al compilar un mapa anidado en pleno mapeo sigue
-  saliendo como `MapperConfigurationException`, no disfrazado de fallo de mapeo.
-- El `catch` del plan no lleva filtro de excepción: un filtro compila a un bloque IL de filtro y
-  `DynamicMethod` los rechaza en .NET Framework. Lo detectaron los tests de compatibilidad, que
-  pasaban en .NET 8, 9 y 10 y fallaban en net472 y net48.
+- `MappingException.MemberPath` is really filled in; it existed before and nobody wrote to it.
+- A configuration problem discovered while compiling a nested map mid-mapping still comes out as a
+  `MapperConfigurationException`, not disguised as a mapping failure.
+- The plan's `catch` carries no exception filter: a filter compiles to an IL filter block and
+  `DynamicMethod` rejects those on .NET Framework. The compatibility tests caught it, passing on
+  .NET 8, 9 and 10 and failing on net472 and net48.
 
 ### Changed
 
-- El plan de un par conocido en tiempo de compilación se alcanza por un hueco numerado en un array
-  en vez de buscando una clave en un diccionario. El número es un `static readonly` de un tipo
-  genérico, que el JIT pliega a una constante, así que no hay clave que construir ni hash que
-  calcular: 6,1 ns a 3,2 ns. El diccionario sigue siendo el único sitio donde se crea un plan;
-  esto es una caché delante.
-- El contexto de una operación que no necesita estado se construye una vez al crear el mapper, no
-  en cada llamada.
-- Sobre el mapeo a mano: el record por constructor pasa de 5,45x a 3,46x, el destino existente de
-  4,52x a 3,27x, el aplanado de 4,27x a 3,40x y el plano de 3,50x a 3,01x. Las mejoras grandes
-  están donde el coste fijo pesaba más, que son los mapas con pocos miembros.
+- The plan for a pair known at compile time is reached through a numbered slot in an array rather
+  than by looking a key up in a dictionary. The number is a `static readonly` of a generic type,
+  which the JIT folds to a constant, so there is no key to build and no hash to compute: 6.1 ns to
+  3.2 ns. The dictionary is still the only place a plan is created; this is a cache in front of it.
+- The context of an operation that needs no state is built once when the mapper is created, not on
+  every call.
+- Over the hand-written mapping: the record through its constructor goes from 5.45x to 3.46x, the
+  existing destination from 4.52x to 3.27x, the flattening from 4.27x to 3.40x and the flat one from
+  3.50x to 3.01x. The big improvements are where the fixed cost weighed most, which is maps with few
+  members.
 
 ### Fixed
 
-- `MemberDescriptor` se compara por tipo declarante, clase y nombre, no por el `MemberInfo` en
-  bruto. La reflexión devuelve un `MemberInfo` distinto para la misma propiedad según el tipo por
-  el que se llegue a ella, así que una propiedad heredada aparecía como dos miembros distintos y se
-  mapeaba dos veces. Solo salía a la luz con herencia, pero el fallo estaba desde el principio.
+- `MemberDescriptor` is compared by declaring type, kind and name, not by the raw `MemberInfo`.
+  Reflection returns a different `MemberInfo` for the same property depending on the type it is
+  reached through, so an inherited property showed up as two different members and was mapped
+  twice. It only surfaced with inheritance, but the defect had been there from the start.
 
-- `MaxDepth` y `PreserveReferences` **funcionan**. Se configuraban, se guardaban en el modelo y el
-  compilador las ignoraba por completo: eran no-ops silenciosos desde que existe la API fluida.
-  La consecuencia era peor que una opción muerta, porque un grafo con un ciclo real recurría hasta
-  agotar la pila y tumbaba el proceso con una excepción que ni se puede capturar.
-- `PreserveReferences` registra el destino justo después de crearlo y antes de mapear ningún
-  miembro, que es lo que permite a un ciclo encontrar el camino de vuelta. Una misma instancia de
-  origen produce siempre la misma de destino dentro de una operación.
-- `MaxDepth` corta la recursión de ese par de tipos y deja el valor por defecto. El contador se
-  libera en un `finally`, así que una excepción no lo deja levantado.
-- El estado por operación solo se crea si alguna configuración lo pide, y los diccionarios que
-  lleva dentro se crean al primer uso: un mapa que no usa ninguna de las dos no paga nada.
-- `AssertIsValid()` detecta ahora los ciclos sin protección recorriendo el grafo de mapas, de modo
-  que lo que antes mataba el proceso en producción es un error en arranque.
-- `PreserveReferences` sobre tipos por valor se reporta: no hay identidad que preservar.
-- `AllowNullDestinationValues` **funciona**. Era el último no-op silencioso: se configuraba, llegaba
-  al modelo y nadie la leía. Con la opción desactivada, un miembro cuyo origen resuelve a null
-  recibe el contenido vacío del tipo destino: cadena vacía, o una instancia nueva si el tipo tiene
-  constructor sin parámetros. Los tipos por valor no se tocan y las colecciones siguen respondiendo
-  a `AllowNullCollections`, que es la opción que habla de ellas. En una proyección solo se aplica al
-  caso de las cadenas: un proveedor de consultas no puede construir un objeto de la nada.
-- Las colecciones se reconstruyen siempre, nunca se comparten. Antes, un `List<X>` hacia `List<X>` o
-  hacia `IReadOnlyList<X>` pasaba por el atajo de tipos iguales o asignables y el destino se quedaba
-  con **la misma lista** que el origen: cambiar una cambiaba la otra, y además `AllowNullCollections`
-  quedaba sin efecto en esos pares. Lo destapó un test de la interacción entre las dos opciones.
+- `MaxDepth` and `PreserveReferences` **work**. They were configured, they were kept in the model,
+  and the compiler ignored them entirely: silent no-ops since the fluent API existed. The
+  consequence was worse than a dead option, because a graph with a real cycle recursed until the
+  stack was gone and took the process down with an exception that cannot even be caught.
+- `PreserveReferences` registers the destination right after creating it and before mapping any
+  member, which is what lets a cycle find its way back. One source instance always produces the
+  same destination within an operation.
+- `MaxDepth` cuts the recursion of that type pair and leaves the default value. The counter is
+  released in a `finally`, so an exception does not leave it raised.
+- Per-operation state is only created if some configuration asks for it, and the dictionaries it
+  carries are created on first use: a map that uses neither of the two pays nothing.
+- `AssertIsValid()` now detects unguarded cycles by walking the graph of maps, so what used to kill
+  the process in production is an error at startup.
+- `PreserveReferences` on value types is reported: there is no identity to preserve.
+- `AllowNullDestinationValues` **works**. It was the last silent no-op: it was configured, it
+  reached the model and nobody read it. With the option off, a member whose source resolves to null
+  receives the destination type's empty content: an empty string, or a new instance if the type has
+  a parameterless constructor. Value types are untouched and collections go on answering to
+  `AllowNullCollections`, which is the option that speaks about them. In a projection it only
+  applies to the string case: a query provider cannot build an object out of nothing.
+- Collections are always rebuilt, never shared. Before, a `List<X>` to `List<X>` or to
+  `IReadOnlyList<X>` went through the shortcut for identical or assignable types and the destination
+  was left with **the same list** as the source: changing one changed the other, and
+  `AllowNullCollections` had no effect on those pairs either. A test of the interaction between the
+  two options uncovered it.
