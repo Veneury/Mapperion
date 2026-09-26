@@ -1,7 +1,7 @@
 # Getting started
 
 ```
-dotnet add package Mapperion --prerelease
+dotnet add package Mapperion
 ```
 
 ## One map
@@ -90,7 +90,7 @@ configuration mistake fails the build rather than a request.
 ## With dependency injection
 
 ```
-dotnet add package Mapperion.Extensions.DependencyInjection --prerelease
+dotnet add package Mapperion.Extensions.DependencyInjection
 ```
 
 ```csharp

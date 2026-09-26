@@ -16,7 +16,7 @@ OrderDto dto = mapper.Map<Order, OrderDto>(order);
 ```
 
 ```
-dotnet add package Mapperion --prerelease
+dotnet add package Mapperion
 ```
 
 ## Two engines, one set of rules
@@ -30,6 +30,16 @@ compilation — and it runs at roughly the speed of a mapping written by hand.
 
 The two share no code. They share the rules, and a test suite checks they agree on the same cases.
 
+## Nothing comes with it
+
+`Mapperion` has no dependencies at all — only the base class library — on every one of its six
+target frameworks, from .NET Framework 4.7.2 to .NET 10. `ProjectTo` is in there too: it builds an
+expression tree and leaves the rest to whichever query provider you have, so there is no package
+per ORM to pick between.
+
+The source generator and the analyzer are separate packages because neither ships any code that
+runs in your application, and keeping them out is what lets the sentence above stay true.
+
 ## Where to start
 
 - [Getting started](articles/getting-started.md) — the first map, and the shape of a configuration.
@@ -39,4 +49,6 @@ The two share no code. They share the rules, and a test suite checks they agree 
   engine cannot do.
 - [Performance](articles/performance.md) — measurements against AutoMapper, Mapster and Mapperly,
   including where Mapperion loses.
+- [The configuration analyzer](articles/analyzer.md) — an optional package that reads your
+  configuration while it compiles and reports what is wrong with it there.
 - [API reference](api/Mapperion.yml) — every public type, generated from the documentation in the source.
