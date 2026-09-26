@@ -19,6 +19,22 @@ OrderDto dto = mapper.Map<Order, OrderDto>(order);
 dotnet add package Mapperion
 ```
 
+## Why not just stay on AutoMapper 14
+
+AutoMapper moved to a paid commercial licence at v15. Version 14 stays MIT — an MIT grant cannot
+be withdrawn from something already released — but that line is frozen: no new features, no new
+target frameworks, and no security fixes.
+
+That last one is not hypothetical. AutoMapper 14 carries
+[CVE-2026-32933](https://github.com/advisories/GHSA-rvv3-g6hj-g44x): an object graph that loops
+recurses until the stack is gone, and it will not be patched on the MIT line. Mapperion bounds
+recursion by default, so the same graph raises a `RecursionLimitException` you can catch rather
+than a `StackOverflowException` you cannot.
+
+And the move is cheap in a way that is checked rather than promised. A sample in the repository
+configures one invoicing layer twice, on AutoMapper 14 and on Mapperion, and fails the build if
+the two disagree on any field. The whole diff between them is one `using` per file and one `!`.
+
 ## Two engines, one set of rules
 
 The **run-time engine** compiles a plan the first time a pair is mapped and reuses it. It is the
