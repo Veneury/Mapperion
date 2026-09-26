@@ -169,6 +169,65 @@ namespace Mapperion.EntityFrameworkCore.Tests
 
             books[0].AuthorName.ShouldBe("Grace of US");
         }
+
+        /// <remarks>
+        /// A projection used to carry enums across by number while the mapping engine carried them
+        /// across by name, so a list view and a detail view of the same row could disagree about
+        /// what a binding was called. The pilot application is what noticed.
+        /// </remarks>
+        [Fact]
+        public void An_enum_crosses_by_name_in_a_projection_too()
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Book, BookBindingDto>());
+
+            using LibraryContext context = fixture.CreateContext();
+
+            List<BookBindingDto> books = context.Books
+                .OrderBy(b => b.Title)
+                .ProjectTo<BookBindingDto>(configuration)
+                .ToList();
+
+            // Compilers is Paperback, which is 0 on the entity and 2 on the contract.
+            books[0].Title.ShouldBe("Compilers");
+            books[0].Binding.ShouldBe(BindingDto.Paperback);
+            ((int)books[0].Binding).ShouldBe(2);
+        }
+
+        /// <remarks>
+        /// And it has to be the database doing it. Crossing by name in the client would mean the
+        /// rows were read first, which is the one thing a projection exists to avoid.
+        /// </remarks>
+        [Fact]
+        public void The_database_is_what_crosses_it()
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Book, BookBindingDto>());
+
+            using LibraryContext context = fixture.CreateContext();
+
+            string sql = context.Books.ProjectTo<BookBindingDto>(configuration).ToQueryString();
+
+            sql.ShouldContain("CASE");
+            sql.ShouldNotContain("Pages");
+        }
+
+        [Fact]
+        public void By_value_still_means_by_value()
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.EnumMapping = Mapperion.Model.EnumMappingPolicy.ByValue;
+                cfg.CreateMap<Book, BookBindingDto>();
+            });
+
+            using LibraryContext context = fixture.CreateContext();
+
+            List<BookBindingDto> books = context.Books
+                .OrderBy(b => b.Title)
+                .ProjectTo<BookBindingDto>(configuration)
+                .ToList();
+
+            ((int)books[0].Binding).ShouldBe(0);
+        }
     }
 
     public sealed class TitleResolver : IValueResolver<Book, BookDto, string>

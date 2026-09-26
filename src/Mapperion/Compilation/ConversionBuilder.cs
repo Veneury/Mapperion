@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Globalization;
 using System.Linq.Expressions;
 using System.Reflection;
 using Mapperion.Execution;
@@ -205,63 +204,24 @@ namespace Mapperion.Compilation
             EnumMappingPolicy policy,
             Expression atRunTime)
         {
-            Type underlyingType = Enum.GetUnderlyingType(sourceType);
-            var cases = new List<SwitchCase>();
-            var seen = new HashSet<object>();
+            List<KeyValuePair<object, object>> pairs =
+                EnumCorrespondence.Between(sourceType, destinationType, policy);
 
-            foreach (object member in Enum.GetValues(sourceType))
+            if (pairs.Count == 0)
             {
-                object underlying = Convert.ChangeType(member, underlyingType, CultureInfo.InvariantCulture);
-
-                if (!seen.Add(underlying))
-                {
-                    continue;
-                }
-
-                object? resolved = Counterpart(member, sourceType, destinationType, policy, underlying);
-
-                if (resolved is not null)
-                {
-                    cases.Add(Expression.SwitchCase(
-                        Expression.Constant(resolved, destinationType),
-                        Expression.Constant(member, sourceType)));
-                }
+                return atRunTime;
             }
 
-            return cases.Count == 0
-                ? atRunTime
-                : Expression.Switch(destinationType, value, atRunTime, null, cases);
-        }
+            var cases = new List<SwitchCase>(pairs.Count);
 
-        /// <summary>
-        /// The destination member one source member becomes, or <see langword="null"/> when that
-        /// cannot be decided now and the run-time call has to answer it.
-        /// </summary>
-        private static object? Counterpart(
-            object member,
-            Type sourceType,
-            Type destinationType,
-            EnumMappingPolicy policy,
-            object underlying)
-        {
-            string? name = Enum.GetName(sourceType, member);
-
-            if (name is not null && Enum.IsDefined(destinationType, name))
+            foreach (KeyValuePair<object, object> pair in pairs)
             {
-                object parsed = Enum.Parse(destinationType, name);
-
-                // The name has to come back out as it went in. Where two destination members share
-                // a value, only one of them is what that value prints as, and the run-time path
-                // rejects the other for the same reason.
-                if (string.Equals(Enum.GetName(destinationType, parsed), name, StringComparison.Ordinal))
-                {
-                    return parsed;
-                }
+                cases.Add(Expression.SwitchCase(
+                    Expression.Constant(pair.Value, destinationType),
+                    Expression.Constant(pair.Key, sourceType)));
             }
 
-            return policy == EnumMappingPolicy.ByNameThenValue
-                ? Enum.ToObject(destinationType, underlying)
-                : null;
+            return Expression.Switch(destinationType, value, atRunTime, null, cases);
         }
 
         private static UnaryExpression? TryNumeric(Expression value, Type sourceType, Type destinationType)

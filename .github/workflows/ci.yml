@@ -43,6 +43,13 @@ jobs:
       - name: Test
         run: dotnet test --no-build --configuration Release --logger "trx;LogFileName=results.trx"
 
+      # The pilot is an application, not a suite, and it checks its own output and exits non-zero
+      # when something is wrong. It runs here because what it covers is the join between the parts
+      # — a container, Entity Framework, profiles, a projection and an in-memory map over one
+      # configuration — which is exactly where a suite of unit tests is least likely to look.
+      - name: Run the pilot application
+        run: dotnet run --project samples/Mapperion.Bookshop/Mapperion.Bookshop.csproj --no-build --configuration Release
+
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v7

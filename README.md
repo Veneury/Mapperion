@@ -267,6 +267,19 @@ before any row is read. The source generator covers the common shapes but not ye
 value resolvers or inheritance. `ReverseMap` does not unflatten: a member mapped from a nested path
 is resolved by convention on the way back, not written into the nested object.
 
+## A pilot you can run
+
+`samples/Mapperion.Bookshop` is a small application that uses the library the way an application
+does: a container, two profiles, EF Core over SQLite, `AssertIsValid()` at startup, a list view
+through `ProjectTo` and a detail view mapped in memory, all over one configuration. It checks its
+own output and runs in CI.
+
+```bash
+dotnet run --project samples/Mapperion.Bookshop
+```
+
+It found a bug on its first day, which is written up in [its readme](samples/Mapperion.Bookshop/README.md).
+
 ## Development
 
 ```bash

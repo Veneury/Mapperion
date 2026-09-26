@@ -318,6 +318,12 @@ namespace Mapperion.Projection
             Type underlyingSource = Nullable.GetUnderlyingType(sourceType) ?? sourceType;
             Type underlyingDestination = Nullable.GetUnderlyingType(destinationType) ?? destinationType;
 
+            if (underlyingSource.IsEnum && underlyingDestination.IsEnum &&
+                engine.Model.Options.EnumMapping != EnumMappingPolicy.ByValue)
+            {
+                return ByName(value, underlyingSource, underlyingDestination, destinationType, engine);
+            }
+
             if (IsDirectlyConvertible(underlyingSource, underlyingDestination))
             {
                 return Expression.Convert(value, destinationType);
@@ -348,6 +354,56 @@ namespace Mapperion.Projection
             throw new MapperConfigurationException(
                 "A projection cannot convert '" + sourceType.Name + "' to '" + destinationType.Name +
                 "'. Declare a map for the pair, or express the member with MapFrom.");
+        }
+
+        /// <summary>
+        /// Crosses two enums by name inside a query, as a chain of conditions that a provider
+        /// turns into a CASE.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Without this a projection carried enums across by number while the mapping engine
+        /// carried them across by name, so a list view and a detail view of the same record could
+        /// disagree about what a status was called. The correspondence both of them use is the
+        /// same one, settled in <see cref="EnumCorrespondence"/>.
+        /// </para>
+        /// <para>
+        /// One thing a projection cannot do is raise the error that <see cref="EnumMappingPolicy.ByName"/>
+        /// raises in memory for a value with no counterpart, because nothing of ours runs per row:
+        /// the SQL either has an arm for a value or it does not. A value outside the ones declared
+        /// falls through to its number, which is what it did before this existed.
+        /// </para>
+        /// </remarks>
+        private static Expression ByName(
+            Expression value,
+            Type underlyingSource,
+            Type underlyingDestination,
+            Type destinationType,
+            MapperEngine engine)
+        {
+            List<KeyValuePair<object, object>> pairs = EnumCorrespondence.Between(
+                underlyingSource,
+                underlyingDestination,
+                engine.Model.Options.EnumMapping);
+
+            Expression chain = Expression.Convert(value, destinationType);
+
+            for (int i = pairs.Count - 1; i >= 0; i--)
+            {
+                Expression constant = Expression.Constant(pairs[i].Key, underlyingSource);
+
+                if (value.Type != underlyingSource)
+                {
+                    constant = Expression.Convert(constant, value.Type);
+                }
+
+                chain = Expression.Condition(
+                    Expression.Equal(value, constant),
+                    Expression.Convert(Expression.Constant(pairs[i].Value, underlyingDestination), destinationType),
+                    chain);
+            }
+
+            return chain;
         }
 
         private static bool IsDirectlyConvertible(Type source, Type destination)
