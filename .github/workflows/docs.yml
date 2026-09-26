@@ -17,8 +17,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Named for what it is rather than for what it does. A required status check is picked from a
+  # list of names with no context beside them, and "build" next to "ubuntu-latest" and
+  # "windows-latest" is an invitation to require the wrong one.
   build:
-    name: build
+    name: docs
     runs-on: ubuntu-latest
 
     steps:
