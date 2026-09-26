@@ -260,9 +260,7 @@ than asserted.
 
 ## Not yet
 
-`string` to `Guid`, `DateOnly` or `TimeOnly`. Those three are not `IConvertible`, so there is no
-conversion at all and the configuration says so rather than failing later; `string` to `DateTime`
-does work. A projection cannot build a dictionary or dispatch to a derived map: its shape is fixed
+A projection cannot build a dictionary or dispatch to a derived map: its shape is fixed
 before any row is read. The source generator covers the common shapes but not yet dictionaries,
 value resolvers or inheritance. `ReverseMap` does not unflatten: a member mapped from a nested path
 is resolved by convention on the way back, not written into the nested object.

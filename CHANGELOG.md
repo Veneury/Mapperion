@@ -5,6 +5,22 @@ Versionado según [SemVer 2.0](https://semver.org/lang/es/).
 
 Antes de la v1.0, las versiones minor pueden introducir cambios de ruptura.
 
+## [Unreleased]
+
+### Added
+
+- `string` a `Guid`, `DateOnly` y `TimeOnly`. Un identificador o una fecha que llegan como texto
+  —de un JSON, o de una columna que alguien escribió como `varchar`— es lo primero que se encuentra
+  cualquiera. `string` a `DateTime` ya funcionaba porque `DateTime` es `IConvertible` y estos tres
+  no lo son, una distinción que no le dice nada a quien escribe el mapa.
+- El texto vacío da el valor por defecto, igual que ya hacía con los enums: ausente no es lo mismo
+  que mal escrito. El texto que sí pretende ser un valor y no lo es lanza una excepción que lo
+  nombra, porque lo útil es saber qué fila traía la basura.
+- Se lee con la cultura invariante. Un mapeo que entendiera la misma fecha de forma distinta según
+  la máquina sería peor problema que el que resuelve.
+- Se mira **después** de un mapa declarado, así que `CreateMap<string, Guid>()` sigue ganando si
+  alguien quiere su propia lectura.
+
 ## [0.10.0] - 2026-09-26
 
 La primera sin sufijo `-preview`. No porque la API haya dejado de moverse —antes de la 1.0 una
