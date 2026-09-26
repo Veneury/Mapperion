@@ -368,6 +368,59 @@ namespace Mapperion.Execution
             return text.Length > 0 && !char.IsDigit(text[0]) && text[0] != '-';
         }
 
+        /// <summary>
+        /// Reads a <see cref="Guid"/> out of text.
+        /// </summary>
+        /// <remarks>
+        /// Empty text is the absence of a value rather than a bad one, so it gives the default the
+        /// same way an empty string gives the default enum. Text that is meant to be a value and
+        /// is not gets an exception naming it, because the useful thing to know is which row had
+        /// the rubbish in it.
+        /// </remarks>
+        internal static Guid ToGuid(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return default;
+            }
+
+            return Guid.TryParse(value, out Guid parsed) ? parsed : throw Unparseable(value!, nameof(Guid));
+        }
+
+#if NET6_0_OR_GREATER
+        internal static DateOnly ToDateOnly(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return default;
+            }
+
+            return DateOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly parsed)
+                ? parsed
+                : throw Unparseable(value!, nameof(DateOnly));
+        }
+
+        internal static TimeOnly ToTimeOnly(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+            {
+                return default;
+            }
+
+            return TimeOnly.TryParse(value, CultureInfo.InvariantCulture, DateTimeStyles.None, out TimeOnly parsed)
+                ? parsed
+                : throw Unparseable(value!, nameof(TimeOnly));
+        }
+#endif
+
+        /// <remarks>
+        /// The invariant culture, deliberately. A mapping that read the same text differently
+        /// depending on the machine it ran on would be a worse problem than the one it solved.
+        /// </remarks>
+        private static MappingException Unparseable(string value, string target) =>
+            new MappingException("'" + value + "' is not a " + target + ". Text is read with the " +
+                "invariant culture; configure the member with MapFrom to read it another way.");
+
         internal static TDestination ChangeType<TDestination>(object? value)
         {
             if (value is null)

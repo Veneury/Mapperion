@@ -75,6 +75,7 @@ namespace Mapperion.Compilation
                 ?? TryNumeric(value, sourceType, destinationType)
                 ?? TryToString(value, sourceType, destinationType)
                 ?? TryNestedMap(value, sourceType, destinationType, scope)
+                ?? TryParseText(value, sourceType, destinationType)
                 ?? TryChangeType(value, sourceType, destinationType);
 
             if (converted is not null)
@@ -589,6 +590,45 @@ namespace Mapperion.Compilation
                 Expression.Equal(value, Expression.Constant(null, sourceType)),
                 Expression.Default(destinationType),
                 call);
+        }
+
+        /// <summary>
+        /// Reads text into the types that carry a value but are not <see cref="IConvertible"/>,
+        /// and so fall through everything else.
+        /// </summary>
+        /// <remarks>
+        /// These three are what an application meets on its first day: an identifier and a date
+        /// arriving as strings from JSON or from a column somebody typed as text. <c>string</c> to
+        /// <c>DateTime</c> already worked, because <c>DateTime</c> is <see cref="IConvertible"/>
+        /// and these are not, which is a distinction that means nothing to whoever is writing the
+        /// map. It is looked at after a declared map, so <c>CreateMap&lt;string, Guid&gt;()</c>
+        /// still wins if somebody wants their own reading of it.
+        /// </remarks>
+        private static MethodCallExpression? TryParseText(Expression value, Type sourceType, Type destinationType)
+        {
+            if (sourceType != typeof(string))
+            {
+                return null;
+            }
+
+            string? reader = null;
+
+            if (destinationType == typeof(Guid))
+            {
+                reader = nameof(MappingRuntime.ToGuid);
+            }
+#if NET6_0_OR_GREATER
+            else if (destinationType == typeof(DateOnly))
+            {
+                reader = nameof(MappingRuntime.ToDateOnly);
+            }
+            else if (destinationType == typeof(TimeOnly))
+            {
+                reader = nameof(MappingRuntime.ToTimeOnly);
+            }
+#endif
+
+            return reader is null ? null : Expression.Call(Method(reader), value);
         }
 
         private static MethodCallExpression? TryChangeType(Expression value, Type sourceType, Type destinationType)
