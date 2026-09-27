@@ -34,6 +34,13 @@ namespace Mapperion.Compilation
             {
                 block = BuildTypeConverterCall(definition, source, destination, context);
             }
+            else if (IsConversionOnly(definition))
+            {
+                block = ConversionBuilder.Build(
+                    source,
+                    destinationType,
+                    CompileScope.Root(engine, context, null, definition.Key));
+            }
             else
             {
                 var step = new StepSlot(Expression.Variable(typeof(string), "step"));
@@ -138,6 +145,29 @@ namespace Mapperion.Compilation
         /// <summary>
         /// Records which member the plan is on, for the handler to name when something fails.
         /// </summary>
+        /// <summary>
+        /// Whether the pair is a conversion wearing a map's clothes.
+        /// </summary>
+        /// <remarks>
+        /// An enum has nothing to assign into, so filling one member by member creates the
+        /// destination and stops, which is how <c>CreateMap&lt;Grade, GradeDto&gt;()</c> came to
+        /// return the zero value of the destination rather than the member that matched. The same
+        /// pair reached as a member of something else went through the conversion builder and gave
+        /// the right answer, so the engine disagreed with itself depending on where the pair was
+        /// met. Anything the map actually configures is left on the member path, where it means
+        /// something.
+        /// </remarks>
+        private static bool IsConversionOnly(TypeMapDefinition definition) =>
+            definition.DestinationType.IsEnum
+            && definition.Members.Count == 0
+            && definition.ConstructorParameters.Count == 0
+            && definition.Constructor is null
+            && definition.ConstructUsing is null
+            && definition.BeforeMapActions.Count == 0
+            && definition.AfterMapActions.Count == 0
+            && definition.DerivedMaps.Count == 0
+            && definition.IncludedMembers.Count == 0;
+
         private static void Mark(List<Expression> body, StepSlot step, string name, bool guarded)
         {
             if (guarded)

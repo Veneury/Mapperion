@@ -70,6 +70,48 @@ namespace Mapperion.SourceGenerator.Tests
         public string Note { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// Names that match while the numbers do not, which is what happens the first time anybody
+    /// reorders an enum. Mapping by value here gives the wrong member rather than no answer.
+    /// </summary>
+    public enum Priority
+    {
+        Low = 1,
+        Normal = 2,
+        High = 3,
+    }
+
+    public enum PriorityDto
+    {
+        High = 1,
+        Normal = 2,
+        Urgent = 3,
+    }
+
+    public enum Channel
+    {
+        Email = 1,
+        Sms = 2,
+    }
+
+    public sealed class Ticket
+    {
+        public Priority Priority { get; set; }
+
+        public Priority? Escalation { get; set; }
+
+        public string Kind { get; set; } = string.Empty;
+    }
+
+    public sealed class TicketDto
+    {
+        public PriorityDto Priority { get; set; }
+
+        public PriorityDto Escalation { get; set; }
+
+        public Channel Kind { get; set; }
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -89,5 +131,13 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class TicketMapper
+    {
+        public partial TicketDto ToDto(Ticket source);
+
+        public partial PriorityDto ToDto(Priority source);
     }
 }

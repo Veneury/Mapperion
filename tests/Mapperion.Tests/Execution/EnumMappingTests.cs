@@ -306,6 +306,57 @@ namespace Mapperion.Tests.Execution
             dto.Wide.ShouldBe(WideDto.Huge);
         }
 
+        /// <summary>
+        /// The pair declared on its own, rather than met as a member of something else.
+        /// </summary>
+        /// <remarks>
+        /// This used to give the zero value of the destination whatever it was handed. An enum
+        /// has nothing to assign into, so the member-by-member path created the destination and
+        /// had nothing left to do — while the same pair reached as a member went through the
+        /// conversion builder and came out right. The engine disagreed with itself depending on
+        /// where the pair was met.
+        /// </remarks>
+        [Theory]
+        [InlineData(Grade.Low, GradeDto.Low)]
+        [InlineData(Grade.Mid, GradeDto.Mid)]
+        [InlineData(Grade.High, GradeDto.High)]
+        public void An_enum_pair_declared_on_its_own_converts(Grade grade, GradeDto expected)
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Grade, GradeDto>());
+            configuration.AssertIsValid();
+
+            configuration.CreateMapper().Map<Grade, GradeDto>(grade).ShouldBe(expected);
+        }
+
+        [Fact]
+        public void Text_declared_straight_onto_an_enum_is_read()
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<string, GradeDto>());
+            IMapper mapper = configuration.CreateMapper();
+
+            mapper.Map<string, GradeDto>("Mid").ShouldBe(GradeDto.Mid);
+            mapper.Map<string, GradeDto>(string.Empty).ShouldBe(default(GradeDto));
+        }
+
+        /// <remarks>
+        /// The map is still a map: a converter declared on it wins, the same way
+        /// <c>CreateMap&lt;string, Guid&gt;()</c> wins over reading the text.
+        /// </remarks>
+        [Fact]
+        public void A_converter_on_an_enum_pair_still_wins()
+        {
+            var configuration = new MapperConfiguration(cfg =>
+                cfg.CreateMap<Grade, GradeDto>().ConvertUsing<AlwaysMid>());
+
+            configuration.CreateMapper().Map<Grade, GradeDto>(Grade.High).ShouldBe(GradeDto.Mid);
+        }
+
+        private sealed class AlwaysMid : ITypeConverter<Grade, GradeDto>
+        {
+            public GradeDto Convert(Grade source, GradeDto destination, ResolutionContext context) =>
+                GradeDto.Mid;
+        }
+
         [Fact]
         public void A_nullable_enum_carries_its_value_across()
         {

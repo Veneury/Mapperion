@@ -95,6 +95,69 @@ namespace Mapperion.SourceGenerator.Tests
             RuntimeMapper().Map<Order, OrderDto>(null!).ShouldBeNull();
         }
 
+        /// <summary>
+        /// The run-time engine matches enum members by name and only falls back to the number,
+        /// which is what <see cref="EnumMappingPolicy.ByNameThenValue"/> means and what it does by
+        /// default. A generator that casts the number instead does not fail: it quietly returns a
+        /// different member.
+        /// </summary>
+        [Theory]
+        [InlineData(Priority.Low)]
+        [InlineData(Priority.Normal)]
+        [InlineData(Priority.High)]
+        public void They_agree_on_an_enum_whose_numbers_moved(Priority priority)
+        {
+            CompareTicket(new Ticket { Priority = priority });
+        }
+
+        [Fact]
+        public void They_agree_on_an_enum_that_is_not_there()
+        {
+            CompareTicket(new Ticket { Escalation = null });
+            CompareTicket(new Ticket { Escalation = Priority.High });
+        }
+
+        /// <summary>
+        /// Text reaches an enum by name ignoring case, then as a number, and empty text is the
+        /// absence of a value rather than a bad one. Anything else is the default under the policy
+        /// both engines use unless told otherwise.
+        /// </summary>
+        [Theory]
+        [InlineData("Email")]
+        [InlineData("sms")]
+        [InlineData("2")]
+        [InlineData("")]
+        [InlineData("nonsense")]
+        public void They_agree_on_an_enum_read_out_of_text(string kind)
+        {
+            CompareTicket(new Ticket { Kind = kind });
+        }
+
+        [Fact]
+        public void They_agree_when_the_enum_is_the_whole_map()
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Priority, PriorityDto>());
+            IMapper mapper = configuration.CreateMapper();
+
+            foreach (Priority priority in new[] { Priority.Low, Priority.Normal, Priority.High })
+            {
+                new TicketMapper().ToDto(priority).ShouldBe(mapper.Map<Priority, PriorityDto>(priority));
+            }
+        }
+
+        private static void CompareTicket(Ticket ticket)
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Ticket, TicketDto>());
+            configuration.AssertIsValid();
+
+            TicketDto generated = new TicketMapper().ToDto(ticket);
+            TicketDto runtime = configuration.CreateMapper().Map<Ticket, TicketDto>(ticket);
+
+            generated.Priority.ShouldBe(runtime.Priority);
+            generated.Escalation.ShouldBe(runtime.Escalation);
+            generated.Kind.ShouldBe(runtime.Kind);
+        }
+
         [Fact]
         public void They_agree_that_an_ignored_member_is_left_alone()
         {

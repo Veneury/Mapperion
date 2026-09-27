@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -15,6 +16,8 @@ namespace Mapperion.SourceGeneration
         private readonly SourceProductionContext context;
         private readonly Compilation compilation;
         private readonly List<MethodPlan> plans;
+        private readonly Dictionary<string, EnumConverter> converters =
+            new Dictionary<string, EnumConverter>(StringComparer.Ordinal);
 
         internal MapperEmitter(SourceProductionContext context, Compilation compilation, List<MethodPlan> plans)
         {
@@ -43,9 +46,19 @@ namespace Mapperion.SourceGeneration
             text.Append(indent).Append("partial class ").AppendLine(mapper.Name);
             text.Append(indent).AppendLine("{");
 
+            var methods = new StringBuilder();
+
             foreach (MethodPlan plan in plans)
             {
-                WriteMethod(text, plan, indent + "    ");
+                WriteMethod(methods, plan, indent + "    ");
+            }
+
+            text.Append(methods);
+
+            // Written last because they are discovered while the methods above are written.
+            foreach (EnumConverter converter in converters.Values)
+            {
+                converter.Write(text, indent + "    ");
             }
 
             text.Append(indent).AppendLine("}");
@@ -112,6 +125,13 @@ namespace Mapperion.SourceGeneration
 
         private string? BuildInstance(MethodPlan plan, string parameter)
         {
+            // An enum is not built, it is converted, and a map straight to one is a map the
+            // run-time engine takes without comment.
+            if (plan.DestinationType.TypeKind == TypeKind.Enum)
+            {
+                return Convert(plan, parameter, plan.SourceType, plan.DestinationType, plan.Method.Name);
+            }
+
             ITypeSymbol? element = TypeFacts.ElementOf(plan.SourceType);
             string? materialiser = TypeFacts.Materialiser(plan.DestinationType);
 
@@ -352,18 +372,11 @@ namespace Mapperion.SourceGeneration
                 }
             }
 
-            MethodPlan? mapping = Lookup(sourceType, destinationType);
+            string? lifted = Lift(plan, expression, sourceType, destinationType, destinationName);
 
-            if (mapping is not null)
+            if (lifted is not null)
             {
-                return mapping.Method.Name + "(" + expression + ")";
-            }
-
-            ITypeSymbol? underlying = TypeFacts.NullableUnderlying(sourceType);
-
-            if (underlying is not null && TypeFacts.Same(underlying, destinationType))
-            {
-                return expression + ".GetValueOrDefault()";
+                return lifted;
             }
 
             Conversion conversion = ((CSharpCompilation)compilation).ClassifyConversion(sourceType, destinationType);
@@ -373,6 +386,21 @@ namespace Mapperion.SourceGeneration
                 return expression;
             }
 
+            // Before the declared maps, which is where the run-time engine looks at them too. A
+            // pair of enums is a conversion and not a map, and putting it the other way round
+            // makes a method declared for that pair call itself.
+            string? asEnum = TryEnum(expression, sourceType, destinationType);
+
+            if (asEnum is not null)
+            {
+                return asEnum;
+            }
+
+            if (conversion.Exists && (conversion.IsNumeric || conversion.IsEnumeration))
+            {
+                return "(" + TypeFacts.Bare(destinationType) + ")" + expression;
+            }
+
             if (destinationType.SpecialType == SpecialType.System_String)
             {
                 return TypeFacts.CanBeNull(sourceType)
@@ -380,9 +408,11 @@ namespace Mapperion.SourceGeneration
                     : expression + ".ToString()";
             }
 
-            if (conversion.Exists && (conversion.IsNumeric || conversion.IsEnumeration))
+            MethodPlan? mapping = Lookup(sourceType, destinationType);
+
+            if (mapping is not null)
             {
-                return "(" + TypeFacts.Bare(destinationType) + ")" + expression;
+                return mapping.Method.Name + "(" + expression + ")";
             }
 
             Report(
@@ -393,6 +423,67 @@ namespace Mapperion.SourceGeneration
                 TypeFacts.Display(destinationType));
 
             return null;
+        }
+
+        /// <summary>
+        /// Lifts a conversion over a nullable on either side.
+        /// </summary>
+        /// <remarks>
+        /// The run-time engine settles this before it looks at anything else about the pair, so an
+        /// absent value gives the destination's default instead of reaching a conversion that
+        /// would throw on it. Answering it in the same place is what keeps the two engines saying
+        /// the same thing about a value that is not there.
+        /// </remarks>
+        private string? Lift(
+            MethodPlan plan,
+            string expression,
+            ITypeSymbol sourceType,
+            ITypeSymbol destinationType,
+            string destinationName)
+        {
+            ITypeSymbol? sourceUnderlying = TypeFacts.NullableUnderlying(sourceType);
+            ITypeSymbol? destinationUnderlying = TypeFacts.NullableUnderlying(destinationType);
+
+            if (sourceUnderlying is not null)
+            {
+                string? inner = Convert(
+                    plan,
+                    expression + ".Value",
+                    sourceUnderlying,
+                    destinationUnderlying ?? destinationType,
+                    destinationName);
+
+                if (inner is null)
+                {
+                    return null;
+                }
+
+                if (destinationUnderlying is not null)
+                {
+                    inner = "(" + TypeFacts.Bare(destinationType) + ")(" + inner + ")";
+                }
+
+                return "(" + expression + ".HasValue ? " + inner +
+                    " : default(" + TypeFacts.Bare(destinationType) + ")!)";
+            }
+
+            if (destinationUnderlying is null)
+            {
+                return null;
+            }
+
+            string? value = Convert(plan, expression, sourceType, destinationUnderlying, destinationName);
+
+            if (value is null)
+            {
+                return null;
+            }
+
+            string wrapped = "(" + TypeFacts.Bare(destinationType) + ")(" + value + ")";
+
+            return sourceType.IsValueType
+                ? wrapped
+                : "(" + expression + " is null ? default(" + TypeFacts.Bare(destinationType) + ") : " + wrapped + ")";
         }
 
         private MethodPlan? Lookup(ITypeSymbol source, ITypeSymbol destination)
@@ -422,6 +513,293 @@ namespace Mapperion.SourceGeneration
                 descriptor,
                 plan.Method.Locations.FirstOrDefault(),
                 arguments.ToArray()));
+        }
+
+        /// <summary>
+        /// The enum rules, written as code rather than carried out at run time.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The run-time engine matches enum members by name and only falls back to the number,
+        /// which is what <c>EnumMappingPolicy.ByNameThenValue</c> means and what it does unless it
+        /// is told otherwise. A cast is the number alone, so the two engines answer differently
+        /// the first time anybody reorders an enum — and differently in the quiet way, returning
+        /// another member rather than failing.
+        /// </para>
+        /// <para>
+        /// Both enums are known here, so the correspondence is settled while the project compiles
+        /// and what is emitted is a switch over constants: one case per name the two sides share,
+        /// with the cast underneath for everything else, which is also where a value the source
+        /// enum never declared ends up.
+        /// </para>
+        /// </remarks>
+        private string? TryEnum(string expression, ITypeSymbol sourceType, ITypeSymbol destinationType)
+        {
+            bool sourceIsEnum = sourceType.TypeKind == TypeKind.Enum;
+            bool destinationIsEnum = destinationType.TypeKind == TypeKind.Enum;
+
+            if (sourceIsEnum && destinationIsEnum)
+            {
+                return Converter(
+                    sourceType,
+                    destinationType,
+                    () => new EnumFromEnum(
+                        ConverterName(sourceType, destinationType),
+                        sourceType,
+                        destinationType)) + "(" + expression + ")";
+            }
+
+            if (sourceType.SpecialType == SpecialType.System_String && destinationIsEnum)
+            {
+                return Converter(
+                    sourceType,
+                    destinationType,
+                    () => new EnumFromText(
+                        ConverterName(sourceType, destinationType),
+                        destinationType)) + "(" + expression + ")";
+            }
+
+            if ((sourceIsEnum && IsNumeric(destinationType)) || (IsNumeric(sourceType) && destinationIsEnum))
+            {
+                return "(" + TypeFacts.Bare(destinationType) + ")" + expression;
+            }
+
+            return null;
+        }
+
+        private string Converter(ITypeSymbol sourceType, ITypeSymbol destinationType, Func<EnumConverter> create)
+        {
+            string key = TypeFacts.Bare(sourceType) + "->" + TypeFacts.Bare(destinationType);
+
+            if (!converters.TryGetValue(key, out EnumConverter? existing))
+            {
+                existing = create();
+                converters.Add(key, existing);
+            }
+
+            return existing.Name;
+        }
+
+        private string ConverterName(ITypeSymbol sourceType, ITypeSymbol destinationType)
+        {
+            string candidate = "Convert" + sourceType.Name + "To" + destinationType.Name;
+            string name = candidate;
+
+            for (int suffix = 2; Taken(name); suffix++)
+            {
+                name = candidate + suffix.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return name;
+        }
+
+        private bool Taken(string name)
+        {
+            foreach (EnumConverter converter in converters.Values)
+            {
+                if (string.Equals(converter.Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            foreach (MethodPlan plan in plans)
+            {
+                if (string.Equals(plan.Method.Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsNumeric(ITypeSymbol type)
+        {
+            switch (type.SpecialType)
+            {
+                case SpecialType.System_SByte:
+                case SpecialType.System_Byte:
+                case SpecialType.System_Int16:
+                case SpecialType.System_UInt16:
+                case SpecialType.System_Int32:
+                case SpecialType.System_UInt32:
+                case SpecialType.System_Int64:
+                case SpecialType.System_UInt64:
+                    return true;
+
+                default:
+                    return false;
+            }
+        }
+
+        /// <summary>Every declared member of an enum, in declaration order.</summary>
+        private static List<IFieldSymbol> Members(ITypeSymbol type)
+        {
+            var members = new List<IFieldSymbol>();
+
+            foreach (IFieldSymbol field in type.GetMembers().OfType<IFieldSymbol>())
+            {
+                if (field.HasConstantValue)
+                {
+                    members.Add(field);
+                }
+            }
+
+            return members;
+        }
+
+        private abstract class EnumConverter
+        {
+            protected EnumConverter(string name)
+            {
+                Name = name;
+            }
+
+            internal string Name { get; }
+
+            internal abstract void Write(StringBuilder text, string indent);
+        }
+
+        private sealed class EnumFromEnum : EnumConverter
+        {
+            private readonly ITypeSymbol source;
+            private readonly ITypeSymbol destination;
+
+            internal EnumFromEnum(string name, ITypeSymbol source, ITypeSymbol destination)
+                : base(name)
+            {
+                this.source = source;
+                this.destination = destination;
+            }
+
+            internal override void Write(StringBuilder text, string indent)
+            {
+                string sourceName = TypeFacts.Bare(source);
+                string destinationName = TypeFacts.Bare(destination);
+
+                text.Append(indent).Append("private static ").Append(destinationName).Append(' ')
+                    .Append(Name).Append('(').Append(sourceName).AppendLine(" value)");
+                text.Append(indent).AppendLine("{");
+
+                List<string> shared = Shared();
+
+                if (shared.Count > 0)
+                {
+                    text.Append(indent).AppendLine("    switch (value)");
+                    text.Append(indent).AppendLine("    {");
+
+                    foreach (string member in shared)
+                    {
+                        text.Append(indent).Append("        case ").Append(sourceName).Append('.')
+                            .Append(member).AppendLine(":");
+                        text.Append(indent).Append("            return ").Append(destinationName).Append('.')
+                            .Append(member).AppendLine(";");
+                    }
+
+                    text.Append(indent).AppendLine("    }");
+                    text.AppendLine();
+                }
+
+                text.Append(indent).Append("    return (").Append(destinationName).AppendLine(")value;");
+                text.Append(indent).AppendLine("}");
+                text.AppendLine();
+            }
+
+            /// <remarks>
+            /// A name only counts when it is the one the destination would print for that value:
+            /// the run-time engine parses the name and then checks it round-trips, so an alias on
+            /// the destination side is not a match there either. Aliases on the source side are
+            /// skipped for the same reason, and because two case labels cannot carry one constant.
+            /// </remarks>
+            private List<string> Shared()
+            {
+                var canonical = new Dictionary<object, string>();
+                var byName = new Dictionary<string, object>(StringComparer.Ordinal);
+
+                foreach (IFieldSymbol member in Members(destination))
+                {
+                    object value = member.ConstantValue!;
+
+                    if (!canonical.ContainsKey(value))
+                    {
+                        canonical.Add(value, member.Name);
+                    }
+
+                    if (!byName.ContainsKey(member.Name))
+                    {
+                        byName.Add(member.Name, value);
+                    }
+                }
+
+                var shared = new List<string>();
+                var seen = new HashSet<object>();
+
+                foreach (IFieldSymbol member in Members(source))
+                {
+                    if (!seen.Add(member.ConstantValue!))
+                    {
+                        continue;
+                    }
+
+                    if (byName.TryGetValue(member.Name, out object? matched) &&
+                        string.Equals(canonical[matched!], member.Name, StringComparison.Ordinal))
+                    {
+                        shared.Add(member.Name);
+                    }
+                }
+
+                return shared;
+            }
+        }
+
+        /// <remarks>
+        /// Text is read the way <c>Enum.TryParse</c> reads it: by name ignoring case, aliases
+        /// included, and then as a number. Empty text is the absence of a value rather than a bad
+        /// one, so it gives the default, which is what the run-time engine does with it too.
+        /// </remarks>
+        private sealed class EnumFromText : EnumConverter
+        {
+            private readonly ITypeSymbol destination;
+
+            internal EnumFromText(string name, ITypeSymbol destination)
+                : base(name)
+            {
+                this.destination = destination;
+            }
+
+            internal override void Write(StringBuilder text, string indent)
+            {
+                string destinationName = TypeFacts.Bare(destination);
+                string underlying = TypeFacts.Bare(((INamedTypeSymbol)destination).EnumUnderlyingType!);
+
+                text.Append(indent).Append("private static ").Append(destinationName).Append(' ')
+                    .Append(Name).AppendLine("(string? value)");
+                text.Append(indent).AppendLine("{");
+                text.Append(indent).AppendLine("    if (string.IsNullOrEmpty(value))");
+                text.Append(indent).AppendLine("    {");
+                text.Append(indent).Append("        return default(").Append(destinationName).AppendLine(");");
+                text.Append(indent).AppendLine("    }");
+                text.AppendLine();
+
+                foreach (IFieldSymbol member in Members(destination))
+                {
+                    text.Append(indent).Append("    if (string.Equals(value, \"").Append(member.Name)
+                        .AppendLine("\", global::System.StringComparison.OrdinalIgnoreCase))");
+                    text.Append(indent).AppendLine("    {");
+                    text.Append(indent).Append("        return ").Append(destinationName).Append('.')
+                        .Append(member.Name).AppendLine(";");
+                    text.Append(indent).AppendLine("    }");
+                    text.AppendLine();
+                }
+
+                text.Append(indent).Append("    return ").Append(underlying)
+                    .Append(".TryParse(value, out ").Append(underlying).AppendLine(" number)");
+                text.Append(indent).Append("        ? (").Append(destinationName).AppendLine(")number");
+                text.Append(indent).Append("        : default(").Append(destinationName).AppendLine(");");
+                text.Append(indent).AppendLine("}");
+                text.AppendLine();
+            }
         }
 
         private sealed class PathRead
