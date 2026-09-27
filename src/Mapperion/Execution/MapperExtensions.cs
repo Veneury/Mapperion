@@ -10,6 +10,53 @@ namespace Mapperion
     public static class MapperExtensions
     {
         /// <summary>
+        /// Settles the map for a pair once and hands back the function, for a loop that maps the
+        /// same pair many times.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// <c>mapper.Map&lt;Order, OrderDto&gt;(order)</c> is a generic method reached through an
+        /// interface, and the runtime works out its type arguments on every call. None of that
+        /// work depends on the object being mapped, so in a loop it is the same answer found over
+        /// and over. This asks for it once:
+        /// </para>
+        /// <code>
+        /// Func&lt;Order, OrderDto&gt; toDto = mapper.MapperFor&lt;Order, OrderDto&gt;();
+        ///
+        /// foreach (Order order in orders)
+        /// {
+        ///     results.Add(toDto(order));
+        /// }
+        /// </code>
+        /// <para>
+        /// The result is an ordinary <see cref="Func{T, TResult}"/>, so it also goes straight into
+        /// a <c>Select</c>. It maps exactly what <see cref="IMapper.Map{TSource, TDestination}(TSource)"/>
+        /// maps, and it is bound to the configuration it came from.
+        /// </para>
+        /// <para>
+        /// Hold it for as long as the loop, or as a field beside the mapper. Asking for one per
+        /// call costs more than it saves, since the work it avoids is the work it does. For a
+        /// single map, <c>Map</c> is the one to write, and where mapping is genuinely what a
+        /// program spends its time on, the source generator beats all of this.
+        /// </para>
+        /// </remarks>
+        /// <typeparam name="TSource">The source type.</typeparam>
+        /// <typeparam name="TDestination">The destination type.</typeparam>
+        /// <param name="mapper">The mapper to bind.</param>
+        /// <returns>A function mapping one <typeparamref name="TSource"/> to a new <typeparamref name="TDestination"/>.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="mapper"/> is <see langword="null"/>.</exception>
+        public static Func<TSource, TDestination> MapperFor<TSource, TDestination>(this IMapper mapper)
+        {
+            Guard.NotNull(mapper, nameof(mapper));
+
+            // Anything that is not the mapper this library builds keeps its own behaviour: a
+            // decorator that counts calls has to go on counting them.
+            return mapper is Mapper built
+                ? built.Bind<TSource, TDestination>()
+                : source => mapper.Map<TSource, TDestination>(source);
+        }
+
+        /// <summary>
         /// Maps <paramref name="source"/> to a new instance of <typeparamref name="TDestination"/>,
         /// skipping the cost of calling a generic method through an interface.
         /// </summary>

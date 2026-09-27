@@ -108,16 +108,33 @@ costs — more, on the flat benchmark, than everything Mapster spends in total.
 
 Two ways out, in the order worth trying them.
 
-**`MapFast`**, when you want the same mapper and the same configuration:
+**`MapperFor`**, when the same pair is mapped more than once:
+
+```csharp
+Func<Order, OrderDto> toDto = mapper.MapperFor<Order, OrderDto>();
+
+foreach (Order order in orders)
+{
+    results.Add(toDto(order));
+}
+```
+
+None of that dispatch depends on the object being mapped, so in a loop it is the same answer found
+over and over. This asks for it once, and what comes back is an ordinary `Func` that also drops
+into a `Select`. Hold it for as long as the loop, or as a field beside the mapper; asking for one
+per call costs more than it saves.
+
+Measured on the flat benchmark, this is the one arrangement that comes in under Mapster.
+
+**`MapFast`**, for a single call with nowhere to keep a function:
 
 ```csharp
 OrderDto dto = mapper.MapFast<Order, OrderDto>(order);
 ```
 
-Same result, same map, same everything. It is an extension method, so the type arguments are
-settled where you wrote them rather than at run time. It recognises the mapper the library builds
-and calls it directly, and falls back to the interface for anything else, so a decorator or a test
-double still works.
+Same result, same map. It skips the interface but still looks the plan up each time, so where
+there is a loop, `MapperFor` is the better answer. Both recognise the mapper the library builds
+and fall back to the interface for anything else, so a decorator or a test double still works.
 
 **The source generator**, when mapping really is the thing your program spends its time on. It
 writes the mapping as ordinary C# while you build, and runs at the speed of code you would have

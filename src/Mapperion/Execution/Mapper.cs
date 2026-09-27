@@ -145,6 +145,34 @@ namespace Mapperion.Execution
             return engine.GetPlan(key).Boxed(source, null, Context(state));
         }
 
+        /// <summary>
+        /// Settles everything that does not depend on the object being mapped, and hands back what
+        /// is left: a function that takes a source and returns a destination.
+        /// </summary>
+        /// <remarks>
+        /// Reaching a generic method through an interface makes the runtime work out its type
+        /// arguments on every call, which on a small map is most of what the call costs. Nothing
+        /// about that work depends on the object, so it does not have to happen per object: this
+        /// does it once and closes over the answer.
+        /// </remarks>
+        [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
+        [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
+        internal Func<TSource, TDestination> Bind<TSource, TDestination>()
+        {
+            MapDelegate<TSource, TDestination> plan = engine.GetTyped<TSource, TDestination>();
+
+            if (engine.RequiresState)
+            {
+                // Something in this configuration reads per-operation state, and each call is its
+                // own operation, so the context cannot be settled here with the rest.
+                return source => plan(source, default!, Context(null));
+            }
+
+            MappingContext shared = stateless;
+
+            return source => plan(source, default!, shared);
+        }
+
         [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = EntryPointJustification)]
         [UnconditionalSuppressMessage("AOT", "IL3050", Justification = EntryPointJustification)]
         private TDestination Invoke<TSource, TDestination>(

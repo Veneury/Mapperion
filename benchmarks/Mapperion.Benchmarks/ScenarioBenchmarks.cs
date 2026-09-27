@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AgileObjects.AgileMapper;
 using BenchmarkDotNet.Attributes;
@@ -82,8 +83,15 @@ namespace Mapperion.Benchmarks
     public class FlatBenchmarks : ScenarioBase
     {
         private Flat source = null!;
+        private Func<Flat, FlatDto> bound = null!;
 
-        protected override void Prepare() => source = Samples.Flat();
+        protected override void Prepare()
+        {
+            source = Samples.Flat();
+
+            // Asked for once, the way a loop or a field beside the mapper would.
+            bound = Mapperion.MapperFor<Flat, FlatDto>();
+        }
 
         protected override void Warm()
         {
@@ -99,6 +107,9 @@ namespace Mapperion.Benchmarks
 
         [Benchmark]
         public FlatDto Mapperion_RuntimeFast() => Mapperion.MapFast<Flat, FlatDto>(source);
+
+        [Benchmark]
+        public FlatDto Mapperion_Bound() => bound(source);
 
         [Benchmark]
         public FlatDto Mapperion_SourceGen() => MapperionSourceGen.ToDto(source);

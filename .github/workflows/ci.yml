@@ -115,6 +115,7 @@ jobs:
           --filter
           "*FlatBenchmarks.Manual" "*FlatBenchmarks.Mapperion_Runtime"
           "*FlatBenchmarks.Mapperion_RuntimeFast" "*FlatBenchmarks.Mapperion_SourceGen"
+          "*FlatBenchmarks.Mapperion_Bound"
           "*NestedBenchmarks.Manual" "*NestedBenchmarks.Mapperion_Runtime"
           "*CollectionBenchmarks.Manual" "*CollectionBenchmarks.Mapperion_Runtime"
           "*CollectionBenchmarks.Mapperion_SourceGen"

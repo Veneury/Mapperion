@@ -7,6 +7,25 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `MapperFor<TSource, TDestination>()`, para cuando el mismo par se mapea muchas veces. Resuelve
+  una sola vez todo lo que no depende del objeto —el despacho genérico por la interfaz y la
+  búsqueda del plan— y devuelve un `Func<TSource, TDestination>` que llamas en el bucle.
+- **Es la única forma que mide por debajo de Mapster**: 1,62x contra 2,12x en una corrida y 1,20x
+  contra 1,51x en otra, con margen de 4-5 ns sobre desviaciones de ~1. Y está explicado por lo que
+  quita, no encontrado en una corrida afortunada: el despacho y el lookup son por par, no por
+  objeto, así que un bucle los pagaba por elemento sin motivo.
+- Devuelve un `Func` y no un tipo nuevo: es literalmente una función de mapeo, entra en un `Select`
+  y no obliga a aprender nada. Es extensión y no miembro de `IMapper`, porque añadir a una interfaz
+  pública rompe a quien la implemente y `IMapper` se mockea constantemente. El «drop-in» intacto.
+- Cuidado con el estado por operación, que era la trampa: si la configuración lo lee, el contexto
+  **no** se fija junto al plan, porque dos llamadas compartirían la bolsa y dos peticiones se
+  verían entre sí. Solo se fija cuando el motor declara que no hace falta, y hay una prueba que
+  mapea dos veces por la misma función y comprueba que ninguna ve a la otra.
+- La documentación dice explícitamente que pedirlo por llamada cuesta más de lo que ahorra, que es
+  la forma obvia de usarlo mal.
+
 ### Changed
 
 - Un plan que no puede fallar ya no lleva el `try/catch` que lo reportaría, ni la miga que se

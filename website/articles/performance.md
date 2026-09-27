@@ -40,30 +40,57 @@ through an interface, and the runtime settles its type arguments on each call; s
 apart put that at about 7.4 ns of a 31 ns call. Mapster's `source.Adapt<T>()` is an extension
 method on a static type and never pays it.
 
-That is a wall rather than a tuning problem, and the arithmetic says so plainly: on the flat
-scenario Mapster's entire cost above hand-written code is about 9 ns, and our interface dispatch
-alone is about 7.4 ns of it. There is no room left to win in, short of changing `IMapper` — which
-is the thing that makes a migration from AutoMapper a change of namespace, and is not for sale.
+That looks like a wall, and for a single call it is one: on the flat scenario Mapster's entire
+cost above hand-written code is about 9 ns, and our interface dispatch alone is about 7.4 ns of
+it. There is no room to win in, short of changing `IMapper` — the thing that makes a migration
+from AutoMapper a change of namespace, and not for sale.
 
-`MapFast` (below) removes that dispatch and closes most of the gap without touching `IMapper`. It
-does not reliably clear Mapster: it measured 1.95x here against Mapster's 1.80x, and 1.43x against
-1.51x in another run of the same code on the same machine. The honest reading of two runs that
-disagree about who won is that they are close, not that we are ahead.
+But none of that work depends on the object being mapped. **`MapperFor` asks for it once**, and
+past the wall the picture turns over:
 
-In absolute terms the gap is under ten nanoseconds per object. For a request mapping fifty objects
-that is half a microsecond, against a request measured in milliseconds.
+| | Run 1 | Run 2 |
+|---|---|---|
+| `mapper.MapperFor<Flat, FlatDto>()`, then called | **1.62x** | **1.20x** |
+| Mapster | 2.12x | 1.51x |
+| `MapFast` | 2.02x | 1.55x |
 
-## MapFast
+Two runs, both clear, and the margin — 4 to 5 ns — is several times the spread. It is explained by
+what it removes rather than found by luck: the dispatch and the plan lookup are per pair, not per
+object, so a loop was paying for them once per item for no reason.
+
+In absolute terms the single-call gap is under ten nanoseconds per object. For a request mapping
+fifty objects that is half a microsecond, against a request measured in milliseconds — which is
+why `Map` remains the one to write until a profiler says otherwise.
+
+## MapperFor, for a loop
+
+```csharp
+Func<Order, OrderDto> toDto = mapper.MapperFor<Order, OrderDto>();
+
+foreach (Order order in orders)
+{
+    results.Add(toDto(order));
+}
+```
+
+Everything that does not depend on the object — working out the type arguments, finding the plan —
+happens once, and what comes back is an ordinary `Func`, so it drops straight into a `Select` too.
+
+Hold it for as long as the loop, or as a field beside the mapper. **Asking for one per call costs
+more than it saves**, since the work it avoids is the work it does.
+
+## MapFast, for a single call
 
 ```csharp
 OrderDto dto = mapper.MapFast<Order, OrderDto>(order);
 ```
 
-Same result as `Map`, reached without the cost of calling a generic method through an interface. It
-recognises the mapper the library builds and calls it directly, falling back to the interface for
-any other implementation, so a decorator still works.
+Same result as `Map`, reached without the interface dispatch, for the places where there is nowhere
+to keep a function. It still looks the plan up on every call, so it is the slower of the two; where
+there is a loop, `MapperFor` is the better answer.
 
-Worth it in a loop over a great many objects. Not worth the noise anywhere else.
+Both recognise the mapper the library builds and fall back to the interface for any other
+implementation, so a decorator still works.
 
 ## Startup
 
