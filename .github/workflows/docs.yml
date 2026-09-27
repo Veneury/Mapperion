@@ -28,6 +28,11 @@ jobs:
       - name: Check out
         uses: actions/checkout@v7
 
+      # Before anything is built, because a site that builds and tells a Spanish reader something
+      # the library stopped doing is worse than a site that does not build.
+      - name: Check the translations are current
+        run: ./website/check-translations.sh
+
       - name: Install .NET
         uses: actions/setup-dotnet@v6
         with:

@@ -329,3 +329,28 @@ footer .border-top {
 .content article > ol {
   margin-bottom: 1.15rem;
 }
+
+/*
+  The language switch. The template renders it as an icon and a tooltip; a tooltip is no use to
+  someone scanning for the other language, so the title is shown as the label. Only the direct
+  anchor child is the switch — the theme picker beside it is a dropdown, not an anchor.
+*/
+.icons > a[title] {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--mp-muted);
+  font-family: var(--mp-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.icons > a[title]::after {
+  content: attr(title);
+}
+
+.icons > a[title]:hover,
+.icons > a[title]:focus-visible {
+  color: var(--mp-accent);
+}

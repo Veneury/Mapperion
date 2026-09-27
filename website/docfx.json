@@ -53,6 +53,7 @@
     "globalMetadata": {
       "_appName": "Mapperion",
       "_appTitle": "Mapperion",
+      "_lang": "en",
       "_appFooter": "Mapperion — MIT licensed object mapper for .NET",
       "_enableSearch": true,
       "_disableContribution": false,
@@ -62,6 +63,11 @@
       },
       "_appLogoPath": "icon.png",
       "_appFaviconPath": "icon.png"
+    },
+    "fileMetadata": {
+      "_lang": {
+        "es/**": "es"
+      }
     },
     "sitemap": {
       "baseUrl": "https://veneury.github.io/Mapperion/"

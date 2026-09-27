@@ -9,24 +9,38 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ### Documentation
 
-- El sitio deja de ser la plantilla por defecto de DocFX. Tema propio: Fraunces para titulares,
-  IBM Plex Sans para texto, IBM Plex Mono para código, verde profundo sobre marfil templado en
-  claro y un negro verdoso en oscuro. El logo y el favicon pasan a ser el icono del paquete, el
-  mismo que se ve en NuGet, servido desde la raíz del repositorio sin duplicarlo.
-- Es un override, no un fork: cada regla toca una variable de Bootstrap que la plantilla ya lee, y
-  las pocas que apuntan a una clase apuntan a una que declara su layout. Una actualización de
-  DocFX trae sus arreglos y esto se sigue aplicando encima.
-- Cuatro cosas solo aparecieron mirando las páginas construidas, y quedan anotadas en el CSS:
-  Bootstrap pinta con pares `rgb` y no con colores, así que poner `--bs-link-color` deja todos los
-  enlaces azules; hay tres nombres para lo que parece lo mismo (`--bs-secondary-color-rgb` y
-  `--bs-secondary-rgb` son variables distintas); la mitad de los selectores del primer intento
-  apuntaban a `article.content`, que no existe, porque la clase está en el `div` padre; y los
-  bloques de código no van oscuros sobre fondo claro porque highlight.js trae una paleta por tema
-  y forzar la superficie deja comentarios y cadenas ilegibles.
-- Ese segundo punto era un fallo de accesibilidad real: el enlace «View source» y la línea de
-  namespace en las **260 páginas de API** se quedaban con el gris de Bootstrap, a 3,53:1 sobre el
-  fondo oscuro, por debajo del 4,5:1 que necesita el texto normal. Medido después en los dos
-  temas: el peor caso es 7,10 en oscuro y 6,06 en claro.
+- The site stops being the default DocFX template. A theme of its own: Fraunces for headings, IBM
+  Plex Sans for text, IBM Plex Mono for code, a deep green on warm ivory in light and a greenish
+  black in dark. The logo and the favicon become the package icon, the same one NuGet shows,
+  served from the root of the repository rather than duplicated.
+- It is an override, not a fork: every rule sets a Bootstrap variable the template already reads,
+  and the few that target a class target one its layout declares. A DocFX upgrade brings its own
+  fixes and this keeps applying on top.
+- Four things only turned up by looking at the built pages, and they are written down in the CSS:
+  Bootstrap paints with `rgb` triples rather than colours, so setting `--bs-link-color` leaves
+  every link blue; there are three names for what looks like one thing
+  (`--bs-secondary-color-rgb` and `--bs-secondary-rgb` are different variables); half the
+  selectors in the first attempt pointed at `article.content`, which does not exist, because the
+  class is on the parent `div`; and code blocks cannot go dark on a light page because
+  highlight.js ships a palette per theme, and forcing the surface leaves comments and strings
+  unreadable.
+- That second one was a real accessibility failure: the "View source" link and the namespace line
+  on all **260 API pages** kept Bootstrap's grey, at 3.53:1 against the dark background, under the
+  4.5:1 normal text needs. Measured afterwards in both themes: the worst case is 7.10 in dark and
+  6.06 in light.
+- The site is bilingual. English stays where it is and Spanish lives under `/es/`, so no indexed
+  URL moves. All five articles and the landing page are translated; the API reference stays
+  English, because it is generated from the XML documentation and translating it would mean two
+  truths about one signature.
+- The switch sits in the navbar through the template's own `iconLinks` hook, so the template
+  places it and a DocFX upgrade does not move it. It appears only on pages that have both
+  languages, and on a Spanish page the navbar's own links are pointed at the Spanish articles, so
+  reading in Spanish does not drop back into English on the next click.
+- `website/check-translations.sh` records each translation against the hash of the English page it
+  was written from, and the docs workflow fails when they no longer match. Dates were the obvious
+  way and the wrong one: a merge brings in commits older than the translation, and the translation
+  would still be describing an older library. A page with no translation is a warning, since a
+  reader simply stays in English.
 
 ## [0.11.0] - 2026-09-26
 
