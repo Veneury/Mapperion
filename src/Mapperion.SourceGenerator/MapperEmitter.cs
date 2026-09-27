@@ -502,6 +502,14 @@ namespace Mapperion.SourceGeneration
                 return mapping.Method.Name + "(" + expression + ")";
             }
 
+            string? read = TryParseText(expression, sourceType, destinationType)
+                ?? TryChangeType(expression, sourceType, destinationType);
+
+            if (read is not null)
+            {
+                return read;
+            }
+
             Report(
                 GeneratorDiagnostics.NoConversion,
                 plan,
@@ -706,6 +714,74 @@ namespace Mapperion.SourceGeneration
                     destinationValue!,
                     key,
                     value)) + "(" + expression + ")";
+        }
+
+        /// <summary>
+        /// Reads a value out of text for the three types that are not <c>IConvertible</c>.
+        /// </summary>
+        /// <remarks>
+        /// <c>Guid</c>, <c>DateOnly</c> and <c>TimeOnly</c> arrived in the run-time engine in
+        /// 0.11.0 and never arrived here, so an identifier or a date coming out of a column
+        /// somebody typed as <c>varchar</c> mapped on one engine and stopped the build on the
+        /// other. Empty text is the absence of a value rather than a bad one and gives the
+        /// default, and the invariant culture is used, both to match the engine.
+        /// </remarks>
+        private string? TryParseText(string expression, ITypeSymbol sourceType, ITypeSymbol destinationType)
+        {
+            if (sourceType.SpecialType != SpecialType.System_String)
+            {
+                return null;
+            }
+
+            string name = TypeFacts.Bare(destinationType);
+
+            if (name is not ("global::System.Guid" or "global::System.DateOnly" or "global::System.TimeOnly"))
+            {
+                return null;
+            }
+
+            bool cultured = name != "global::System.Guid";
+
+            return Named(
+                sourceType,
+                destinationType,
+                () => new TextParse(
+                    ConverterName(sourceType, destinationType),
+                    destinationType,
+                    cultured)) + "(" + expression + ")";
+        }
+
+        /// <summary>
+        /// The last thing the run-time engine tries: two types that both say they can convert
+        /// themselves, handed to <c>Convert.ChangeType</c> with the invariant culture.
+        /// </summary>
+        private string? TryChangeType(string expression, ITypeSymbol sourceType, ITypeSymbol destinationType)
+        {
+            if (!IsConvertible(sourceType) || !IsConvertible(destinationType))
+            {
+                return null;
+            }
+
+            return Named(
+                sourceType,
+                destinationType,
+                () => new ConvertibleChange(
+                    ConverterName(sourceType, destinationType),
+                    sourceType,
+                    destinationType)) + "(" + expression + ")";
+        }
+
+        private static bool IsConvertible(ITypeSymbol type)
+        {
+            foreach (INamedTypeSymbol contract in type.AllInterfaces)
+            {
+                if (contract.Name == "IConvertible" && contract.ContainingNamespace.ToDisplayString() == "System")
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private string Named(ITypeSymbol sourceType, ITypeSymbol destinationType, Func<Helper> create)
@@ -938,6 +1014,87 @@ namespace Mapperion.SourceGeneration
                     .Append(".TryParse(value, out ").Append(underlying).AppendLine(" number)");
                 text.Append(indent).Append("        ? (").Append(destinationName).AppendLine(")number");
                 text.Append(indent).Append("        : default(").Append(destinationName).AppendLine(");");
+                text.Append(indent).AppendLine("}");
+                text.AppendLine();
+            }
+        }
+
+        private sealed class TextParse : Helper
+        {
+            private readonly ITypeSymbol destination;
+            private readonly bool cultured;
+
+            internal TextParse(string name, ITypeSymbol destination, bool cultured)
+                : base(name)
+            {
+                this.destination = destination;
+                this.cultured = cultured;
+            }
+
+            internal override void Write(StringBuilder text, string indent)
+            {
+                string name = TypeFacts.Bare(destination);
+                string culture = cultured
+                    ? ", global::System.Globalization.CultureInfo.InvariantCulture, " +
+                      "global::System.Globalization.DateTimeStyles.None"
+                    : string.Empty;
+
+                text.Append(indent).Append("private static ").Append(name).Append(' ').Append(Name)
+                    .AppendLine("(string? value)");
+                text.Append(indent).AppendLine("{");
+                text.Append(indent).AppendLine("    if (string.IsNullOrEmpty(value))");
+                text.Append(indent).AppendLine("    {");
+                text.Append(indent).Append("        return default(").Append(name).AppendLine(");");
+                text.Append(indent).AppendLine("    }");
+                text.AppendLine();
+                text.Append(indent).Append("    if (").Append(name).Append(".TryParse(value").Append(culture)
+                    .Append(", out ").Append(name).AppendLine(" parsed))");
+                text.Append(indent).AppendLine("    {");
+                text.Append(indent).AppendLine("        return parsed;");
+                text.Append(indent).AppendLine("    }");
+                text.AppendLine();
+                text.Append(indent).Append("    throw new global::System.FormatException(\"'\" + value + \"' is not a ")
+                    .Append(destination.Name)
+                    .AppendLine(". Text is read with the invariant culture; map the member from an expression to read it another way.\");");
+                text.Append(indent).AppendLine("}");
+                text.AppendLine();
+            }
+        }
+
+        private sealed class ConvertibleChange : Helper
+        {
+            private readonly ITypeSymbol source;
+            private readonly ITypeSymbol destination;
+
+            internal ConvertibleChange(string name, ITypeSymbol source, ITypeSymbol destination)
+                : base(name)
+            {
+                this.source = source;
+                this.destination = destination;
+            }
+
+            internal override void Write(StringBuilder text, string indent)
+            {
+                string name = TypeFacts.Bare(destination);
+                bool nullable = TypeFacts.CanBeNull(source);
+
+                text.Append(indent).Append("private static ").Append(name).Append(' ').Append(Name)
+                    .Append('(').Append(TypeFacts.Bare(source)).Append(nullable ? "? " : " ")
+                    .AppendLine("value)");
+                text.Append(indent).AppendLine("{");
+
+                if (nullable)
+                {
+                    text.Append(indent).AppendLine("    if (value is null)");
+                    text.Append(indent).AppendLine("    {");
+                    text.Append(indent).Append("        return default(").Append(name).AppendLine(");");
+                    text.Append(indent).AppendLine("    }");
+                    text.AppendLine();
+                }
+
+                text.Append(indent).Append("    return (").Append(name)
+                    .Append(")global::System.Convert.ChangeType(value, typeof(").Append(name)
+                    .AppendLine("), global::System.Globalization.CultureInfo.InvariantCulture);");
                 text.Append(indent).AppendLine("}");
                 text.AppendLine();
             }

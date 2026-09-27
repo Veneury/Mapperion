@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Shouldly;
 using Xunit;
@@ -256,6 +257,57 @@ namespace Mapperion.SourceGenerator.Tests
             Batch batch = SampleBatch();
 
             new BatchMapper().ToDto(batch).Lines.ShouldNotBeSameAs(batch.Lines);
+        }
+
+        /// <summary>
+        /// Values read out of text, which the run-time engine gained in 0.11.0 and the generator
+        /// never did: the same configuration mapped on one engine and stopped the build on the
+        /// other.
+        /// </summary>
+        [Fact]
+        public void They_agree_on_values_read_out_of_text()
+        {
+            CompareRow(new Row
+            {
+                Reference = "6f9619ff-8b86-d011-b42d-00c04fc964ff",
+                Opened = "2026-09-27",
+                Amount = "12.50",
+            });
+        }
+
+        [Fact]
+        public void They_agree_that_empty_text_is_an_absent_value()
+        {
+            CompareRow(new Row { Reference = string.Empty, Opened = string.Empty, Amount = "0" });
+        }
+
+        /// <remarks>
+        /// Both refuse text that is meant to be a value and is not. They raise different types
+        /// doing it — the run-time engine wraps everything in <c>MappingException</c> and the
+        /// generated code has no such thing, because it emits no handler at all.
+        /// </remarks>
+        [Fact]
+        public void They_agree_that_rubbish_in_a_value_is_refused()
+        {
+            var row = new Row { Reference = "not a guid", Opened = "2026-09-27", Amount = "0" };
+
+            Should.Throw<Exception>(() => new RowMapper().ToDto(row));
+
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Row, RowDto>());
+            Should.Throw<Exception>(() => configuration.CreateMapper().Map<Row, RowDto>(row));
+        }
+
+        private static void CompareRow(Row row)
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Row, RowDto>());
+            configuration.AssertIsValid();
+
+            RowDto generated = new RowMapper().ToDto(row);
+            RowDto runtime = configuration.CreateMapper().Map<Row, RowDto>(row);
+
+            generated.Reference.ShouldBe(runtime.Reference);
+            generated.Opened.ShouldBe(runtime.Opened);
+            generated.Amount.ShouldBe(runtime.Amount);
         }
 
         [Fact]

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Mapperion.SourceGenerator.Tests
@@ -143,6 +144,24 @@ namespace Mapperion.SourceGenerator.Tests
         public List<LineDto> Optional { get; set; } = new List<LineDto>();
     }
 
+    public sealed class Row
+    {
+        public string Reference { get; set; } = string.Empty;
+
+        public string Opened { get; set; } = string.Empty;
+
+        public string Amount { get; set; } = string.Empty;
+    }
+
+    public sealed class RowDto
+    {
+        public Guid Reference { get; set; }
+
+        public DateOnly Opened { get; set; }
+
+        public decimal Amount { get; set; }
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -162,6 +181,12 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class RowMapper
+    {
+        public partial RowDto ToDto(Row source);
     }
 
     [Mapper]
