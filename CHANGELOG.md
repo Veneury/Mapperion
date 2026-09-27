@@ -89,6 +89,14 @@ Before v1.0, a minor version may introduce breaking changes.
 - Conversions are lifted over nullables where the run-time engine lifts them, before anything
   else is asked about the pair, so an absent value gives the destination's default instead of
   reaching a cast that throws on it.
+- Enums by name enter the CI budget with a 40% tolerance of their own, the third scenario to
+  need one and for the reason the other two did. CI reported 6.07x against 4.56x on a change
+  that cannot reach it: the only run-time edit in that pull request is a branch taken while a
+  plan is compiled, and only where the destination is an enum, which that scenario's is not. Six
+  short runs were taken anyway — 4.14x, 4.44x and 3.45x on the branch against 3.65x, 4.09x and
+  3.70x on main. The two sets overlap and each spans about a whole point, because the
+  hand-written floor is five switch statements and it moved seventeen per cent between
+  consecutive runs over code that had not changed.
 - The record-via-constructor scenario enters the CI budget with a 40% tolerance of its own, for
   the same reason as enums by value: its hand-written floor is five nanoseconds, and three
   iterations do not settle that. The demonstration is written down in `baseline.json` — over
