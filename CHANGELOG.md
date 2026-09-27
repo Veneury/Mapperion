@@ -5,6 +5,49 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- Un plan que no puede fallar ya no lleva el `try/catch` que lo reportaría, ni la miga que se
+  escribía antes de cada miembro para que el handler la leyera. La pregunta se responde al compilar
+  el plan y en pesimista: es «puede fallar» ante cualquier cosa que meta código de usuario
+  —converters, resolvers, condiciones, `BeforeMap`, un método como origen—, ante cualquier
+  conversión que pueda lanzar, y ante cualquier cosa que alcance otro mapa, porque una excepción
+  que sale de un mapa anidado la reporta aquel y por este pasaría sin atribuir.
+- El saber de qué conversiones pueden lanzar vive en `ConversionBuilder`, al lado del código que
+  decide cómo convertir, para que no puedan separarse: una conversión que gane una forma de fallar
+  mientras esto la siga llamando inofensiva quitaría el reporte justo donde hacía falta.
+- El plan de un par se alcanza sin el `castclass` que se pagaba en cada llamada. El hueco se deriva
+  de esos dos tipos exactos, así que la comprobación no podía fallar nunca: se pagaba siempre y
+  nunca servía. Solo en net6+; en `netstandard2.0` y `net472` se queda el cast, porque `Unsafe`
+  ahí sería un paquete y cero dependencias vale más que un nanosegundo.
+- Medido: el lookup baja de 3,40 a 2,05 ns y el despacho por interfaz de 9,31 a 7,44.
+
+### Fixed
+
+- El escenario del record por constructor entra en el presupuesto de CI con tolerancia propia del
+  40 %, por lo mismo que los enums por valor: su suelo a mano son cinco nanosegundos y tres
+  iteraciones no lo resuelven. La demostración quedó escrita en `baseline.json` — sobre código sin
+  tocar, el job corto reportó 4,91x y una corrida completa del mismo escenario, 2,99x. Era el
+  segundo falso positivo del guardían.
+
+### Documentation
+
+- `MapFast` deja de ser una nota al pie. Tiene sección propia en la guía de primeros pasos, con
+  cuándo vale la pena y cuándo la respuesta es el source generator, y el README dice por qué
+  importa en vez de mencionarlo de pasada.
+- Las seis filas principales de la tabla de rendimiento se remidieron enteras, todas las columnas
+  en la misma corrida. No se actualizaron solo nuestras columnas: mezclar corridas habría dado una
+  tabla que nos favorece por accidente de medición, y dos corridas en esta máquina han puesto a la
+  misma librería sin tocar un 20 % aparte.
+- Queda escrito el muro: `mapper.Map<A,B>(x)` es un método genérico por interfaz y su despacho
+  cuesta unos 7,4 ns, mientras que **todo** lo que Mapster gasta por encima del manual son unos 9.
+  No hay margen donde ganar sin cambiar `IMapper`. `MapFast` cierra casi todo el hueco pero no lo
+  supera de forma fiable: 1,95x contra 1,80x en una corrida y 1,43x contra 1,51x en otra, mismo
+  código y misma máquina. Lo que sí aguanta es que **el source generator le gana a Mapster** en las
+  tres filas donde aparece.
+
 ## [0.11.0] - 2026-09-26
 
 A minor rather than a patch: reading values out of text is new capability — a mapping that used to

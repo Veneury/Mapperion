@@ -100,6 +100,33 @@ services.AddMapperion(typeof(SomeProfile).Assembly);
 That scans for `Profile` classes, registers `IMapper`, and resolves converters and resolvers from
 the container, so a resolver can take its own dependencies.
 
+## When mapping is the hot path
+
+`mapper.Map<Order, OrderDto>(order)` is a generic method reached through an interface, and the
+runtime works out its type arguments on every call. On a small map that is most of what the call
+costs — more, on the flat benchmark, than everything Mapster spends in total.
+
+Two ways out, in the order worth trying them.
+
+**`MapFast`**, when you want the same mapper and the same configuration:
+
+```csharp
+OrderDto dto = mapper.MapFast<Order, OrderDto>(order);
+```
+
+Same result, same map, same everything. It is an extension method, so the type arguments are
+settled where you wrote them rather than at run time. It recognises the mapper the library builds
+and calls it directly, and falls back to the interface for anything else, so a decorator or a test
+double still works.
+
+**The source generator**, when mapping really is the thing your program spends its time on. It
+writes the mapping as ordinary C# while you build, and runs at the speed of code you would have
+written by hand — a far bigger difference than `MapFast` can give back.
+
+Neither is worth reaching for by default. The saving is nanoseconds per object, which is nothing
+beside almost anything else a request does; `Map` is the one to write until a profiler says
+otherwise. [Performance](performance.md) has the numbers.
+
 ## When a map fails
 
 A failure names the member it happened at, including the path through nested maps and the position

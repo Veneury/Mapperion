@@ -277,7 +277,14 @@ namespace Mapperion.Compilation
 
             if ((uint)slot < (uint)current.Length && current[slot] is MapPlan cached)
             {
+#if NET6_0_OR_GREATER
+                // The slot is derived from these two types, so the delegate in it is this one. The
+                // cast can only ever succeed, and in shared generic code it is not free: the type
+                // to check against comes out of the generic dictionary on every call.
+                return System.Runtime.CompilerServices.Unsafe.As<MapDelegate<TSource, TDestination>>(cached.Typed);
+#else
                 return (MapDelegate<TSource, TDestination>)cached.Typed;
+#endif
             }
 
             return (MapDelegate<TSource, TDestination>)Fill(slot, typeof(TSource), typeof(TDestination)).Typed;

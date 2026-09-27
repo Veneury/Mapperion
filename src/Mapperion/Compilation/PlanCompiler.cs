@@ -39,11 +39,17 @@ namespace Mapperion.Compilation
                 var step = new StepSlot(Expression.Variable(typeof(string), "step"));
                 CompileScope scope = CompileScope.Root(engine, context, step, definition.Key);
 
-                var body = new List<Expression>
+                // A map that cannot fail needs neither the handler nor the breadcrumbs it reads.
+                bool guarded = CanThrow(definition, engine);
+
+                var body = new List<Expression>();
+
+                if (guarded)
                 {
-                    Expression.Assign(step.Variable, Expression.Constant("(constructing)")),
-                    Expression.Assign(result, CreateDestination(definition, destination, source, scope)),
-                };
+                    body.Add(Expression.Assign(step.Variable, Expression.Constant("(constructing)")));
+                }
+
+                body.Add(Expression.Assign(result, CreateDestination(definition, destination, source, scope)));
 
                 if (definition.PreserveReferences)
                 {
@@ -57,7 +63,7 @@ namespace Mapperion.Compilation
 
                 foreach (object action in definition.BeforeMapActions)
                 {
-                    body.Add(Expression.Assign(step.Variable, Expression.Constant("(before step)")));
+                    Mark(body, step, "(before step)", guarded);
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
@@ -72,10 +78,7 @@ namespace Mapperion.Compilation
 
                     if (assignment is not null)
                     {
-                        body.Add(Expression.Assign(
-                            step.Variable,
-                            Expression.Constant(member.DestinationMember.Name)));
-
+                        Mark(body, step, member.DestinationMember.Name, guarded);
                         body.Add(assignment);
                     }
                 }
@@ -91,17 +94,14 @@ namespace Mapperion.Compilation
 
                     if (assignment is not null)
                     {
-                        body.Add(Expression.Assign(
-                            step.Variable,
-                            Expression.Constant(member.DestinationPath!.ToString())));
-
+                        Mark(body, step, member.DestinationPath!.ToString(), guarded);
                         body.Add(assignment);
                     }
                 }
 
                 foreach (object action in definition.AfterMapActions)
                 {
-                    body.Add(Expression.Assign(step.Variable, Expression.Constant("(after step)")));
+                    Mark(body, step, "(after step)", guarded);
                     body.Add(BuildAction(action, definition, source, result, context));
                 }
 
@@ -113,10 +113,12 @@ namespace Mapperion.Compilation
                 core = WithRecursionCeiling(core, definition, context, engine);
                 core = WithDerivedDispatch(core, definition, source, scope);
 
-                block = Expression.Block(
-                    new[] { step.Variable },
-                    Expression.Assign(step.Variable, Expression.Constant("(constructing)")),
-                    Reporting(core, step.Variable, definition));
+                block = guarded
+                    ? Expression.Block(
+                        new[] { step.Variable },
+                        Expression.Assign(step.Variable, Expression.Constant("(constructing)")),
+                        Reporting(core, step.Variable, definition))
+                    : core;
             }
 
             if (!sourceType.IsValueType)
@@ -131,6 +133,86 @@ namespace Mapperion.Compilation
             Delegate typed = Expression.Lambda(delegateType, block, source, destination, context).Compile();
 
             return new MapPlan(typed, BuildBoxed(typed, sourceType, destinationType));
+        }
+
+        /// <summary>
+        /// Records which member the plan is on, for the handler to name when something fails.
+        /// </summary>
+        private static void Mark(List<Expression> body, StepSlot step, string name, bool guarded)
+        {
+            if (guarded)
+            {
+                body.Add(Expression.Assign(step.Variable, Expression.Constant(name)));
+            }
+        }
+
+        /// <summary>
+        /// Whether anything in this map is capable of failing.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// A map that reads plain members and assigns them without converting anything that could
+        /// raise has no failure to report, and the handler that would report it is not free: the
+        /// try block keeps the body from being treated as straight-line code, and the breadcrumb
+        /// written before every member exists only for the handler to read.
+        /// </para>
+        /// <para>
+        /// Everything that brings user code into the map, or that can raise on its own, is a no.
+        /// So is anything that reaches another map, because an exception coming out of one is
+        /// reported by that map and would pass through this one unattributed. The question is
+        /// answered pessimistically on purpose: a map wrongly called safe loses the member name
+        /// from a real error, which is worse than the nanoseconds this is about.
+        /// </para>
+        /// </remarks>
+        private static bool CanThrow(TypeMapDefinition definition, MapperEngine engine)
+        {
+            if (definition.TypeConverterType is not null ||
+                definition.ConstructUsing is not null ||
+                definition.Constructor is not null ||
+                definition.BeforeMapActions.Count > 0 ||
+                definition.AfterMapActions.Count > 0 ||
+                definition.DerivedMaps.Count > 0 ||
+                definition.IncludedMembers.Count > 0 ||
+                definition.PreserveReferences ||
+                definition.MaxDepth is not null ||
+                engine.NeedsCeiling(definition.Key))
+            {
+                return true;
+            }
+
+            foreach (MemberDefinition member in definition.Members)
+            {
+                if (member.IsIgnored)
+                {
+                    continue;
+                }
+
+                if (member.IsPath ||
+                    member.ValueConverterType is not null ||
+                    member.Condition is not null ||
+                    member.PreCondition is not null ||
+                    member.HasNullSubstitute ||
+                    member.Source is not MemberPathSource path)
+                {
+                    return true;
+                }
+
+                foreach (MemberDescriptor hop in path.Path.Steps)
+                {
+                    // A method is user code however plain it looks from here.
+                    if (hop.Kind == MemberKind.Method)
+                    {
+                        return true;
+                    }
+                }
+
+                if (!ConversionBuilder.CannotThrow(path.Path.Leaf.MemberType, member.DestinationMember.MemberType))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
