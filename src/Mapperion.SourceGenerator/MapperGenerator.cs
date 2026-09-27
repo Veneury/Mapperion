@@ -132,6 +132,7 @@ namespace Mapperion.SourceGeneration
             ExplicitSources = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
             Ignored = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
             Included = new List<IncludedPair>();
+            Resolvers = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
 
             foreach (AttributeData attribute in method.GetAttributes())
             {
@@ -152,6 +153,14 @@ namespace Mapperion.SourceGeneration
                     if (attribute.ConstructorArguments[0].Value is string ignored)
                     {
                         Ignored.Add(ignored);
+                    }
+                }
+                else if (name == MapperAttributes.MapperResolveAttributeName && attribute.ConstructorArguments.Length == 2)
+                {
+                    if (attribute.ConstructorArguments[0].Value is string resolver &&
+                        attribute.ConstructorArguments[1].Value is string target)
+                    {
+                        Resolvers[target] = resolver;
                     }
                 }
                 else if (name == MapperAttributes.MapperIncludeAttributeName && attribute.ConstructorArguments.Length == 2)
@@ -176,6 +185,8 @@ namespace Mapperion.SourceGeneration
         internal HashSet<string> Ignored { get; }
 
         internal List<IncludedPair> Included { get; }
+
+        internal Dictionary<string, string> Resolvers { get; }
     }
 
     /// <summary>A derived pair this method hands over to, named by <c>[MapperInclude]</c>.</summary>

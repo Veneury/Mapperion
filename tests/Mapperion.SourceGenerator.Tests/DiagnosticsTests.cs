@@ -66,6 +66,20 @@ public partial class Mapper
         }
 
         [Fact]
+        public void A_resolver_method_that_is_not_there_is_reported()
+        {
+            GeneratorOutcome outcome = GeneratorHarness.Run(Types + @"
+[Mapperion.Mapper]
+public partial class Mapper
+{
+    [Mapperion.MapperResolve(""Missing"", ""Name"")]
+    public partial Destination Map(Source source);
+}");
+
+            outcome.Reported("MPR0009").ShouldBeTrue(outcome.Report());
+        }
+
+        [Fact]
         public void A_mapper_that_is_not_partial_is_reported()
         {
             GeneratorOutcome outcome = GeneratorHarness.Run(Types + @"

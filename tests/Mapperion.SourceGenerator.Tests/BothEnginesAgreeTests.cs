@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Shouldly;
 using Xunit;
 
@@ -356,6 +357,34 @@ namespace Mapperion.SourceGenerator.Tests
             {
                 instalment.Months.ShouldBe(((InstalmentPaymentDto)runtime).Months);
             }
+        }
+
+        /// <summary>
+        /// A value worked out rather than read across, which is what a value resolver is for.
+        /// </summary>
+        /// <remarks>
+        /// The generator has no container to take a resolver out of, so what it takes is a method
+        /// beside the mapping ones, named by <c>[MapperResolve]</c> and handed the whole source.
+        /// </remarks>
+        [Fact]
+        public void They_agree_on_a_value_that_is_worked_out()
+        {
+            var cart = new Cart
+            {
+                Lines = { new Line { Code = "A", Price = 1.5m }, new Line { Code = "B", Price = 2m } },
+            };
+
+            var configuration = new MapperConfiguration(cfg =>
+                cfg.CreateMap<Cart, CartDto>()
+                   .ForMember(d => d.Total, o => o.MapFrom(s => s.Lines.Sum(l => l.Price))));
+
+            configuration.AssertIsValid();
+
+            CartDto generated = new CartMapper().ToDto(cart);
+            CartDto runtime = configuration.CreateMapper().Map<Cart, CartDto>(cart);
+
+            generated.Total.ShouldBe(runtime.Total);
+            generated.LinesCount.ShouldBe(runtime.LinesCount);
         }
 
         [Fact]

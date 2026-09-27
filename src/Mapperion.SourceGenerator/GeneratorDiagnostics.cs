@@ -66,6 +66,14 @@ namespace Mapperion.SourceGeneration
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor UnknownResolver = new DiagnosticDescriptor(
+            "MPR0009",
+            "Method named in an attribute was not found",
+            "Mapping '{0}' to '{1}': [MapperResolve] names '{2}', and this class has no method of that name taking a '{0}'",
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor UnknownMember = new DiagnosticDescriptor(
             "MPR0006",
             "Member named in an attribute was not found",

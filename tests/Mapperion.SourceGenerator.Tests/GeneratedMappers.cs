@@ -192,6 +192,18 @@ namespace Mapperion.SourceGenerator.Tests
         public int Months { get; set; }
     }
 
+    public sealed class Cart
+    {
+        public List<Line> Lines { get; set; } = new List<Line>();
+    }
+
+    public sealed class CartDto
+    {
+        public decimal Total { get; set; }
+
+        public int LinesCount { get; set; }
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -211,6 +223,25 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class CartMapper
+    {
+        [MapperResolve(nameof(Total), "Total")]
+        public partial CartDto ToDto(Cart source);
+
+        private static decimal Total(Cart source)
+        {
+            decimal total = 0m;
+
+            foreach (Line line in source.Lines)
+            {
+                total += line.Price;
+            }
+
+            return total;
+        }
     }
 
     [Mapper]
