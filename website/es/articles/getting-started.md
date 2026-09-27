@@ -100,6 +100,51 @@ services.AddMapperion(typeof(SomeProfile).Assembly);
 Eso busca clases `Profile`, registra `IMapper` y resuelve converters y resolvers desde el
 contenedor, de modo que un resolver puede tener sus propias dependencias.
 
+## Cuando el mapeo es el camino caliente
+
+`mapper.Map<Order, OrderDto>(order)` es un método genérico alcanzado a través de una interfaz, y
+el runtime resuelve sus argumentos de tipo en cada llamada. En un mapa pequeño eso es la mayor
+parte de lo que cuesta la llamada — más, en el benchmark plano, que todo lo que gasta Mapster.
+
+Dos salidas, en el orden en que vale la pena probarlas.
+
+**`MapperFor`**, cuando el mismo par se mapea más de una vez:
+
+```csharp
+Func<Order, OrderDto> toDto = mapper.MapperFor<Order, OrderDto>();
+
+foreach (Order order in orders)
+{
+    results.Add(toDto(order));
+}
+```
+
+Nada de ese despacho depende del objeto que se mapea, así que en un bucle es la misma respuesta
+encontrada una y otra vez. Esto la pide una sola vez, y lo que vuelve es un `Func` corriente que
+también entra en un `Select`. Guárdalo mientras dure el bucle, o como campo al lado del mapper;
+pedir uno por llamada cuesta más de lo que ahorra.
+
+Medido en el benchmark plano, esta es la única forma que queda por debajo de Mapster.
+
+**`MapFast`**, para una llamada suelta sin sitio donde guardar una función:
+
+```csharp
+OrderDto dto = mapper.MapFast<Order, OrderDto>(order);
+```
+
+El mismo resultado, el mismo mapa. Se salta la interfaz pero sigue buscando el plan cada vez, así
+que donde hay un bucle, `MapperFor` es la mejor respuesta. Los dos reconocen el mapper que
+construye la librería y caen de vuelta a la interfaz con cualquier otra cosa, así que un decorador
+o un doble de test siguen funcionando.
+
+**El source generator**, cuando el mapeo es de verdad en lo que tu programa se va el tiempo.
+Escribe el mapeo como C# corriente mientras compilas, y corre a la velocidad del código que
+habrías escrito a mano — una diferencia mucho mayor de la que `MapFast` puede devolver.
+
+Ninguno vale la pena por defecto. El ahorro son nanosegundos por objeto, que no es nada al lado de
+casi cualquier otra cosa que haga una petición; `Map` es lo que hay que escribir hasta que un
+profiler diga otra cosa. [Rendimiento](performance.md) tiene los números.
+
 ## Cuando un mapeo falla
 
 Un fallo nombra el miembro en el que ocurrió, con la ruta completa a través de mapas anidados y la

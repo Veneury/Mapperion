@@ -31,6 +31,35 @@ namespace Mapperion.Compilation
             typeof(char), typeof(float), typeof(double), typeof(decimal),
         };
 
+        /// <summary>
+        /// Whether carrying a value from one type to the other is something that cannot throw.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// It lives here, beside the code that decides how to convert, because the two answers have
+        /// to agree: a conversion that grows a way to fail while this still calls it harmless would
+        /// take the reporting away from the one place that needed it.
+        /// </para>
+        /// <para>
+        /// Deliberately narrow. Identical types and reference assignments do nothing at all, and
+        /// <see cref="Expression.Convert(Expression, Type)"/> between numbers is unchecked, so it
+        /// wraps rather than raising — except into <see cref="decimal"/>, which does raise, and is
+        /// the reason decimal is left out of this even though it is a number.
+        /// </para>
+        /// </remarks>
+        internal static bool CannotThrow(Type sourceType, Type destinationType)
+        {
+            if (sourceType == destinationType || destinationType.IsAssignableFrom(sourceType))
+            {
+                return true;
+            }
+
+            return sourceType != typeof(decimal)
+                && destinationType != typeof(decimal)
+                && Numeric.Contains(sourceType)
+                && Numeric.Contains(destinationType);
+        }
+
         internal static Expression Build(Expression value, Type destinationType, CompileScope scope)
         {
             Type sourceType = value.Type;

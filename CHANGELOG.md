@@ -7,8 +7,66 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- `MapperFor<TSource, TDestination>()`, for when the same pair is mapped many times. It settles
+  everything that does not depend on the object — the generic dispatch through the interface and
+  the plan lookup — once, and hands back a `Func<TSource, TDestination>` to call in the loop.
+- **It is the only shape that measures below Mapster**: 1.62x against 2.12x in one run and 1.20x
+  against 1.51x in another, a 4-5 ns margin against spreads of about 1. And it is explained by
+  what it removes rather than found in a lucky run: the dispatch and the lookup are per pair, not
+  per object, so a loop was paying for them per item for no reason.
+- It returns a `Func` rather than a new type: it is literally a mapping function, it drops into a
+  `Select`, and there is nothing to learn. It is an extension and not a member of `IMapper`,
+  because adding to a public interface breaks everyone who implements it and `IMapper` is mocked
+  constantly. The drop-in stays a drop-in.
+- Per-operation state was the trap: if the configuration reads it, the context is **not** settled
+  alongside the plan, because two calls would share the bag and two requests would see each
+  other. It is only settled when the engine says it is not needed, and a test maps twice through
+  the same function and checks that neither sees the other.
+- The documentation says outright that asking for one per call costs more than it saves, which is
+  the obvious way to use it wrong.
+
+### Changed
+
+- A plan that cannot fail no longer carries the `try/catch` that would report it, nor the
+  breadcrumb written before each member for the handler to read. The question is answered when
+  the plan is compiled, and answered pessimistically: "it can fail" for anything that admits user
+  code — converters, resolvers, conditions, `BeforeMap`, a method as a source — for any
+  conversion that can throw, and for anything that reaches another map, because an exception out
+  of a nested map is reported by that map and would pass through this one unattributed.
+- What is known about which conversions can throw lives in `ConversionBuilder`, beside the code
+  that decides how to convert, so the two cannot drift apart: a conversion that gains a way to
+  fail while this still calls it harmless would remove the reporting exactly where it was needed.
+- A pair's plan is reached without the `castclass` that was paid on every call. The delegate is
+  derived from those two exact types, so the check could never fail: it was always paid and never
+  used. On net6+ only; `netstandard2.0` and `net472` keep the cast, because `Unsafe` there would
+  be a package, and zero dependencies is worth more than a nanosecond.
+- Measured: the lookup falls from 3.40 to 2.05 ns and the interface dispatch from 9.31 to 7.44.
+
+### Fixed
+
+- The record-via-constructor scenario enters the CI budget with a 40% tolerance of its own, for
+  the same reason as enums by value: its hand-written floor is five nanoseconds, and three
+  iterations do not settle that. The demonstration is written down in `baseline.json` — over
+  untouched code, the short job reported 4.91x and a full run of the same scenario 2.99x. It was
+  the guard's second false positive.
+
 ### Documentation
 
+- `MapFast` stops being a footnote. It has a section of its own in the getting-started guide, with
+  when it is worth it and when the answer is the source generator, and the readme says why it
+  matters instead of mentioning it in passing.
+- The six main rows of the performance table were measured again in full, every column in the
+  same run. Our columns were not updated on their own: mixing runs would have produced a table
+  that flatters us by accident of measurement, and two runs on this machine have put the same
+  untouched library twenty per cent apart.
+- The wall is written down: `mapper.Map<A,B>(x)` is a generic method through an interface and its
+  dispatch costs about 7.4 ns, while **everything** Mapster spends above hand-written code is
+  about 9. There is no room to win in without changing `IMapper`. `MapFast` closes most of the gap
+  but does not reliably beat it: 1.95x against 1.80x in one run and 1.43x against 1.51x in
+  another, same code and same machine. What does hold is that **the source generator beats
+  Mapster** in all three rows it appears in.
 - The site stops being the default DocFX template. A theme of its own: Fraunces for headings, IBM
   Plex Sans for text, IBM Plex Mono for code, a deep green on warm ivory in light and a greenish
   black in dark. The logo and the favicon become the package icon, the same one NuGet shows,
@@ -41,6 +99,9 @@ Before v1.0, a minor version may introduce breaking changes.
   way and the wrong one: a merge brings in commits older than the translation, and the translation
   would still be describing an older library. A page with no translation is a warning, since a
   reader simply stays in English.
+- It earned itself immediately: merging the performance work turned the docs build red on
+  `getting-started` and `performance`, which are the two English pages `MapperFor` changed. Both
+  Spanish pages now carry the new table and the new section.
 
 ## [0.11.0] - 2026-09-26
 

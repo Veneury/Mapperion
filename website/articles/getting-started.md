@@ -100,6 +100,50 @@ services.AddMapperion(typeof(SomeProfile).Assembly);
 That scans for `Profile` classes, registers `IMapper`, and resolves converters and resolvers from
 the container, so a resolver can take its own dependencies.
 
+## When mapping is the hot path
+
+`mapper.Map<Order, OrderDto>(order)` is a generic method reached through an interface, and the
+runtime works out its type arguments on every call. On a small map that is most of what the call
+costs — more, on the flat benchmark, than everything Mapster spends in total.
+
+Two ways out, in the order worth trying them.
+
+**`MapperFor`**, when the same pair is mapped more than once:
+
+```csharp
+Func<Order, OrderDto> toDto = mapper.MapperFor<Order, OrderDto>();
+
+foreach (Order order in orders)
+{
+    results.Add(toDto(order));
+}
+```
+
+None of that dispatch depends on the object being mapped, so in a loop it is the same answer found
+over and over. This asks for it once, and what comes back is an ordinary `Func` that also drops
+into a `Select`. Hold it for as long as the loop, or as a field beside the mapper; asking for one
+per call costs more than it saves.
+
+Measured on the flat benchmark, this is the one arrangement that comes in under Mapster.
+
+**`MapFast`**, for a single call with nowhere to keep a function:
+
+```csharp
+OrderDto dto = mapper.MapFast<Order, OrderDto>(order);
+```
+
+Same result, same map. It skips the interface but still looks the plan up each time, so where
+there is a loop, `MapperFor` is the better answer. Both recognise the mapper the library builds
+and fall back to the interface for anything else, so a decorator or a test double still works.
+
+**The source generator**, when mapping really is the thing your program spends its time on. It
+writes the mapping as ordinary C# while you build, and runs at the speed of code you would have
+written by hand — a far bigger difference than `MapFast` can give back.
+
+Neither is worth reaching for by default. The saving is nanoseconds per object, which is nothing
+beside almost anything else a request does; `Map` is the one to write until a profiler says
+otherwise. [Performance](performance.md) has the numbers.
+
 ## When a map fails
 
 A failure names the member it happened at, including the path through nested maps and the position

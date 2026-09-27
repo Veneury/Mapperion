@@ -1,1 +1,2 @@
 #nullable enable
+static Mapperion.MapperExtensions.MapperFor<TSource, TDestination>(this Mapperion.IMapper! mapper) -> System.Func<TSource, TDestination>!
