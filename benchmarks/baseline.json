@@ -32,6 +32,15 @@
     "either would mean now is that the work went back to being done per call instead of once,",
     "while the plan was compiled.",
     "",
+    "By name then earned a tolerance of its own, the third scenario to do so and for the reason",
+    "the other two did. CI reported 6.07x against 4.56x on a change that touches nothing it",
+    "runs: the only run-time edit in that pull request is a branch taken while a plan is",
+    "compiled, and only for a pair whose destination is an enum, which this scenario's is not.",
+    "Six short runs were taken to check it anyway — 4.14x, 4.44x and 3.45x on the branch, 3.65x,",
+    "4.09x and 3.70x on main. The two sets overlap and each spans about a whole point. The",
+    "hand-written floor is five switch statements, seven to eleven nanoseconds, and it moved",
+    "seventeen per cent between consecutive runs over code that had not changed.",
+    "",
     "Mapperion_Bound is MapperFor's number, and it is held because it is the one arrangement",
     "measured under Mapster. A regression there would mean the dispatch or the plan lookup",
     "crept back into the per-object path, which is the whole of what it removes."
@@ -104,7 +113,8 @@
     {
       "type": "EnumByNameBenchmarks",
       "method": "Mapperion_Runtime",
-      "ratio": 4.56
+      "ratio": 4.56,
+      "tolerance": 0.4
     }
   ]
 }

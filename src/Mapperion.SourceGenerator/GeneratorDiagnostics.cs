@@ -50,6 +50,30 @@ namespace Mapperion.SourceGeneration
             DiagnosticSeverity.Error,
             isEnabledByDefault: true);
 
+        internal static readonly DiagnosticDescriptor IncludedPairHasNoMethod = new DiagnosticDescriptor(
+            "MPR0007",
+            "Included pair has no mapping method",
+            "Mapping '{0}' to '{1}': [MapperInclude] names '{2}' to '{3}', and this class has no method that maps it",
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor IncludedPairIsNotDerived = new DiagnosticDescriptor(
+            "MPR0008",
+            "Included pair does not derive from this one",
+            "Mapping '{0}' to '{1}': [MapperInclude] names '{2}' to '{3}', but '{2}' does not derive from '{0}' or '{3}' from '{1}'",
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
+        internal static readonly DiagnosticDescriptor UnknownResolver = new DiagnosticDescriptor(
+            "MPR0009",
+            "Method named in an attribute was not found",
+            "Mapping '{0}' to '{1}': [MapperResolve] names '{2}', and this class has no method of that name taking a '{0}'",
+            Category,
+            DiagnosticSeverity.Error,
+            isEnabledByDefault: true);
+
         internal static readonly DiagnosticDescriptor UnknownMember = new DiagnosticDescriptor(
             "MPR0006",
             "Member named in an attribute was not found",
