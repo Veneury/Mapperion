@@ -9,6 +9,28 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ### Added
 
+- The source generator matches members the way the run-time engine does, by spelling out a path:
+  a destination called `CustomerAddressCity` finds `Customer.Address.City` on its own, three
+  members deep. It is the convention AutoMapper is known for, and leaving it out meant the
+  generator reported as unmapped what the other engine mapped without being asked.
+- Dictionaries are copied into dictionaries, keys and values converted. Written as a loop and not
+  as `ToDictionary`, because the two disagree about a repeated key: the engine's last entry wins
+  and `ToDictionary` throws.
+- `Guid`, `DateOnly` and `TimeOnly` are read out of text, and two types that both say they can
+  convert themselves go through `Convert.ChangeType` with the invariant culture. The first three
+  arrived in the run-time engine in 0.11.0 and never arrived here, so the same configuration
+  mapped on one engine and stopped the build on the other.
+- `[MapperInclude(typeof(CardPayment), typeof(CardPaymentDto))]` is `Include`, said where the
+  generator can read it: mapping through a base reference now hands the work to the derived
+  method instead of building the base destination and dropping what the derived type added. Most
+  derived first. Declared and not inferred, for the reason it is declared in the other engine
+  too — a class that happens to derive from another is not a statement that mapping one should
+  produce the other.
+- `[MapperResolve(nameof(Total), "Total")]` is what a value resolver becomes when there is no
+  container to take one out of: a method beside the mapping ones, handed the whole source.
+- Three diagnostics for the two new attributes: `MPR0007` when an included pair has no method,
+  `MPR0008` when the pair named does not derive from the one being mapped, `MPR0009` when no
+  method of that name takes the source.
 - `MapperFor<TSource, TDestination>()`, for when the same pair is mapped many times. It settles
   everything that does not depend on the object — the generic dispatch through the interface and
   the plan lookup — once, and hands back a `Func<TSource, TDestination>` to call in the loop.
@@ -46,6 +68,27 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ### Fixed
 
+- **Generated code matched enum members by number where the run-time engine matches them by
+  name.** `ByNameThenValue` is the default and means the name first, so the two engines returned
+  different members the first time anybody reordered an enum — quietly, with no error anywhere.
+  Both enums are known while the project compiles, so the correspondence is now settled there and
+  what is emitted is a switch over constants.
+- **`CreateMap<Grade, GradeDto>()` on its own returned the destination's zero value** whatever it
+  was handed. An enum has nothing to assign into, so the member-by-member path created it and
+  stopped, while the same pair met as a member of something else went through the conversion
+  builder and came out right: the engine disagreed with itself depending on where the pair was
+  met. A map that configures anything of its own is untouched, so a converter declared on the
+  pair still wins.
+- **A collection the source did not have threw** in generated code and gave an empty collection
+  in the other engine. `AllowNullCollections` cannot be seen while compiling, so the generator
+  follows the default.
+- **A collection of the same type on both sides was handed over rather than copied**, so source
+  and destination shared one list and a change to either was a change to both.
+- Text into an enum is read by name ignoring case and then as a number, with empty text giving
+  the default, which is what the other engine does with it.
+- Conversions are lifted over nullables where the run-time engine lifts them, before anything
+  else is asked about the pair, so an absent value gives the destination's default instead of
+  reaching a cast that throws on it.
 - The record-via-constructor scenario enters the CI budget with a 40% tolerance of its own, for
   the same reason as enums by value: its hand-written floor is five nanoseconds, and three
   iterations do not settle that. The demonstration is written down in `baseline.json` — over
@@ -102,6 +145,10 @@ Before v1.0, a minor version may introduce breaking changes.
 - It earned itself immediately: merging the performance work turned the docs build red on
   `getting-started` and `performance`, which are the two English pages `MapperFor` changed. Both
   Spanish pages now carry the new table and the new section.
+- The ahead-of-time article says what the generator covers now, lists the four attributes in a
+  table, and is straight about the two things it still does not read: the affixes and the naming
+  conventions, which live on a `MapperConfiguration` and so do not exist while the project
+  compiles.
 
 ## [0.11.0] - 2026-09-26
 
