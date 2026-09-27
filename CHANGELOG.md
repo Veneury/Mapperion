@@ -5,6 +5,43 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Documentation
+
+- The site stops being the default DocFX template. A theme of its own: Fraunces for headings, IBM
+  Plex Sans for text, IBM Plex Mono for code, a deep green on warm ivory in light and a greenish
+  black in dark. The logo and the favicon become the package icon, the same one NuGet shows,
+  served from the root of the repository rather than duplicated.
+- It is an override, not a fork: every rule sets a Bootstrap variable the template already reads,
+  and the few that target a class target one its layout declares. A DocFX upgrade brings its own
+  fixes and this keeps applying on top.
+- Four things only turned up by looking at the built pages, and they are written down in the CSS:
+  Bootstrap paints with `rgb` triples rather than colours, so setting `--bs-link-color` leaves
+  every link blue; there are three names for what looks like one thing
+  (`--bs-secondary-color-rgb` and `--bs-secondary-rgb` are different variables); half the
+  selectors in the first attempt pointed at `article.content`, which does not exist, because the
+  class is on the parent `div`; and code blocks cannot go dark on a light page because
+  highlight.js ships a palette per theme, and forcing the surface leaves comments and strings
+  unreadable.
+- That second one was a real accessibility failure: the "View source" link and the namespace line
+  on all **260 API pages** kept Bootstrap's grey, at 3.53:1 against the dark background, under the
+  4.5:1 normal text needs. Measured afterwards in both themes: the worst case is 7.10 in dark and
+  6.06 in light.
+- The site is bilingual. English stays where it is and Spanish lives under `/es/`, so no indexed
+  URL moves. All five articles and the landing page are translated; the API reference stays
+  English, because it is generated from the XML documentation and translating it would mean two
+  truths about one signature.
+- The switch sits in the navbar through the template's own `iconLinks` hook, so the template
+  places it and a DocFX upgrade does not move it. It appears only on pages that have both
+  languages, and on a Spanish page the navbar's own links are pointed at the Spanish articles, so
+  reading in Spanish does not drop back into English on the next click.
+- `website/check-translations.sh` records each translation against the hash of the English page it
+  was written from, and the docs workflow fails when they no longer match. Dates were the obvious
+  way and the wrong one: a merge brings in commits older than the translation, and the translation
+  would still be describing an older library. A page with no translation is a warning, since a
+  reader simply stays in English.
+
 ## [0.11.0] - 2026-09-26
 
 A minor rather than a patch: reading values out of text is new capability — a mapping that used to
