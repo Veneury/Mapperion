@@ -162,6 +162,36 @@ namespace Mapperion.SourceGenerator.Tests
         public decimal Amount { get; set; }
     }
 
+    public class Payment
+    {
+        public decimal Amount { get; set; }
+    }
+
+    public class CardPayment : Payment
+    {
+        public string Last4 { get; set; } = string.Empty;
+    }
+
+    public sealed class InstalmentPayment : CardPayment
+    {
+        public int Months { get; set; }
+    }
+
+    public class PaymentDto
+    {
+        public decimal Amount { get; set; }
+    }
+
+    public class CardPaymentDto : PaymentDto
+    {
+        public string Last4 { get; set; } = string.Empty;
+    }
+
+    public sealed class InstalmentPaymentDto : CardPaymentDto
+    {
+        public int Months { get; set; }
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -181,6 +211,18 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class PaymentMapper
+    {
+        [MapperInclude(typeof(CardPayment), typeof(CardPaymentDto))]
+        [MapperInclude(typeof(InstalmentPayment), typeof(InstalmentPaymentDto))]
+        public partial PaymentDto ToDto(Payment source);
+
+        public partial CardPaymentDto ToDto(CardPayment source);
+
+        public partial InstalmentPaymentDto ToDto(InstalmentPayment source);
     }
 
     [Mapper]

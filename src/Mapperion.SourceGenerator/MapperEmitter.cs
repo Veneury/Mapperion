@@ -101,11 +101,112 @@ namespace Mapperion.SourceGeneration
                 text.AppendLine();
             }
 
+            WriteDerivedDispatch(text, plan, parameter, indent);
+
             string body = BuildInstance(plan, parameter) ?? "default!";
 
             text.Append(indent).Append("    return ").Append(body).AppendLine(";");
             text.Append(indent).AppendLine("}");
             text.AppendLine();
+        }
+
+        /// <summary>
+        /// Hands the work to a derived method when the instance turns out to be of a derived
+        /// type, so mapping through a base reference still produces the right destination.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This is what <c>Include</c> does in the run-time engine, and it is declared rather
+        /// than inferred for the same reason it is there: a class that happens to derive from
+        /// another is not a statement that mapping one should produce the other. A hierarchy is
+        /// only dispatched over where somebody said so.
+        /// </para>
+        /// <para>
+        /// Most derived first, so a hierarchy several levels deep picks the closest match rather
+        /// than the first one that happens to fit.
+        /// </para>
+        /// </remarks>
+        private void WriteDerivedDispatch(StringBuilder text, MethodPlan plan, string parameter, string indent)
+        {
+            var dispatched = new List<KeyValuePair<IncludedPair, MethodPlan>>();
+
+            foreach (IncludedPair pair in plan.Included)
+            {
+                if (!Derives(pair.Source, plan.SourceType) || !Derives(pair.Destination, plan.DestinationType))
+                {
+                    Report(
+                        GeneratorDiagnostics.IncludedPairIsNotDerived,
+                        plan,
+                        TypeFacts.Display(pair.Source),
+                        TypeFacts.Display(pair.Destination));
+
+                    continue;
+                }
+
+                MethodPlan? target = Lookup(pair.Source, pair.Destination);
+
+                if (target is null)
+                {
+                    Report(
+                        GeneratorDiagnostics.IncludedPairHasNoMethod,
+                        plan,
+                        TypeFacts.Display(pair.Source),
+                        TypeFacts.Display(pair.Destination));
+
+                    continue;
+                }
+
+                dispatched.Add(new KeyValuePair<IncludedPair, MethodPlan>(pair, target));
+            }
+
+            if (dispatched.Count == 0)
+            {
+                return;
+            }
+
+            dispatched.Sort(static (left, right) =>
+            {
+                if (TypeFacts.Same(left.Key.Source, right.Key.Source))
+                {
+                    return 0;
+                }
+
+                if (Derives(right.Key.Source, left.Key.Source))
+                {
+                    return 1;
+                }
+
+                return Derives(left.Key.Source, right.Key.Source) ? -1 : 0;
+            });
+
+            text.Append(indent).Append("    switch (").Append(parameter).AppendLine(")");
+            text.Append(indent).AppendLine("    {");
+
+            for (int i = 0; i < dispatched.Count; i++)
+            {
+                string name = "derived" + (i + 1).ToString(CultureInfo.InvariantCulture);
+
+                text.Append(indent).Append("        case ").Append(TypeFacts.Bare(dispatched[i].Key.Source))
+                    .Append(' ').Append(name).AppendLine(":");
+                text.Append(indent).Append("            return ").Append(dispatched[i].Value.Method.Name)
+                    .Append('(').Append(name).AppendLine(");");
+            }
+
+            text.Append(indent).AppendLine("    }");
+            text.AppendLine();
+        }
+
+        private static bool Derives(ITypeSymbol candidate, ITypeSymbol ancestor)
+        {
+            for (ITypeSymbol? current = candidate; current is not null; current = current.BaseType)
+            {
+                if (TypeFacts.Same(current, ancestor))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static string Accessibility(IMethodSymbol method)

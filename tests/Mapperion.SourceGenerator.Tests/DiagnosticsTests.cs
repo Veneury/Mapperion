@@ -26,6 +26,46 @@ public partial class Mapper
         }
 
         [Fact]
+        public void An_included_pair_with_no_method_is_reported()
+        {
+            GeneratorOutcome outcome = GeneratorHarness.Run(@"
+public class Animal { public int Age { get; set; } }
+public class Dog : Animal { public string Breed { get; set; } = """"; }
+public class AnimalDto { public int Age { get; set; } }
+public class DogDto : AnimalDto { public string Breed { get; set; } = """"; }
+
+[Mapperion.Mapper]
+public partial class Mapper
+{
+    [Mapperion.MapperInclude(typeof(Dog), typeof(DogDto))]
+    public partial AnimalDto Map(Animal source);
+}");
+
+            outcome.Reported("MPR0007").ShouldBeTrue(outcome.Report());
+        }
+
+        [Fact]
+        public void An_included_pair_that_is_not_derived_is_reported()
+        {
+            GeneratorOutcome outcome = GeneratorHarness.Run(@"
+public class Animal { public int Age { get; set; } }
+public class Mineral { public int Age { get; set; } }
+public class AnimalDto { public int Age { get; set; } }
+public class MineralDto { public int Age { get; set; } }
+
+[Mapperion.Mapper]
+public partial class Mapper
+{
+    [Mapperion.MapperInclude(typeof(Mineral), typeof(MineralDto))]
+    public partial AnimalDto Map(Animal source);
+
+    public partial MineralDto Map(Mineral source);
+}");
+
+            outcome.Reported("MPR0008").ShouldBeTrue(outcome.Report());
+        }
+
+        [Fact]
         public void A_mapper_that_is_not_partial_is_reported()
         {
             GeneratorOutcome outcome = GeneratorHarness.Run(Types + @"

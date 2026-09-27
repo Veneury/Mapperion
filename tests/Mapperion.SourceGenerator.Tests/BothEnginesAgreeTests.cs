@@ -310,6 +310,54 @@ namespace Mapperion.SourceGenerator.Tests
             generated.Amount.ShouldBe(runtime.Amount);
         }
 
+        /// <summary>
+        /// Mapping through a base reference, where the instance is of a derived type.
+        /// </summary>
+        /// <remarks>
+        /// The generator had no dispatch at all, so it built the base destination and dropped
+        /// everything the derived type added, while the run-time engine handed the work to the
+        /// derived map. Both are told about the hierarchy rather than guessing at it: Include on
+        /// one side, [MapperInclude] on the other.
+        /// </remarks>
+        [Fact]
+        public void They_agree_on_a_derived_instance_behind_a_base_reference()
+        {
+            ComparePayment(new Payment { Amount = 10m });
+            ComparePayment(new CardPayment { Amount = 20m, Last4 = "4242" });
+            ComparePayment(new InstalmentPayment { Amount = 30m, Last4 = "1881", Months = 6 });
+        }
+
+        private static void ComparePayment(Payment payment)
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Payment, PaymentDto>()
+                   .Include<CardPayment, CardPaymentDto>()
+                   .Include<InstalmentPayment, InstalmentPaymentDto>();
+
+                cfg.CreateMap<CardPayment, CardPaymentDto>();
+                cfg.CreateMap<InstalmentPayment, InstalmentPaymentDto>();
+            });
+
+            configuration.AssertIsValid();
+
+            PaymentDto generated = new PaymentMapper().ToDto(payment);
+            PaymentDto runtime = configuration.CreateMapper().Map<Payment, PaymentDto>(payment);
+
+            generated.GetType().ShouldBe(runtime.GetType());
+            generated.Amount.ShouldBe(runtime.Amount);
+
+            if (generated is CardPaymentDto card)
+            {
+                card.Last4.ShouldBe(((CardPaymentDto)runtime).Last4);
+            }
+
+            if (generated is InstalmentPaymentDto instalment)
+            {
+                instalment.Months.ShouldBe(((InstalmentPaymentDto)runtime).Months);
+            }
+        }
+
         [Fact]
         public void They_agree_that_an_ignored_member_is_left_alone()
         {

@@ -131,6 +131,7 @@ namespace Mapperion.SourceGeneration
             DestinationType = method.ReturnType;
             ExplicitSources = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
             Ignored = new HashSet<string>(System.StringComparer.OrdinalIgnoreCase);
+            Included = new List<IncludedPair>();
 
             foreach (AttributeData attribute in method.GetAttributes())
             {
@@ -153,6 +154,14 @@ namespace Mapperion.SourceGeneration
                         Ignored.Add(ignored);
                     }
                 }
+                else if (name == MapperAttributes.MapperIncludeAttributeName && attribute.ConstructorArguments.Length == 2)
+                {
+                    if (attribute.ConstructorArguments[0].Value is ITypeSymbol derivedSource &&
+                        attribute.ConstructorArguments[1].Value is ITypeSymbol derivedDestination)
+                    {
+                        Included.Add(new IncludedPair(derivedSource, derivedDestination));
+                    }
+                }
             }
         }
 
@@ -165,5 +174,21 @@ namespace Mapperion.SourceGeneration
         internal Dictionary<string, string> ExplicitSources { get; }
 
         internal HashSet<string> Ignored { get; }
+
+        internal List<IncludedPair> Included { get; }
+    }
+
+    /// <summary>A derived pair this method hands over to, named by <c>[MapperInclude]</c>.</summary>
+    internal sealed class IncludedPair
+    {
+        internal IncludedPair(ITypeSymbol source, ITypeSymbol destination)
+        {
+            Source = source;
+            Destination = destination;
+        }
+
+        internal ITypeSymbol Source { get; }
+
+        internal ITypeSymbol Destination { get; }
     }
 }
