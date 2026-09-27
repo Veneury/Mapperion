@@ -9,63 +9,99 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ### Added
 
-- `MapperFor<TSource, TDestination>()`, para cuando el mismo par se mapea muchas veces. Resuelve
-  una sola vez todo lo que no depende del objeto —el despacho genérico por la interfaz y la
-  búsqueda del plan— y devuelve un `Func<TSource, TDestination>` que llamas en el bucle.
-- **Es la única forma que mide por debajo de Mapster**: 1,62x contra 2,12x en una corrida y 1,20x
-  contra 1,51x en otra, con margen de 4-5 ns sobre desviaciones de ~1. Y está explicado por lo que
-  quita, no encontrado en una corrida afortunada: el despacho y el lookup son por par, no por
-  objeto, así que un bucle los pagaba por elemento sin motivo.
-- Devuelve un `Func` y no un tipo nuevo: es literalmente una función de mapeo, entra en un `Select`
-  y no obliga a aprender nada. Es extensión y no miembro de `IMapper`, porque añadir a una interfaz
-  pública rompe a quien la implemente y `IMapper` se mockea constantemente. El «drop-in» intacto.
-- Cuidado con el estado por operación, que era la trampa: si la configuración lo lee, el contexto
-  **no** se fija junto al plan, porque dos llamadas compartirían la bolsa y dos peticiones se
-  verían entre sí. Solo se fija cuando el motor declara que no hace falta, y hay una prueba que
-  mapea dos veces por la misma función y comprueba que ninguna ve a la otra.
-- La documentación dice explícitamente que pedirlo por llamada cuesta más de lo que ahorra, que es
-  la forma obvia de usarlo mal.
+- `MapperFor<TSource, TDestination>()`, for when the same pair is mapped many times. It settles
+  everything that does not depend on the object — the generic dispatch through the interface and
+  the plan lookup — once, and hands back a `Func<TSource, TDestination>` to call in the loop.
+- **It is the only shape that measures below Mapster**: 1.62x against 2.12x in one run and 1.20x
+  against 1.51x in another, a 4-5 ns margin against spreads of about 1. And it is explained by
+  what it removes rather than found in a lucky run: the dispatch and the lookup are per pair, not
+  per object, so a loop was paying for them per item for no reason.
+- It returns a `Func` rather than a new type: it is literally a mapping function, it drops into a
+  `Select`, and there is nothing to learn. It is an extension and not a member of `IMapper`,
+  because adding to a public interface breaks everyone who implements it and `IMapper` is mocked
+  constantly. The drop-in stays a drop-in.
+- Per-operation state was the trap: if the configuration reads it, the context is **not** settled
+  alongside the plan, because two calls would share the bag and two requests would see each
+  other. It is only settled when the engine says it is not needed, and a test maps twice through
+  the same function and checks that neither sees the other.
+- The documentation says outright that asking for one per call costs more than it saves, which is
+  the obvious way to use it wrong.
 
 ### Changed
 
-- Un plan que no puede fallar ya no lleva el `try/catch` que lo reportaría, ni la miga que se
-  escribía antes de cada miembro para que el handler la leyera. La pregunta se responde al compilar
-  el plan y en pesimista: es «puede fallar» ante cualquier cosa que meta código de usuario
-  —converters, resolvers, condiciones, `BeforeMap`, un método como origen—, ante cualquier
-  conversión que pueda lanzar, y ante cualquier cosa que alcance otro mapa, porque una excepción
-  que sale de un mapa anidado la reporta aquel y por este pasaría sin atribuir.
-- El saber de qué conversiones pueden lanzar vive en `ConversionBuilder`, al lado del código que
-  decide cómo convertir, para que no puedan separarse: una conversión que gane una forma de fallar
-  mientras esto la siga llamando inofensiva quitaría el reporte justo donde hacía falta.
-- El plan de un par se alcanza sin el `castclass` que se pagaba en cada llamada. El hueco se deriva
-  de esos dos tipos exactos, así que la comprobación no podía fallar nunca: se pagaba siempre y
-  nunca servía. Solo en net6+; en `netstandard2.0` y `net472` se queda el cast, porque `Unsafe`
-  ahí sería un paquete y cero dependencias vale más que un nanosegundo.
-- Medido: el lookup baja de 3,40 a 2,05 ns y el despacho por interfaz de 9,31 a 7,44.
+- A plan that cannot fail no longer carries the `try/catch` that would report it, nor the
+  breadcrumb written before each member for the handler to read. The question is answered when
+  the plan is compiled, and answered pessimistically: "it can fail" for anything that admits user
+  code — converters, resolvers, conditions, `BeforeMap`, a method as a source — for any
+  conversion that can throw, and for anything that reaches another map, because an exception out
+  of a nested map is reported by that map and would pass through this one unattributed.
+- What is known about which conversions can throw lives in `ConversionBuilder`, beside the code
+  that decides how to convert, so the two cannot drift apart: a conversion that gains a way to
+  fail while this still calls it harmless would remove the reporting exactly where it was needed.
+- A pair's plan is reached without the `castclass` that was paid on every call. The delegate is
+  derived from those two exact types, so the check could never fail: it was always paid and never
+  used. On net6+ only; `netstandard2.0` and `net472` keep the cast, because `Unsafe` there would
+  be a package, and zero dependencies is worth more than a nanosecond.
+- Measured: the lookup falls from 3.40 to 2.05 ns and the interface dispatch from 9.31 to 7.44.
 
 ### Fixed
 
-- El escenario del record por constructor entra en el presupuesto de CI con tolerancia propia del
-  40 %, por lo mismo que los enums por valor: su suelo a mano son cinco nanosegundos y tres
-  iteraciones no lo resuelven. La demostración quedó escrita en `baseline.json` — sobre código sin
-  tocar, el job corto reportó 4,91x y una corrida completa del mismo escenario, 2,99x. Era el
-  segundo falso positivo del guardían.
+- The record-via-constructor scenario enters the CI budget with a 40% tolerance of its own, for
+  the same reason as enums by value: its hand-written floor is five nanoseconds, and three
+  iterations do not settle that. The demonstration is written down in `baseline.json` — over
+  untouched code, the short job reported 4.91x and a full run of the same scenario 2.99x. It was
+  the guard's second false positive.
 
 ### Documentation
 
-- `MapFast` deja de ser una nota al pie. Tiene sección propia en la guía de primeros pasos, con
-  cuándo vale la pena y cuándo la respuesta es el source generator, y el README dice por qué
-  importa en vez de mencionarlo de pasada.
-- Las seis filas principales de la tabla de rendimiento se remidieron enteras, todas las columnas
-  en la misma corrida. No se actualizaron solo nuestras columnas: mezclar corridas habría dado una
-  tabla que nos favorece por accidente de medición, y dos corridas en esta máquina han puesto a la
-  misma librería sin tocar un 20 % aparte.
-- Queda escrito el muro: `mapper.Map<A,B>(x)` es un método genérico por interfaz y su despacho
-  cuesta unos 7,4 ns, mientras que **todo** lo que Mapster gasta por encima del manual son unos 9.
-  No hay margen donde ganar sin cambiar `IMapper`. `MapFast` cierra casi todo el hueco pero no lo
-  supera de forma fiable: 1,95x contra 1,80x en una corrida y 1,43x contra 1,51x en otra, mismo
-  código y misma máquina. Lo que sí aguanta es que **el source generator le gana a Mapster** en las
-  tres filas donde aparece.
+- `MapFast` stops being a footnote. It has a section of its own in the getting-started guide, with
+  when it is worth it and when the answer is the source generator, and the readme says why it
+  matters instead of mentioning it in passing.
+- The six main rows of the performance table were measured again in full, every column in the
+  same run. Our columns were not updated on their own: mixing runs would have produced a table
+  that flatters us by accident of measurement, and two runs on this machine have put the same
+  untouched library twenty per cent apart.
+- The wall is written down: `mapper.Map<A,B>(x)` is a generic method through an interface and its
+  dispatch costs about 7.4 ns, while **everything** Mapster spends above hand-written code is
+  about 9. There is no room to win in without changing `IMapper`. `MapFast` closes most of the gap
+  but does not reliably beat it: 1.95x against 1.80x in one run and 1.43x against 1.51x in
+  another, same code and same machine. What does hold is that **the source generator beats
+  Mapster** in all three rows it appears in.
+- The site stops being the default DocFX template. A theme of its own: Fraunces for headings, IBM
+  Plex Sans for text, IBM Plex Mono for code, a deep green on warm ivory in light and a greenish
+  black in dark. The logo and the favicon become the package icon, the same one NuGet shows,
+  served from the root of the repository rather than duplicated.
+- It is an override, not a fork: every rule sets a Bootstrap variable the template already reads,
+  and the few that target a class target one its layout declares. A DocFX upgrade brings its own
+  fixes and this keeps applying on top.
+- Four things only turned up by looking at the built pages, and they are written down in the CSS:
+  Bootstrap paints with `rgb` triples rather than colours, so setting `--bs-link-color` leaves
+  every link blue; there are three names for what looks like one thing
+  (`--bs-secondary-color-rgb` and `--bs-secondary-rgb` are different variables); half the
+  selectors in the first attempt pointed at `article.content`, which does not exist, because the
+  class is on the parent `div`; and code blocks cannot go dark on a light page because
+  highlight.js ships a palette per theme, and forcing the surface leaves comments and strings
+  unreadable.
+- That second one was a real accessibility failure: the "View source" link and the namespace line
+  on all **260 API pages** kept Bootstrap's grey, at 3.53:1 against the dark background, under the
+  4.5:1 normal text needs. Measured afterwards in both themes: the worst case is 7.10 in dark and
+  6.06 in light.
+- The site is bilingual. English stays where it is and Spanish lives under `/es/`, so no indexed
+  URL moves. All five articles and the landing page are translated; the API reference stays
+  English, because it is generated from the XML documentation and translating it would mean two
+  truths about one signature.
+- The switch sits in the navbar through the template's own `iconLinks` hook, so the template
+  places it and a DocFX upgrade does not move it. It appears only on pages that have both
+  languages, and on a Spanish page the navbar's own links are pointed at the Spanish articles, so
+  reading in Spanish does not drop back into English on the next click.
+- `website/check-translations.sh` records each translation against the hash of the English page it
+  was written from, and the docs workflow fails when they no longer match. Dates were the obvious
+  way and the wrong one: a merge brings in commits older than the translation, and the translation
+  would still be describing an older library. A page with no translation is a warning, since a
+  reader simply stays in English.
+- It earned itself immediately: merging the performance work turned the docs build red on
+  `getting-started` and `performance`, which are the two English pages `MapperFor` changed. Both
+  Spanish pages now carry the new table and the new section.
 
 ## [0.11.0] - 2026-09-26
 

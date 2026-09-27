@@ -28,6 +28,10 @@ generator tests.
 - Warnings are errors here, including the analyzers and the missing-documentation one. A public
   member without XML documentation does not build.
 - Comments in code are XML documentation and nothing else.
+- If you change a page under `website/`, the Spanish translation under `website/es/` stops
+  matching and the docs workflow says so. Update the translation, then run
+  `./website/check-translations.sh --update` to record that you looked. A change no reader can
+  see — a typo, a link — still needs the record updated; the script does not guess.
 
 ## Copyright
 

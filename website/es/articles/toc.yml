@@ -1,0 +1,10 @@
+- name: Primeros pasos
+  href: getting-started.md
+- name: Migrar desde AutoMapper
+  href: migrating-from-automapper.md
+- name: El analizador de configuración
+  href: analyzer.md
+- name: Ahead-of-time y trimming
+  href: aot.md
+- name: Rendimiento
+  href: performance.md

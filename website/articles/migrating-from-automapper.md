@@ -82,4 +82,8 @@ when the configuration is built, rather than the factory quietly winning.
 
 ## Not in the box
 
-`ProjectTo` for EF6. Everything else AutoMapper does has an equivalent.
+Nothing, as far as AutoMapper goes: everything it does has an equivalent here, `ProjectTo` for
+EF6 included since 0.10.0, with its own test suite running on net472.
+
+What a projection cannot do at all, in either library, is build a dictionary or dispatch to a
+derived map: its shape is fixed before a row is read. Mapperion says so rather than skipping it.

@@ -36,22 +36,37 @@
           "images/**",
           "google6963982ff3bfb15c.html"
         ]
+      },
+      {
+        "files": [
+          "icon.png"
+        ],
+        "src": ".."
       }
     ],
     "output": "_site",
     "template": [
       "default",
-      "modern"
+      "modern",
+      "template"
     ],
     "globalMetadata": {
       "_appName": "Mapperion",
       "_appTitle": "Mapperion",
-      "_appFooter": "Mapperion \u2014 MIT licensed object mapper for .NET",
+      "_lang": "en",
+      "_appFooter": "Mapperion — MIT licensed object mapper for .NET",
       "_enableSearch": true,
       "_disableContribution": false,
       "_gitContribute": {
         "repo": "https://github.com/Veneury/Mapperion",
         "branch": "main"
+      },
+      "_appLogoPath": "icon.png",
+      "_appFaviconPath": "icon.png"
+    },
+    "fileMetadata": {
+      "_lang": {
+        "es/**": "es"
       }
     },
     "sitemap": {
