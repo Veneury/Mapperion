@@ -5,6 +5,29 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Documentation
+
+- El sitio deja de ser la plantilla por defecto de DocFX. Tema propio: Fraunces para titulares,
+  IBM Plex Sans para texto, IBM Plex Mono para código, verde profundo sobre marfil templado en
+  claro y un negro verdoso en oscuro. El logo y el favicon pasan a ser el icono del paquete, el
+  mismo que se ve en NuGet, servido desde la raíz del repositorio sin duplicarlo.
+- Es un override, no un fork: cada regla toca una variable de Bootstrap que la plantilla ya lee, y
+  las pocas que apuntan a una clase apuntan a una que declara su layout. Una actualización de
+  DocFX trae sus arreglos y esto se sigue aplicando encima.
+- Cuatro cosas solo aparecieron mirando las páginas construidas, y quedan anotadas en el CSS:
+  Bootstrap pinta con pares `rgb` y no con colores, así que poner `--bs-link-color` deja todos los
+  enlaces azules; hay tres nombres para lo que parece lo mismo (`--bs-secondary-color-rgb` y
+  `--bs-secondary-rgb` son variables distintas); la mitad de los selectores del primer intento
+  apuntaban a `article.content`, que no existe, porque la clase está en el `div` padre; y los
+  bloques de código no van oscuros sobre fondo claro porque highlight.js trae una paleta por tema
+  y forzar la superficie deja comentarios y cadenas ilegibles.
+- Ese segundo punto era un fallo de accesibilidad real: el enlace «View source» y la línea de
+  namespace en las **260 páginas de API** se quedaban con el gris de Bootstrap, a 3,53:1 sobre el
+  fondo oscuro, por debajo del 4,5:1 que necesita el texto normal. Medido después en los dos
+  temas: el peor caso es 7,10 en oscuro y 6,06 en claro.
+
 ## [0.11.0] - 2026-09-26
 
 A minor rather than a patch: reading values out of text is new capability — a mapping that used to
