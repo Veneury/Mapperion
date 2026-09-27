@@ -112,6 +112,19 @@ namespace Mapperion.SourceGenerator.Tests
         public Channel Kind { get; set; }
     }
 
+    /// <summary>
+    /// Nothing configured: every member here is found by spelling out a path through the source,
+    /// which is the convention AutoMapper is known for and the one the run-time engine follows.
+    /// </summary>
+    public sealed class OrderSummaryDto
+    {
+        public long Id { get; set; }
+
+        public string CustomerName { get; set; } = string.Empty;
+
+        public string CustomerAddressCity { get; set; } = string.Empty;
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -131,6 +144,12 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class SummaryMapper
+    {
+        public partial OrderSummaryDto ToSummary(Order source);
     }
 
     [Mapper]

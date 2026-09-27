@@ -16,6 +16,9 @@ namespace Mapperion.SourceGeneration
         private readonly SourceProductionContext context;
         private readonly Compilation compilation;
         private readonly List<MethodPlan> plans;
+        /// <summary>The same ceiling the run-time engine puts on flattening by default.</summary>
+        private const int MaxFlatteningDepth = 3;
+
         private readonly Dictionary<string, EnumConverter> converters =
             new Dictionary<string, EnumConverter>(StringComparer.Ordinal);
 
@@ -269,7 +272,7 @@ namespace Mapperion.SourceGeneration
                     : Convert(plan, read.Expression, read.Type, destinationType, destinationName);
             }
 
-            IPropertySymbol? match = Match(plan.SourceType, destinationName);
+            List<IPropertySymbol>? match = MatchPath(plan.SourceType, destinationName, 1);
 
             if (match is null)
             {
@@ -277,7 +280,65 @@ namespace Mapperion.SourceGeneration
                 return null;
             }
 
-            return Convert(plan, parameter + "." + match.Name, match.Type, destinationType, destinationName);
+            PathRead flattened = Read(parameter, plan.SourceType, match);
+            return Convert(plan, flattened.Expression, flattened.Type, destinationType, destinationName);
+        }
+
+        /// <summary>
+        /// The source path that feeds a destination member: the member of that name, and failing
+        /// that the chain of members whose names spell it.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Flattening is the convention AutoMapper is known for and the run-time engine does it,
+        /// so a destination called <c>CustomerAddressCity</c> finds <c>Customer.Address.City</c>
+        /// without being told. Leaving it out here meant the generator reported a member as
+        /// unmapped that the other engine mapped on its own, and the same configuration behaved
+        /// differently depending on which engine read it.
+        /// </para>
+        /// <para>
+        /// Three members deep, the same ceiling the run-time engine uses by default. The affixes
+        /// and the naming conventions are not read: they are set on a
+        /// <c>MapperConfiguration</c>, which does not exist at compile time, so what is
+        /// implemented here is the default spelling on both sides.
+        /// </para>
+        /// </remarks>
+        private static List<IPropertySymbol>? MatchPath(ITypeSymbol sourceType, string name, int depth)
+        {
+            IPropertySymbol? direct = Match(sourceType, name);
+
+            if (direct is not null)
+            {
+                return new List<IPropertySymbol> { direct };
+            }
+
+            if (depth >= MaxFlatteningDepth)
+            {
+                return null;
+            }
+
+            foreach (IPropertySymbol candidate in TypeFacts.Readable(sourceType))
+            {
+                if (candidate.Name.Length == 0 ||
+                    name.Length <= candidate.Name.Length ||
+                    !name.StartsWith(candidate.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                List<IPropertySymbol>? tail = MatchPath(
+                    candidate.Type,
+                    name.Substring(candidate.Name.Length),
+                    depth + 1);
+
+                if (tail is not null)
+                {
+                    tail.Insert(0, candidate);
+                    return tail;
+                }
+            }
+
+            return null;
         }
 
         private static IPropertySymbol? Match(ITypeSymbol sourceType, string name)
@@ -312,14 +373,11 @@ namespace Mapperion.SourceGeneration
         private PathRead? ReadPath(MethodPlan plan, string parameter, string path)
         {
             ITypeSymbol current = plan.SourceType;
-            string expression = parameter;
-            var guards = new List<string>();
+            var steps = new List<IPropertySymbol>();
 
-            string[] steps = path.Split('.');
-
-            for (int i = 0; i < steps.Length; i++)
+            foreach (string name in path.Split('.'))
             {
-                IPropertySymbol? property = Match(current, steps[i]);
+                IPropertySymbol? property = Match(current, name);
 
                 if (property is null)
                 {
@@ -327,13 +385,28 @@ namespace Mapperion.SourceGeneration
                     return null;
                 }
 
+                steps.Add(property);
+                current = property.Type;
+            }
+
+            return Read(parameter, plan.SourceType, steps);
+        }
+
+        private static PathRead Read(string parameter, ITypeSymbol sourceType, List<IPropertySymbol> steps)
+        {
+            ITypeSymbol current = sourceType;
+            string expression = parameter;
+            var guards = new List<string>();
+
+            for (int i = 0; i < steps.Count; i++)
+            {
                 if (i > 0 && TypeFacts.CanBeNull(current))
                 {
                     guards.Add(expression + " is not null");
                 }
 
-                expression += "." + property.Name;
-                current = property.Type;
+                expression += "." + steps[i].Name;
+                current = steps[i].Type;
             }
 
             if (guards.Count == 0)

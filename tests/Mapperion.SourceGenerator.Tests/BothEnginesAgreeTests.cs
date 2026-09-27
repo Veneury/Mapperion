@@ -158,6 +158,44 @@ namespace Mapperion.SourceGenerator.Tests
             generated.Kind.ShouldBe(runtime.Kind);
         }
 
+        /// <summary>
+        /// Flattening, with nothing configured on either side.
+        /// </summary>
+        /// <remarks>
+        /// The generator used to report these as unmapped while the run-time engine found them on
+        /// its own, so one configuration meant two different things depending on which engine
+        /// read it.
+        /// </remarks>
+        [Fact]
+        public void They_agree_on_a_member_found_by_spelling_out_a_path()
+        {
+            CompareSummary(SampleOrder());
+        }
+
+        [Fact]
+        public void They_agree_on_a_spelt_out_path_that_stops_short()
+        {
+            Order order = SampleOrder();
+            order.Customer!.Address = null;
+            CompareSummary(order);
+
+            order.Customer = null;
+            CompareSummary(order);
+        }
+
+        private static void CompareSummary(Order order)
+        {
+            var configuration = new MapperConfiguration(cfg => cfg.CreateMap<Order, OrderSummaryDto>());
+            configuration.AssertIsValid();
+
+            OrderSummaryDto generated = new SummaryMapper().ToSummary(order);
+            OrderSummaryDto runtime = configuration.CreateMapper().Map<Order, OrderSummaryDto>(order);
+
+            generated.Id.ShouldBe(runtime.Id);
+            generated.CustomerName.ShouldBe(runtime.CustomerName);
+            generated.CustomerAddressCity.ShouldBe(runtime.CustomerAddressCity);
+        }
+
         [Fact]
         public void They_agree_that_an_ignored_member_is_left_alone()
         {
