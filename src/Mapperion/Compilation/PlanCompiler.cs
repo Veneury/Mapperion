@@ -143,9 +143,6 @@ namespace Mapperion.Compilation
         }
 
         /// <summary>
-        /// Records which member the plan is on, for the handler to name when something fails.
-        /// </summary>
-        /// <summary>
         /// Whether the pair is a conversion wearing a map's clothes.
         /// </summary>
         /// <remarks>
@@ -168,6 +165,9 @@ namespace Mapperion.Compilation
             && definition.DerivedMaps.Count == 0
             && definition.IncludedMembers.Count == 0;
 
+        /// <summary>
+        /// Records which member the plan is on, for the handler to name when something fails.
+        /// </summary>
         private static void Mark(List<Expression> body, StepSlot step, string name, bool guarded)
         {
             if (guarded)
