@@ -196,6 +196,68 @@ namespace Mapperion.SourceGenerator.Tests
             generated.CustomerAddressCity.ShouldBe(runtime.CustomerAddressCity);
         }
 
+        /// <summary>
+        /// Dictionaries, which the generator had nothing for: a member the other engine copied
+        /// was reported here as having no conversion at all.
+        /// </summary>
+        [Fact]
+        public void They_agree_on_a_dictionary()
+        {
+            CompareBatch(SampleBatch());
+        }
+
+        /// <summary>
+        /// A collection that is not there gives an empty one rather than throwing, which is what
+        /// the run-time engine does with it unless null collections are asked for.
+        /// </summary>
+        [Fact]
+        public void They_agree_on_a_collection_that_is_not_there()
+        {
+            Batch batch = SampleBatch();
+            batch.Optional = null;
+
+            CompareBatch(batch);
+        }
+
+        private static Batch SampleBatch() => new Batch
+        {
+            Lines = { ["a"] = new Line { Code = "A", Price = 1m } },
+            Labels = { [1] = "one" },
+            Optional = new List<Line> { new Line { Code = "B", Price = 2m } },
+        };
+
+        private static void CompareBatch(Batch batch)
+        {
+            var configuration = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<Batch, BatchDto>();
+                cfg.CreateMap<Line, LineDto>();
+            });
+
+            configuration.AssertIsValid();
+
+            BatchDto generated = new BatchMapper().ToDto(batch);
+            BatchDto runtime = configuration.CreateMapper().Map<Batch, BatchDto>(batch);
+
+            generated.Lines.Count.ShouldBe(runtime.Lines.Count);
+            generated.Lines["a"].Code.ShouldBe(runtime.Lines["a"].Code);
+            generated.Labels.Count.ShouldBe(runtime.Labels.Count);
+            generated.Labels[1L].ShouldBe(runtime.Labels[1L]);
+            generated.Optional.Count.ShouldBe(runtime.Optional.Count);
+        }
+
+        /// <remarks>
+        /// The destination gets its own collection. Handing the source's over means two objects
+        /// share one list, and a change to either is a change to both.
+        /// </remarks>
+        [Fact]
+        public void They_agree_that_the_destination_does_not_share_the_source_collection()
+        {
+            Batch batch = SampleBatch();
+
+            new BatchMapper().ToDto(batch).Lines.ShouldNotBeSameAs(batch.Lines);
+        }
+
         [Fact]
         public void They_agree_that_an_ignored_member_is_left_alone()
         {

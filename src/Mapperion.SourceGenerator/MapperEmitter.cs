@@ -19,8 +19,8 @@ namespace Mapperion.SourceGeneration
         /// <summary>The same ceiling the run-time engine puts on flattening by default.</summary>
         private const int MaxFlatteningDepth = 3;
 
-        private readonly Dictionary<string, EnumConverter> converters =
-            new Dictionary<string, EnumConverter>(StringComparer.Ordinal);
+        private readonly Dictionary<string, Helper> helpers =
+            new Dictionary<string, Helper>(StringComparer.Ordinal);
 
         internal MapperEmitter(SourceProductionContext context, Compilation compilation, List<MethodPlan> plans)
         {
@@ -59,9 +59,9 @@ namespace Mapperion.SourceGeneration
             text.Append(methods);
 
             // Written last because they are discovered while the methods above are written.
-            foreach (EnumConverter converter in converters.Values)
+            foreach (Helper helper in helpers.Values)
             {
-                converter.Write(text, indent + "    ");
+                helper.Write(text, indent + "    ");
             }
 
             text.Append(indent).AppendLine("}");
@@ -232,7 +232,11 @@ namespace Mapperion.SourceGeneration
             string materialiser,
             string destinationName)
         {
-            string projected = expression;
+            // A collection that is not there gives an empty one rather than throwing, which is
+            // what the run-time engine does with it unless a configuration asks for null
+            // collections — and that configuration cannot be seen from here.
+            string projected = expression + " ?? global::System.Linq.Enumerable.Empty<" +
+                TypeFacts.Bare(sourceElement) + ">()";
 
             if (!TypeFacts.Same(sourceElement, destinationElement))
             {
@@ -250,7 +254,7 @@ namespace Mapperion.SourceGeneration
                     return null;
                 }
 
-                projected = "global::System.Linq.Enumerable.Select(" + expression + ", " + element.Method.Name + ")";
+                projected = "global::System.Linq.Enumerable.Select(" + projected + ", " + element.Method.Name + ")";
             }
 
             return "global::System.Linq.Enumerable." + materialiser + "(" + projected + ")";
@@ -427,9 +431,14 @@ namespace Mapperion.SourceGeneration
             ITypeSymbol destinationType,
             string destinationName)
         {
-            if (TypeFacts.Same(sourceType, destinationType))
+            // Before the check for one type, the way the run-time engine orders it: a collection
+            // is copied into the destination rather than handed over, so the two objects do not
+            // end up sharing a list that either of them can then change under the other.
+            string? copied = TryDictionary(plan, expression, sourceType, destinationType, destinationName);
+
+            if (copied is not null)
             {
-                return expression;
+                return copied;
             }
 
             ITypeSymbol? sourceElement = TypeFacts.ElementOf(sourceType);
@@ -443,6 +452,11 @@ namespace Mapperion.SourceGeneration
                 {
                     return Sequence(plan, expression, sourceElement, destinationElement, materialiser, destinationName);
                 }
+            }
+
+            if (TypeFacts.Same(sourceType, destinationType))
+            {
+                return expression;
             }
 
             string? lifted = Lift(plan, expression, sourceType, destinationType, destinationName);
@@ -613,7 +627,7 @@ namespace Mapperion.SourceGeneration
 
             if (sourceIsEnum && destinationIsEnum)
             {
-                return Converter(
+                return Named(
                     sourceType,
                     destinationType,
                     () => new EnumFromEnum(
@@ -624,7 +638,7 @@ namespace Mapperion.SourceGeneration
 
             if (sourceType.SpecialType == SpecialType.System_String && destinationIsEnum)
             {
-                return Converter(
+                return Named(
                     sourceType,
                     destinationType,
                     () => new EnumFromText(
@@ -640,14 +654,68 @@ namespace Mapperion.SourceGeneration
             return null;
         }
 
-        private string Converter(ITypeSymbol sourceType, ITypeSymbol destinationType, Func<EnumConverter> create)
+        /// <summary>
+        /// Copies a dictionary into a dictionary, converting the keys and the values.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The run-time engine has done this from the start and the generator had nothing for it,
+        /// so a member the other engine copied was reported here as having no conversion. Written
+        /// out as a loop rather than as <c>ToDictionary</c>, because the two do not agree about a
+        /// repeated key: the engine's last entry wins, and <c>ToDictionary</c> throws.
+        /// </para>
+        /// <para>
+        /// A source that is not there gives an empty dictionary rather than nothing, which is
+        /// what the other engine does with it unless a configuration asks for null collections —
+        /// and that configuration is not visible from here.
+        /// </para>
+        /// </remarks>
+        private string? TryDictionary(
+            MethodPlan plan,
+            string expression,
+            ITypeSymbol sourceType,
+            ITypeSymbol destinationType,
+            string destinationName)
+        {
+            if (!TypeFacts.IsDictionary(sourceType, out ITypeSymbol? sourceKey, out ITypeSymbol? sourceValue) ||
+                !TypeFacts.IsDestinationDictionary(
+                    destinationType,
+                    out ITypeSymbol? destinationKey,
+                    out ITypeSymbol? destinationValue))
+            {
+                return null;
+            }
+
+            string? key = Convert(plan, "entry.Key", sourceKey!, destinationKey!, destinationName);
+            string? value = Convert(plan, "entry.Value", sourceValue!, destinationValue!, destinationName);
+
+            if (key is null || value is null)
+            {
+                return null;
+            }
+
+            return Named(
+                sourceType,
+                destinationType,
+                () => new DictionaryCopy(
+                    ConverterName(sourceType, destinationType),
+                    sourceType,
+                    sourceKey!,
+                    sourceValue!,
+                    destinationKey!,
+                    destinationValue!,
+                    key,
+                    value)) + "(" + expression + ")";
+        }
+
+        private string Named(ITypeSymbol sourceType, ITypeSymbol destinationType, Func<Helper> create)
         {
             string key = TypeFacts.Bare(sourceType) + "->" + TypeFacts.Bare(destinationType);
 
-            if (!converters.TryGetValue(key, out EnumConverter? existing))
+            if (!helpers.TryGetValue(key, out Helper? existing))
             {
                 existing = create();
-                converters.Add(key, existing);
+                helpers.Add(key, existing);
             }
 
             return existing.Name;
@@ -668,9 +736,9 @@ namespace Mapperion.SourceGeneration
 
         private bool Taken(string name)
         {
-            foreach (EnumConverter converter in converters.Values)
+            foreach (Helper helper in helpers.Values)
             {
-                if (string.Equals(converter.Name, name, StringComparison.Ordinal))
+                if (string.Equals(helper.Name, name, StringComparison.Ordinal))
                 {
                     return true;
                 }
@@ -722,9 +790,9 @@ namespace Mapperion.SourceGeneration
             return members;
         }
 
-        private abstract class EnumConverter
+        private abstract class Helper
         {
-            protected EnumConverter(string name)
+            protected Helper(string name)
             {
                 Name = name;
             }
@@ -734,7 +802,7 @@ namespace Mapperion.SourceGeneration
             internal abstract void Write(StringBuilder text, string indent);
         }
 
-        private sealed class EnumFromEnum : EnumConverter
+        private sealed class EnumFromEnum : Helper
         {
             private readonly ITypeSymbol source;
             private readonly ITypeSymbol destination;
@@ -831,7 +899,7 @@ namespace Mapperion.SourceGeneration
         /// included, and then as a number. Empty text is the absence of a value rather than a bad
         /// one, so it gives the default, which is what the run-time engine does with it too.
         /// </remarks>
-        private sealed class EnumFromText : EnumConverter
+        private sealed class EnumFromText : Helper
         {
             private readonly ITypeSymbol destination;
 
@@ -870,6 +938,77 @@ namespace Mapperion.SourceGeneration
                     .Append(".TryParse(value, out ").Append(underlying).AppendLine(" number)");
                 text.Append(indent).Append("        ? (").Append(destinationName).AppendLine(")number");
                 text.Append(indent).Append("        : default(").Append(destinationName).AppendLine(");");
+                text.Append(indent).AppendLine("}");
+                text.AppendLine();
+            }
+        }
+
+        private sealed class DictionaryCopy : Helper
+        {
+            private readonly ITypeSymbol source;
+            private readonly ITypeSymbol sourceKey;
+            private readonly ITypeSymbol sourceValue;
+            private readonly ITypeSymbol destinationKey;
+            private readonly ITypeSymbol destinationValue;
+            private readonly string key;
+            private readonly string value;
+
+            internal DictionaryCopy(
+                string name,
+                ITypeSymbol source,
+                ITypeSymbol sourceKey,
+                ITypeSymbol sourceValue,
+                ITypeSymbol destinationKey,
+                ITypeSymbol destinationValue,
+                string key,
+                string value)
+                : base(name)
+            {
+                this.source = source;
+                this.sourceKey = sourceKey;
+                this.sourceValue = sourceValue;
+                this.destinationKey = destinationKey;
+                this.destinationValue = destinationValue;
+                this.key = key;
+                this.value = value;
+            }
+
+            internal override void Write(StringBuilder text, string indent)
+            {
+                string entry = "global::System.Collections.Generic.KeyValuePair<" +
+                    TypeFacts.Bare(sourceKey) + ", " + TypeFacts.Bare(sourceValue) + ">";
+                string built = "global::System.Collections.Generic.Dictionary<" +
+                    TypeFacts.Bare(destinationKey) + ", " + TypeFacts.Bare(destinationValue) + ">";
+                bool nullable = TypeFacts.CanBeNull(source);
+
+                // Not static: the value conversion can be a call to one of the mapping methods,
+                // and those are instance methods on the class this is written into.
+                text.Append(indent).Append("private ").Append(built).Append(' ').Append(Name)
+                    .Append('(').Append(TypeFacts.Bare(source)).Append(nullable ? "? " : " ")
+                    .AppendLine("source)");
+                text.Append(indent).AppendLine("{");
+                text.Append(indent).Append("    ").Append(built).Append(" result = new ").Append(built)
+                    .AppendLine("();");
+                text.AppendLine();
+
+                if (nullable)
+                {
+                    text.Append(indent).AppendLine("    if (source is null)");
+                    text.Append(indent).AppendLine("    {");
+                    text.Append(indent).AppendLine("        return result;");
+                    text.Append(indent).AppendLine("    }");
+                    text.AppendLine();
+                }
+
+                text.Append(indent).Append("    foreach (").Append(entry).Append(" entry in (")
+                    .Append("global::System.Collections.Generic.IEnumerable<").Append(entry)
+                    .AppendLine(">)source)");
+                text.Append(indent).AppendLine("    {");
+                text.Append(indent).Append("        result[").Append(key).Append("] = ").Append(value)
+                    .AppendLine(";");
+                text.Append(indent).AppendLine("    }");
+                text.AppendLine();
+                text.Append(indent).AppendLine("    return result;");
                 text.Append(indent).AppendLine("}");
                 text.AppendLine();
             }

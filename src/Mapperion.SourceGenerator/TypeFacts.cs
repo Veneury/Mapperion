@@ -97,6 +97,75 @@ namespace Mapperion.SourceGeneration
             return null;
         }
 
+        /// <summary>
+        /// The key and value types when the type is read as a dictionary.
+        /// </summary>
+        /// <remarks>
+        /// The same two contracts the run-time engine looks for, and for the same reason: a type
+        /// that says it is a dictionary is the one whose entries can be copied across as entries
+        /// rather than walked as a sequence of pairs.
+        /// </remarks>
+        internal static bool IsDictionary(ITypeSymbol type, out ITypeSymbol? key, out ITypeSymbol? value)
+        {
+            if (IsDictionaryOf(type, out key, out value))
+            {
+                return true;
+            }
+
+            foreach (INamedTypeSymbol contract in type.AllInterfaces)
+            {
+                if (IsDictionaryOf(contract, out key, out value))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>The key and value types of a destination that can be built as a dictionary.</summary>
+        internal static bool IsDestinationDictionary(ITypeSymbol type, out ITypeSymbol? key, out ITypeSymbol? value)
+        {
+            key = null;
+            value = null;
+
+            if (type is not INamedTypeSymbol named || named.TypeArguments.Length != 2)
+            {
+                return false;
+            }
+
+            if (named.Name is not ("Dictionary" or "IDictionary" or "IReadOnlyDictionary") ||
+                named.ContainingNamespace.ToDisplayString() != "System.Collections.Generic")
+            {
+                return false;
+            }
+
+            key = named.TypeArguments[0];
+            value = named.TypeArguments[1];
+            return true;
+        }
+
+        private static bool IsDictionaryOf(ITypeSymbol type, out ITypeSymbol? key, out ITypeSymbol? value)
+        {
+            key = null;
+            value = null;
+
+            if (type is not INamedTypeSymbol named || named.TypeArguments.Length != 2)
+            {
+                return false;
+            }
+
+            if (named.Name is not ("IDictionary" or "IReadOnlyDictionary") ||
+                named.ContainingNamespace.ToDisplayString() != "System.Collections.Generic")
+            {
+                return false;
+            }
+
+            key = named.TypeArguments[0];
+            value = named.TypeArguments[1];
+            return true;
+        }
+
         /// <summary>How a destination sequence should be materialised, or null when it is not one.</summary>
         internal static string? Materialiser(ITypeSymbol destination)
         {

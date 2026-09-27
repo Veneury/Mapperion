@@ -125,6 +125,24 @@ namespace Mapperion.SourceGenerator.Tests
         public string CustomerAddressCity { get; set; } = string.Empty;
     }
 
+    public sealed class Batch
+    {
+        public Dictionary<string, Line> Lines { get; set; } = new Dictionary<string, Line>();
+
+        public Dictionary<int, string> Labels { get; set; } = new Dictionary<int, string>();
+
+        public List<Line>? Optional { get; set; }
+    }
+
+    public sealed class BatchDto
+    {
+        public Dictionary<string, LineDto> Lines { get; set; } = new Dictionary<string, LineDto>();
+
+        public IReadOnlyDictionary<long, string> Labels { get; set; } = new Dictionary<long, string>();
+
+        public List<LineDto> Optional { get; set; } = new List<LineDto>();
+    }
+
     public sealed record LineRecordDto(string Code, double Price);
 
     /// <summary>
@@ -144,6 +162,14 @@ namespace Mapperion.SourceGenerator.Tests
         public partial List<LineDto> ToDtos(IEnumerable<Line> source);
 
         public partial LineRecordDto ToRecord(Line source);
+    }
+
+    [Mapper]
+    public partial class BatchMapper
+    {
+        public partial BatchDto ToDto(Batch source);
+
+        public partial LineDto ToDto(Line source);
     }
 
     [Mapper]
