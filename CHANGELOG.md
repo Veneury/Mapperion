@@ -7,6 +7,19 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ## [Unreleased]
 
+### Documentation
+
+- `RELEASING.md` said the release workflow waits for approval before pushing. It waits before
+  starting: the whole job runs inside the `nuget` environment, so GitHub holds it at step zero.
+  Approving means "start this release", not "these packages look right", and nothing is built
+  until it happens. Worth having either way — a tag pushed by accident publishes nothing — but
+  not what was written, and the difference decides whether the gate is any use to you.
+- The value of `NUGET_USER` is named rather than described. It is the nuget.org account that
+  created the trusted publishing policy, and where that differs from the account that owns the
+  packages it is the creator that counts. Getting it wrong costs a full release run: everything
+  passes and the token exchange fails with a 401 one step before the push, which is now in the
+  list of things that go wrong and how to recover from them.
+
 ### Added
 
 - The source generator matches members the way the run-time engine does, by spelling out a path:
