@@ -85,11 +85,23 @@ namespace Mapperion.Conventions
             return path is null ? configured : configured.WithSource(new MemberPathSource(path));
         }
 
+        /// <remarks>
+        /// A path configured with <c>ForPath</c> owns the member it starts at, and not only the
+        /// one it ends at. Without that, the convention claims the first step by name as well and
+        /// the two disagree — a destination whose path root shares a name with a source member of
+        /// an unrelated type stopped the mapper being built at all. The leaf is what the
+        /// configuration is stored under, so the root has to be asked for separately.
+        /// </remarks>
         private static bool IsConfigured(TypeMapDefinition definition, MemberDescriptor destination)
         {
             foreach (MemberDefinition member in definition.Members)
             {
                 if (member.DestinationMember.Equals(destination))
+                {
+                    return true;
+                }
+
+                if (member.IsPath && member.DestinationPath!.Steps[0].Equals(destination))
                 {
                     return true;
                 }
