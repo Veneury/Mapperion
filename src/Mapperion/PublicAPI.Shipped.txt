@@ -39,6 +39,8 @@ Mapperion.IMapperConfigurationExpression.MemberListValidation.get -> Mapperion.M
 Mapperion.IMapperConfigurationExpression.MemberListValidation.set -> void
 Mapperion.IMapperConfigurationExpression.NameComparison.get -> Mapperion.Model.MemberNameComparison
 Mapperion.IMapperConfigurationExpression.NameComparison.set -> void
+Mapperion.IMapperConfigurationExpression.ReadingThroughAMemberUsesIt.get -> bool
+Mapperion.IMapperConfigurationExpression.ReadingThroughAMemberUsesIt.set -> void
 Mapperion.IMapperConfigurationExpression.RecognizeDestinationPostfixes(params string![]! postfixes) -> void
 Mapperion.IMapperConfigurationExpression.RecognizeDestinationPrefixes(params string![]! prefixes) -> void
 Mapperion.IMapperConfigurationExpression.RecognizeSourcePostfixes(params string![]! postfixes) -> void
@@ -195,6 +197,8 @@ Mapperion.Model.MapperOptions.MemberListValidation.init -> void
 Mapperion.Model.MapperOptions.NameComparison.get -> Mapperion.Model.MemberNameComparison
 Mapperion.Model.MapperOptions.NameComparison.init -> void
 Mapperion.Model.MapperOptions.NameStringComparison.get -> System.StringComparison
+Mapperion.Model.MapperOptions.ReadingThroughAMemberUsesIt.get -> bool
+Mapperion.Model.MapperOptions.ReadingThroughAMemberUsesIt.init -> void
 Mapperion.Model.MapperOptions.RecursionLimit.get -> int
 Mapperion.Model.MapperOptions.RecursionLimit.init -> void
 Mapperion.Model.MapperOptions.SourceMemberNamingConvention.get -> Mapperion.INamingConvention!
