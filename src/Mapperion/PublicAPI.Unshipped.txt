@@ -1,5 +1,1 @@
 #nullable enable
-Mapperion.IMapperConfigurationExpression.ReadingThroughAMemberUsesIt.get -> bool
-Mapperion.IMapperConfigurationExpression.ReadingThroughAMemberUsesIt.set -> void
-Mapperion.Model.MapperOptions.ReadingThroughAMemberUsesIt.get -> bool
-Mapperion.Model.MapperOptions.ReadingThroughAMemberUsesIt.init -> void
