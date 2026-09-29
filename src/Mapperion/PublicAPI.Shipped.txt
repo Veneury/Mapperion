@@ -61,9 +61,12 @@ Mapperion.IMappingExpression<TSource, TDestination>.BeforeMap<TMappingAction>() 
 Mapperion.IMappingExpression<TSource, TDestination>.ConstructUsing(System.Func<TSource, Mapperion.ResolutionContext, TDestination>! factory) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.ConstructUsing(System.Func<TSource, TDestination>! factory) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.ConvertUsing<TTypeConverter>() -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForAllMembers(System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, object!>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.ForCtorParam(string! constructorParameterName, System.Action<Mapperion.ICtorParamConfigurationExpression<TSource>!>! parameterOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForMember(string! destinationMember, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, object!>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.ForMember<TMember>(System.Linq.Expressions.Expression<System.Func<TDestination, TMember>!>! destinationMember, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.ForPath<TMember>(System.Linq.Expressions.Expression<System.Func<TDestination, TMember>!>! destinationPath, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>!>! pathOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
+Mapperion.IMappingExpression<TSource, TDestination>.ForSourceMember(System.Linq.Expressions.Expression<System.Func<TSource, object?>!>! sourceMember, System.Action<Mapperion.ISourceMemberConfigurationExpression!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.Include<TDerivedSource, TDerivedDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.IncludeBase<TBaseSource, TBaseDestination>() -> Mapperion.IMappingExpression<TSource, TDestination>!
 Mapperion.IMappingExpression<TSource, TDestination>.IncludeMembers(params System.Linq.Expressions.Expression<System.Func<TSource, object?>!>![]! members) -> Mapperion.IMappingExpression<TSource, TDestination>!
@@ -77,6 +80,7 @@ Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.Condition(System.Linq.Expressions.Expression<System.Func<TSource, bool>!>! condition) -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.ConvertUsing<TValueConverter, TSourceMember>() -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.Ignore() -> void
+Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom(string! sourceMember) -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom<TSourceMember>(System.Linq.Expressions.Expression<System.Func<TSource, TSourceMember>!>! sourceMember) -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom<TValueResolver>() -> void
 Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.NullSubstitute(object! value) -> void
@@ -90,6 +94,8 @@ Mapperion.IOpenMappingExpression.IgnoreMember(string! destinationMemberName) -> 
 Mapperion.IOpenMappingExpression.MaxDepth(int depth) -> Mapperion.IOpenMappingExpression!
 Mapperion.IOpenMappingExpression.PreserveReferences() -> Mapperion.IOpenMappingExpression!
 Mapperion.IOpenMappingExpression.ValidateMemberList(Mapperion.Model.MemberListValidation validation) -> Mapperion.IOpenMappingExpression!
+Mapperion.ISourceMemberConfigurationExpression
+Mapperion.ISourceMemberConfigurationExpression.DoNotValidate() -> void
 Mapperion.ITypeConverter<TSource, TDestination>
 Mapperion.ITypeConverter<TSource, TDestination>.Convert(TSource source, TDestination destination, Mapperion.ResolutionContext context) -> TDestination
 Mapperion.IValueConverter<TSourceMember, TDestinationMember>
@@ -300,6 +306,8 @@ Mapperion.Model.TypeMapDefinition.SourceType.get -> System.Type!
 Mapperion.Model.TypeMapDefinition.TypeConverterType.get -> System.Type?
 Mapperion.Model.TypeMapDefinition.TypeConverterType.init -> void
 Mapperion.Model.TypeMapDefinition.TypeMapDefinition(Mapperion.Model.TypeMapKey key) -> void
+Mapperion.Model.TypeMapDefinition.UnvalidatedSourceMembers.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.MemberDescriptor!>!
+Mapperion.Model.TypeMapDefinition.UnvalidatedSourceMembers.init -> void
 Mapperion.Model.TypeMapKey
 Mapperion.Model.TypeMapKey.DestinationType.get -> System.Type!
 Mapperion.Model.TypeMapKey.Equals(Mapperion.Model.TypeMapKey other) -> bool

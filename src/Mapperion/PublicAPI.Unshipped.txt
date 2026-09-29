@@ -1,9 +1,1 @@
 #nullable enable
-Mapperion.IMappingExpression<TSource, TDestination>.ForAllMembers(System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, object!>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
-Mapperion.IMappingExpression<TSource, TDestination>.ForMember(string! destinationMember, System.Action<Mapperion.IMemberConfigurationExpression<TSource, TDestination, object!>!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
-Mapperion.IMappingExpression<TSource, TDestination>.ForSourceMember(System.Linq.Expressions.Expression<System.Func<TSource, object?>!>! sourceMember, System.Action<Mapperion.ISourceMemberConfigurationExpression!>! memberOptions) -> Mapperion.IMappingExpression<TSource, TDestination>!
-Mapperion.IMemberConfigurationExpression<TSource, TDestination, TMember>.MapFrom(string! sourceMember) -> void
-Mapperion.ISourceMemberConfigurationExpression
-Mapperion.ISourceMemberConfigurationExpression.DoNotValidate() -> void
-Mapperion.Model.TypeMapDefinition.UnvalidatedSourceMembers.get -> System.Collections.Generic.IReadOnlyList<Mapperion.Model.MemberDescriptor!>!
-Mapperion.Model.TypeMapDefinition.UnvalidatedSourceMembers.init -> void
