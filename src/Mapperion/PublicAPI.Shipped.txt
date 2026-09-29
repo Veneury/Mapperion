@@ -354,6 +354,7 @@ static Mapperion.ExactMatchNamingConvention.Instance.get -> Mapperion.ExactMatch
 static Mapperion.LowerUnderscoreNamingConvention.Instance.get -> Mapperion.LowerUnderscoreNamingConvention!
 static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source) -> TDestination
 static Mapperion.MapperExtensions.MapFast<TSource, TDestination>(this Mapperion.IMapper! mapper, TSource source, TDestination destination) -> TDestination
+static Mapperion.MapperExtensions.MapperFor<TSource, TDestination>(this Mapperion.IMapper! mapper) -> System.Func<TSource, TDestination>!
 static Mapperion.MapperHost.Initialize(Mapperion.IMapper! mapper) -> void
 static Mapperion.MapperHost.Instance.get -> Mapperion.IMapper!
 static Mapperion.MapperHost.IsInitialized.get -> bool
