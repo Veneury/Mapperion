@@ -5,6 +5,19 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Fixed
+
+- **`ForPath` now owns the member its path starts at.** It only owned the one the path ends at,
+  so the naming convention claimed the first step as well and the two disagreed. Where the source
+  happened to have a member of the same name and an unrelated type, the mapper refused to build at
+  all: `No conversion from X to Y is available`, for a member the configuration had already spoken
+  for.
+- Found by running the same configuration through AutoMapper, where it maps. Every existing test
+  for `ForPath` used a path whose root had no namesake on the source, which is why four releases
+  went by without it showing. There is a test for the clash now.
+
 ## [0.12.0] - 2026-09-29
 
 ### Documentation

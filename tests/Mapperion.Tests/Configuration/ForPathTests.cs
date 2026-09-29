@@ -32,6 +32,19 @@ namespace Mapperion.Tests.Configuration
         public string Recipient { get; set; } = string.Empty;
     }
 
+
+    /// <summary>A source whose own member is named like the root of the path below.</summary>
+    public sealed class Consignment
+    {
+        public string Recipient { get; set; } = string.Empty;
+
+        public Warehouse Address { get; set; } = new Warehouse();
+    }
+
+    public sealed class Warehouse
+    {
+        public string Code { get; set; } = string.Empty;
+    }
     public sealed class FixedAddress
     {
         public AddressDto Address { get; } = new AddressDto();
@@ -218,6 +231,31 @@ namespace Mapperion.Tests.Configuration
                 () => config.CreateMapper().Map<Delivery, DeliveryDto>(new Delivery { City = "x" }));
 
             error.MemberPath.ShouldBe("Address.City.Name");
+        }
+
+        /// <remarks>
+        /// <para>
+        /// ForPath owns the member its path starts at. Without that, the convention also claims
+        /// that member by name and the two disagree: here the source has its own Address, of a
+        /// type that has no map to the destination one, and the mapper refused to build.
+        /// </para>
+        /// <para>
+        /// Every other test here uses a path whose root has no namesake on the source, which is
+        /// why this went unnoticed. It was found by running the same configuration through the
+        /// library this one is a drop-in for, where it maps.
+        /// </para>
+        /// </remarks>
+        [Fact]
+        public void A_path_owns_the_member_it_starts_at()
+        {
+            var config = new MapperConfiguration(cfg => cfg
+                .CreateMap<Consignment, DeliveryDto>()
+                .ForPath(d => d.Address!.City.Name, o => o.MapFrom(s => s.Address.Code)));
+
+            DeliveryDto result = config.CreateMapper()
+                .Map<Consignment, DeliveryDto>(new Consignment { Address = new Warehouse { Code = "W1" } });
+
+            result.Address!.City.Name.ShouldBe("W1");
         }
     }
 }
