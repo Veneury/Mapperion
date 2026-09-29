@@ -52,6 +52,55 @@ namespace Mapperion
             Action<IMemberConfigurationExpression<TSource, TDestination, TMember>> pathOptions);
 
         /// <summary>
+        /// Configures one destination member, named as text rather than selected by an expression.
+        /// </summary>
+        /// <remarks>
+        /// For a member chosen somewhere a lambda cannot reach — a settings file, a table of
+        /// overrides, a loop. It costs the compiler's checking, so the expression overload is the
+        /// one to reach for when there is a choice. A dotted name walks a path, exactly as
+        /// <see cref="ForPath"/> does.
+        /// </remarks>
+        /// <param name="destinationMember">The member name, or a dotted path to one.</param>
+        /// <param name="memberOptions">The configuration applied to that member.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        /// <exception cref="MapperConfigurationException">
+        /// The destination has no member of that name.
+        /// </exception>
+        IMappingExpression<TSource, TDestination> ForMember(
+            string destinationMember,
+            Action<IMemberConfigurationExpression<TSource, TDestination, object>> memberOptions);
+
+        /// <summary>
+        /// Applies the same configuration to every destination member.
+        /// </summary>
+        /// <remarks>
+        /// Every writable member of the destination, including the ones no call has mentioned.
+        /// It runs before the conventions fill anything in, so a member it ignores stays ignored
+        /// and a member it gives a source to keeps that source.
+        /// </remarks>
+        /// <param name="memberOptions">The configuration applied to each member.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="memberOptions"/> is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> ForAllMembers(
+            Action<IMemberConfigurationExpression<TSource, TDestination, object>> memberOptions);
+
+        /// <summary>
+        /// Configures one member of the source.
+        /// </summary>
+        /// <remarks>
+        /// There is one thing to say about a source member, and it only means anything under
+        /// <see cref="Model.MemberListValidation.Source"/>: that it is allowed to go unread.
+        /// </remarks>
+        /// <param name="sourceMember">A member access on the source.</param>
+        /// <param name="memberOptions">The configuration applied to that member.</param>
+        /// <returns>This expression, for chaining.</returns>
+        /// <exception cref="ArgumentNullException">Either argument is <see langword="null"/>.</exception>
+        IMappingExpression<TSource, TDestination> ForSourceMember(
+            Expression<Func<TSource, object?>> sourceMember,
+            Action<ISourceMemberConfigurationExpression> memberOptions);
+
+        /// <summary>
         /// Configures one parameter of the destination constructor. Parameter names are matched
         /// ignoring case, because C# names parameters in camelCase and properties in PascalCase.
         /// </summary>

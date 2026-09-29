@@ -7,6 +7,21 @@ Before v1.0, a minor version may introduce breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **The four members a migration from AutoMapper actually writes.** `ForMember` taking the
+  destination member as text, `MapFrom` taking the source member as text, `ForAllMembers`, and
+  `ForSourceMember` with the one thing there is to say about a source member — `DoNotValidate()`,
+  which excuses it from validation against the source list. All four were run side by side against
+  AutoMapper and answer the same.
+- A dotted name walks a path, the shape the expression overloads already accepted, and the name is
+  resolved while the configuration is built: a misspelling is a configuration error rather than a
+  member that quietly maps to nothing. The expression overloads are still the ones to prefer,
+  since they keep the compiler involved.
+- The rest of the surface comparison was left alone on purpose. Copying AutoMapper's overload list
+  wholesale would break source compatibility here: its extra `PreCondition` overloads make
+  `o.PreCondition(s => false)` ambiguous, and that call compiles today.
+
 ### Fixed
 
 - **`ForPath` now owns the member its path starts at.** It only owned the one the path ends at,
