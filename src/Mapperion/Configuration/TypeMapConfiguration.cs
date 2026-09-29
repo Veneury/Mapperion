@@ -39,6 +39,7 @@ namespace Mapperion.Configuration
         private readonly List<TypeMapKey> derivedMaps = new List<TypeMapKey>();
         private readonly List<TypeMapKey> baseMaps = new List<TypeMapKey>();
         private readonly List<MemberPath> includedMembers = new List<MemberPath>();
+        private readonly List<MemberDescriptor> unvalidatedSourceMembers = new List<MemberDescriptor>();
         private readonly List<object> beforeMapActions = new List<object>();
         private readonly List<object> afterMapActions = new List<object>();
         private int? maxDepth;
@@ -84,6 +85,64 @@ namespace Mapperion.Configuration
             MemberConfiguration<TSource, TDestination, TMember> configuration = FindOrAddPath<TMember>(path);
 
             pathOptions(configuration);
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> ForMember(
+            string destinationMember,
+            Action<IMemberConfigurationExpression<TSource, TDestination, object>> memberOptions)
+        {
+            Guard.NotNull(destinationMember, nameof(destinationMember));
+            Guard.NotNull(memberOptions, nameof(memberOptions));
+
+            MemberPath path = MemberNameResolver.Path(
+                typeof(TDestination), destinationMember, "destination");
+
+            // A single step is a member and not a path, which is the same rule ForPath follows.
+            MemberConfiguration<TSource, TDestination, object> configuration = path.IsFlattened
+                ? FindOrAddPath<object>(path)
+                : FindOrAdd<object>(path.Leaf);
+
+            memberOptions(configuration);
+            return this;
+        }
+
+        /// <remarks>
+        /// Every writable member of the destination, whether or not a call has already mentioned
+        /// it, and the ones already mentioned keep what they were given first — the action is
+        /// applied on top. It runs here rather than at build time so that the conventions see the
+        /// result and leave those members alone.
+        /// </remarks>
+        public IMappingExpression<TSource, TDestination> ForAllMembers(
+            Action<IMemberConfigurationExpression<TSource, TDestination, object>> memberOptions)
+        {
+            Guard.NotNull(memberOptions, nameof(memberOptions));
+
+            foreach (MemberDescriptor destination in DestinationMembers())
+            {
+                memberOptions(FindOrAdd<object>(destination));
+            }
+
+            return this;
+        }
+
+        public IMappingExpression<TSource, TDestination> ForSourceMember(
+            Expression<Func<TSource, object?>> sourceMember,
+            Action<ISourceMemberConfigurationExpression> memberOptions)
+        {
+            Guard.NotNull(sourceMember, nameof(sourceMember));
+            Guard.NotNull(memberOptions, nameof(memberOptions));
+
+            MemberPath path = MemberExpressionParser.ParseIncludedMember(sourceMember);
+            var configuration = new SourceMemberConfiguration();
+
+            memberOptions(configuration);
+
+            if (configuration.IsExcludedFromValidation)
+            {
+                unvalidatedSourceMembers.Add(path.Steps[0]);
+            }
+
             return this;
         }
 
@@ -285,7 +344,39 @@ namespace Mapperion.Configuration
                 AfterMapActions = afterMapActions.ToArray(),
                 MaxDepth = maxDepth,
                 PreserveReferences = preserveReferences,
+                UnvalidatedSourceMembers = unvalidatedSourceMembers.ToArray(),
             };
+        }
+
+        /// <remarks>
+        /// Every writable member of the destination, found the plain way. ForAllMembers is the
+        /// only caller and it runs while the configuration is being written, before the options
+        /// that drive the real member walk are known.
+        /// </remarks>
+        [UnconditionalSuppressMessage("Trimming", "IL2090", Justification =
+            "Members are looked up by name here, which the trimmer cannot follow. The fluent configuration is only reachable through MapperConfiguration, which already says so.")]
+        private static IEnumerable<MemberDescriptor> DestinationMembers()
+        {
+            const System.Reflection.BindingFlags lookup =
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.FlattenHierarchy;
+
+            foreach (System.Reflection.PropertyInfo property in typeof(TDestination).GetProperties(lookup))
+            {
+                if (property.CanWrite && property.GetIndexParameters().Length == 0)
+                {
+                    yield return MemberDescriptor.ForProperty(property);
+                }
+            }
+
+            foreach (System.Reflection.FieldInfo field in typeof(TDestination).GetFields(lookup))
+            {
+                if (!field.IsInitOnly)
+                {
+                    yield return MemberDescriptor.ForField(field);
+                }
+            }
         }
 
         private CtorParamConfiguration<TSource> FindOrAddParameter(string name)

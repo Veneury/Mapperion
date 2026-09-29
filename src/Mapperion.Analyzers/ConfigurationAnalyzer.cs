@@ -321,8 +321,21 @@ namespace Mapperion.Analysis
         /// The destination member a lambda points at, as it is written, so that
         /// <c>d =&gt; d.Customer.Name</c> becomes <c>Customer.Name</c>.
         /// </summary>
+        /// <remarks>
+        /// A member is selected either by an expression or, since the overloads that take one as
+        /// text exist, by a literal string. A name built at run time cannot be read here, and a
+        /// member this returns null for is simply not tracked — the diagnostics below say that two
+        /// calls disagree, so saying nothing is the right answer when one of them is unknowable.
+        /// </remarks>
         private static string? Path(ExpressionSyntax expression)
         {
+            if (expression is LiteralExpressionSyntax literal &&
+                literal.IsKind(SyntaxKind.StringLiteralExpression))
+            {
+                string text = literal.Token.ValueText;
+                return text.Length == 0 ? null : text;
+            }
+
             if (expression is not LambdaExpressionSyntax lambda || lambda.Body is not ExpressionSyntax body)
             {
                 return null;

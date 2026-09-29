@@ -305,6 +305,11 @@ namespace Mapperion.Validation
                 }
             }
 
+            foreach (MemberDescriptor excused in map.UnvalidatedSourceMembers)
+            {
+                consumed.Add(excused);
+            }
+
             foreach (MemberDescriptor candidate in members.Readable(map.SourceType))
             {
                 if (!consumed.Contains(candidate))

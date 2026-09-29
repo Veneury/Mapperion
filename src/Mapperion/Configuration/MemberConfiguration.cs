@@ -61,6 +61,16 @@ namespace Mapperion.Configuration
             isIgnored = false;
         }
 
+        public void MapFrom(string sourceMember)
+        {
+            Guard.NotNull(sourceMember, nameof(sourceMember));
+
+            source = new MemberPathSource(
+                MemberNameResolver.Path(typeof(TSource), sourceMember, "source"));
+
+            isIgnored = false;
+        }
+
         public void ConvertUsing<TValueConverter, TSourceMember>()
             where TValueConverter : IValueConverter<TSourceMember, TMember>
         {

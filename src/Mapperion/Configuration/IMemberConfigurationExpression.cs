@@ -21,6 +21,21 @@ namespace Mapperion
         void MapFrom<TSourceMember>(Expression<Func<TSource, TSourceMember>> sourceMember);
 
         /// <summary>
+        /// Takes the value from the source member of the given name, or from the dotted path to
+        /// one.
+        /// </summary>
+        /// <remarks>
+        /// The name is resolved while the configuration is built, so a misspelling is a
+        /// configuration error and not a member that quietly maps to nothing.
+        /// </remarks>
+        /// <param name="sourceMember">The source member name, or a dotted path to one.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="sourceMember"/> is <see langword="null"/>.</exception>
+        /// <exception cref="MapperConfigurationException">
+        /// The source has no member of that name.
+        /// </exception>
+        void MapFrom(string sourceMember);
+
+        /// <summary>
         /// Takes the value from a resolver, which sees the whole source and destination.
         /// </summary>
         /// <typeparam name="TValueResolver">The resolver, which needs a parameterless constructor.</typeparam>

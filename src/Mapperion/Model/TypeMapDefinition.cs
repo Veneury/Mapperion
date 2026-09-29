@@ -69,6 +69,13 @@ namespace Mapperion.Model
         /// <summary>Gets which side must be fully covered for this map to validate.</summary>
         public MemberListValidation MemberListValidation { get; init; } = MemberListValidation.Destination;
 
+        /// <summary>
+        /// Source members that <c>ForSourceMember(..., o =&gt; o.DoNotValidate())</c> excused from
+        /// validation against the source list.
+        /// </summary>
+        public IReadOnlyList<MemberDescriptor> UnvalidatedSourceMembers { get; init; } =
+            System.Array.Empty<MemberDescriptor>();
+
         /// <summary>Gets the maps for derived type pairs handled polymorphically by this one.</summary>
         public IReadOnlyList<TypeMapKey> DerivedMaps { get; init; } = NoKeys;
 
@@ -126,6 +133,7 @@ namespace Mapperion.Model
                 MaxDepth = MaxDepth,
                 PreserveReferences = PreserveReferences,
                 MemberListValidation = MemberListValidation,
+                UnvalidatedSourceMembers = UnvalidatedSourceMembers,
                 DerivedMaps = DerivedMaps,
                 BaseMaps = BaseMaps,
                 IncludedMembers = IncludedMembers,
