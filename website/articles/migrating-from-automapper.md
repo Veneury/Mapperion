@@ -78,6 +78,17 @@ through `ProjectTo`. Mapperion throws instead, and says which member and why.
 AutoMapper's overloads. Declaring `ConstructUsing` and `ForCtorParam` on the same map is rejected
 when the configuration is built, rather than the factory quietly winning.
 
+**Reading through a member counts as using it**, when validating against the source member list.
+Given `ForMember(d => d.Anything, o => o.MapFrom(s => s.Depot.Code))`, `Depot` is read, so
+`MemberListValidation.Source` counts it as used. AutoMapper counts a path its naming convention
+found but not one you wrote by hand, and reports `Depot` as unmapped — the two were run side by
+side to establish that, and it reads more like an artefact of how it records what the convention
+matched than a rule anybody chose.
+
+The lenient reading is the default because being more lenient cannot break a migration: a
+configuration AutoMapper accepted is accepted here. Set `cfg.ReadingThroughAMemberUsesIt = false`
+for its behaviour exactly.
+
 **Validation is off by default**, as in AutoMapper. `cfg.ValidateOnBuild = true` turns it on.
 
 ## Not in the box

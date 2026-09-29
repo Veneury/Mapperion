@@ -80,6 +80,31 @@ namespace Mapperion
         /// <summary>Gets or sets which side must be fully covered for a map to validate.</summary>
         MemberListValidation MemberListValidation { get; set; }
 
+        /// <summary>
+        /// Whether reading through a member counts as using it, when validating against the source
+        /// member list. On by default.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// Only <see cref="MemberListValidation.Source"/> cares. It reports every readable source
+        /// member that no destination member uses, and the question is what a destination
+        /// configured with <c>MapFrom(s =&gt; s.Office.Code)</c> uses: the whole of <c>Office</c>,
+        /// or nothing of it.
+        /// </para>
+        /// <para>
+        /// On, which is the default, it counts: <c>Office</c> is read, so it is used. Off matches
+        /// the library this one is a drop-in for, which counts a path the naming convention found
+        /// but not one written by hand — the two were run side by side to establish that, and it
+        /// looks more like an artefact of how that library records what it matched than a rule.
+        /// </para>
+        /// <para>
+        /// The default is the lenient one on purpose. Being more lenient than that library cannot
+        /// break a migration, since a configuration it accepted is accepted here; being stricter
+        /// would reject configurations that already work.
+        /// </para>
+        /// </remarks>
+        bool ReadingThroughAMemberUsesIt { get; set; }
+
         /// <summary>Gets or sets a value indicating whether the configuration is validated when built.</summary>
         bool ValidateOnBuild { get; set; }
 

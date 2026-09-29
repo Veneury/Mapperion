@@ -48,7 +48,7 @@ namespace Mapperion.Validation
 
                 if (map.MemberListValidation == MemberListValidation.Source)
                 {
-                    ValidateSource(map, members, errors);
+                    ValidateSource(map, members, model.Options.ReadingThroughAMemberUsesIt, errors);
                 }
             }
 
@@ -288,7 +288,18 @@ namespace Mapperion.Validation
             return true;
         }
 
-        private static void ValidateSource(TypeMapDefinition map, TypeMembers members, List<string> errors)
+        /// <remarks>
+        /// <paramref name="readingThroughUses"/> decides what a destination configured with
+        /// <c>MapFrom(s =&gt; s.Office.Code)</c> uses. On, <c>Office</c> is read and so it counts.
+        /// Off, only a member read whole, or one the naming convention reached through, counts —
+        /// which is what the library this one is a drop-in for does, established by running the
+        /// two side by side rather than by reading either.
+        /// </remarks>
+        private static void ValidateSource(
+            TypeMapDefinition map,
+            TypeMembers members,
+            bool readingThroughUses,
+            List<string> errors)
         {
             var consumed = new HashSet<MemberDescriptor>();
 
@@ -299,7 +310,12 @@ namespace Mapperion.Validation
                     continue;
                 }
 
-                if (member.Source is MemberPathSource path)
+                if (member.Source is not MemberPathSource path)
+                {
+                    continue;
+                }
+
+                if (readingThroughUses || !member.IsExplicit || path.Path.Length == 1)
                 {
                     consumed.Add(path.Path.Steps[0]);
                 }
