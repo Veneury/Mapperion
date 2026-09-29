@@ -5,6 +5,22 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Added
+
+- **`ReadingThroughAMemberUsesIt`**, which decides what counts as using a source member when
+  validating against the source member list. On by default, which is what this library already
+  did: `MapFrom(s => s.Depot.Code)` reads `Depot`, so `Depot` is used. Off matches AutoMapper.
+- AutoMapper is not simply stricter here, it disagrees with itself: it counts a path its naming
+  convention found, and a member read whole, but not a path written by hand. The three cases were
+  run through both libraries side by side to establish that, and the strict mode answers the same
+  as AutoMapper on all three.
+- The lenient reading stays the default because being more lenient cannot break a migration — a
+  configuration AutoMapper accepted is accepted here — while being stricter would reject
+  configurations that already work. Turning it into an option rather than a change is the whole
+  point: nobody has to move.
+
 ## [0.13.0] - 2026-09-29
 
 ### Added

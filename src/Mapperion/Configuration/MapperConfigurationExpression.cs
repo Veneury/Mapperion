@@ -38,6 +38,9 @@ namespace Mapperion.Configuration
 
         public MemberListValidation MemberListValidation { get; set; } = MapperOptions.Defaults.MemberListValidation;
 
+        /// <inheritdoc />
+        public bool ReadingThroughAMemberUsesIt { get; set; } = MapperOptions.Defaults.ReadingThroughAMemberUsesIt;
+
         public bool ValidateOnBuild { get; set; } = MapperOptions.Defaults.ValidateOnBuild;
 
         public INamingConvention SourceMemberNamingConvention { get; set; } =
@@ -187,6 +190,7 @@ namespace Mapperion.Configuration
                 IncludeSourceMethods = IncludeSourceMethods,
                 EnumMapping = EnumMapping,
                 MemberListValidation = MemberListValidation,
+                ReadingThroughAMemberUsesIt = ReadingThroughAMemberUsesIt,
                 ValidateOnBuild = ValidateOnBuild,
                 SourceMemberNamingConvention = SourceMemberNamingConvention,
                 DestinationMemberNamingConvention = DestinationMemberNamingConvention,

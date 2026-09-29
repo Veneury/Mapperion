@@ -80,6 +80,17 @@ distintas por `Map` y por `ProjectTo`. Mapperion lanza en su lugar, y dice qué 
 sobrecargas de AutoMapper. Declarar `ConstructUsing` y `ForCtorParam` en el mismo mapa se rechaza
 al construir la configuración, en vez de dejar que gane la fábrica en silencio.
 
+**Leer a través de un miembro cuenta como usarlo**, al validar contra la lista de origen. Con
+`ForMember(d => d.Anything, o => o.MapFrom(s => s.Depot.Code))` se lee `Depot`, así que
+`MemberListValidation.Source` lo da por usado. AutoMapper cuenta una ruta que encontró su
+convención de nombres pero no una que escribiste tú, y reporta `Depot` como no mapeado — se
+comprobó corriendo las dos bibliotecas lado a lado, y parece más un artefacto de cómo registra lo
+que emparejó la convención que una regla que alguien eligiera.
+
+La lectura laxa es la de por defecto porque ser más laxo no puede romper una migración: una
+configuración que AutoMapper aceptaba se acepta aquí. Pon `cfg.ReadingThroughAMemberUsesIt = false`
+para su comportamiento exacto.
+
 **La validación está apagada por defecto**, como en AutoMapper. `cfg.ValidateOnBuild = true` la
 enciende.
 
