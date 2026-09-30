@@ -5,6 +5,19 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Changed
+
+- **The package icon.** It was a filled square and an outlined one, which said there are two
+  things here but not what happens between them. Now a square goes in and a circle comes out:
+  the shape itself changes, which is the whole of what this library does. The colours and the
+  navy tile are unchanged, so it still reads as a pair with Mediarion.
+- The icon now has a source, `icon.svg`, and `tools/draw-icon.py` draws `icon.png` from the same
+  numbers. Before there was only the PNG and no way to change it except by hand.
+- NuGet keeps the icon each version was published with, so this one appears from the next
+  release onwards and earlier versions go on showing the old one.
+
 ## [0.14.0] - 2026-09-29
 
 ### Added
