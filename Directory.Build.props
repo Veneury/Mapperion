@@ -14,7 +14,7 @@
 
   <PropertyGroup>
     <Product>Mapperion</Product>
-    <VersionPrefix>0.14.0</VersionPrefix>
+    <VersionPrefix>0.15.0</VersionPrefix>
     <Authors>Mapperion contributors</Authors>
     <Copyright>Copyright (c) Mapperion contributors</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
