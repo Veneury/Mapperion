@@ -280,8 +280,10 @@ than asserted.
 - Records and any destination built through a constructor, with `ForCtorParam` to override an
   argument and parameter defaults filling what the source does not provide.
 - `ReverseMap()`, which inverts renamed members and leaves the rest to the conventions.
-- Type converters, value converters and value resolvers, each created once and reused. They need
-  a parameterless constructor until dependency injection support lands.
+- Type converters, value converters and value resolvers. With no container they are built through
+  a public parameterless constructor and kept; with `Mapperion.Extensions.DependencyInjection` one
+  **registered in the container** comes from it instead, with its own dependencies and under the
+  lifetime you gave it, and one that is not falls back to that constructor.
 - `BeforeMap` and `AfterMap`, as a lambda or as an `IMappingAction` type. A map with a type
   converter runs neither: the converter replaces the whole map.
 - `Mapperion.Extensions.DependencyInjection`, which registers the mapper and lets converters and

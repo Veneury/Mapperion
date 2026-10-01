@@ -100,6 +100,18 @@ services.AddMapperion(typeof(SomeProfile).Assembly);
 Eso busca clases `Profile`, registra `IMapper` y resuelve converters y resolvers desde el
 contenedor, de modo que un resolver puede tener sus propias dependencias.
 
+Registra el resolver además de aquello de lo que depende. Al contenedor se le pide por tipo, y un
+tipo que nadie registró no es algo que pueda construir — el mapper cae entonces a un constructor
+público sin parámetros, que es justo lo que un resolver con dependencias no tiene:
+
+```csharp
+services.AddScoped<ITenantContext, TenantContext>();
+services.AddScoped<AuditedByResolver>();
+services.AddMapperion(typeof(SomeProfile).Assembly);
+```
+
+AutoMapper te pide lo mismo, así que nada de esto cambia al venir de allí.
+
 ## Cuando el mapeo es el camino caliente
 
 `mapper.Map<Order, OrderDto>(order)` es un método genérico alcanzado a través de una interfaz, y

@@ -5,6 +5,34 @@ Versioned according to [SemVer 2.0](https://semver.org/).
 
 Before v1.0, a minor version may introduce breaking changes.
 
+## [Unreleased]
+
+### Fixed
+
+- **A converter or resolver that could not be built said so badly.** The message that explains
+  what to do — give it a public parameterless constructor, or register it in the container —
+  was written and unreachable. It sat behind a null check, and `Activator.CreateInstance`
+  throws `MissingMethodException` for a type with no parameterless constructor rather than
+  returning null; null comes back only from an empty `Nullable<T>`. So the one case the advice
+  was written for never saw it, and what came out was the runtime reporting a missing method on
+  a type the caller never asked to construct.
+- A resolver that takes its dependencies through its constructor and is left out of the
+  container is now a `MapperConfigurationException` naming the type and saying to register it,
+  with the `MissingMethodException` kept as the inner exception. Found by an application using
+  the library rather than by a test.
+
+### Changed
+
+- **The README said resolvers need a parameterless constructor "until dependency injection
+  support lands".** It landed, and four lines further down the same list said the dependency
+  injection package lets resolvers take their dependencies from the container. Both sentences
+  were published, and the wrong one is the one that would stop somebody trying. It now says
+  what actually happens, including that the resolver has to be registered itself, which
+  AutoMapper asks for too.
+- The getting-started page says the same in English and in Spanish, with the registration
+  spelled out, because the page was right but incomplete and the missing half is the half that
+  bites.
+
 ## [0.15.0] - 2026-09-30
 
 ### Changed

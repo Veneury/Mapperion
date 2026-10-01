@@ -31,16 +31,35 @@ namespace Mapperion.Internal
         [RequiresUnreferencedCode("Creating a converter or resolver by type is not compatible with trimming.")]
         private static object Create(Type type)
         {
-            object? instance = Activator.CreateInstance(type);
+            object? instance;
+
+            try
+            {
+                instance = Activator.CreateInstance(type);
+            }
+            catch (MissingMethodException e)
+            {
+                // The interesting case arrives here, not below. A type with no parameterless
+                // constructor makes Activator throw; it returns null only for an empty Nullable<T>.
+                // Both ends said the same thing and only the unreachable one said it well, so a
+                // resolver taking its dependencies through its constructor and left out of the
+                // container reported the runtime's own message and never the advice.
+                throw new MapperConfigurationException(Explain(type), e);
+            }
 
             if (instance is null)
             {
-                throw new MapperConfigurationException(
-                    type.Name + " could not be created. A converter, resolver or mapping action " +
-                    "needs a public parameterless constructor, or must be registered in the container.");
+                throw new MapperConfigurationException(Explain(type));
             }
 
             return instance;
+        }
+
+        private static string Explain(Type type)
+        {
+            return type.Name + " could not be created. A converter, resolver or mapping action " +
+                "needs a public parameterless constructor, or must be registered in the container " +
+                "for AddMapperion to resolve it with its dependencies.";
         }
     }
 
